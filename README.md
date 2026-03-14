@@ -390,3 +390,4 @@ filesystem. You can do this either by
    `ls` to list folders and files, as visible in the screenshot. You can then
    delete the downloaded folder / repository from the Windows filesystem in the
    explorer.
+
