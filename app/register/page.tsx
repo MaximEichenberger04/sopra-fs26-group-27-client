@@ -38,8 +38,8 @@ const Regisration: React.FC = () => {
         setToken(response.token);
       }
 
-      // Navigate to the user overview
-      router.push("/users");
+      // Navigate to the user's profile
+      router.push(`/user/${response.id}`);
     } catch (error) {
       if (error instanceof Error) {
         alert(`Something went wrong during the login:\n${error.message}`);
@@ -92,7 +92,17 @@ const Regisration: React.FC = () => {
           <Form.Item
             name="password"
             label="Password"
-            rules={[{ required: true, message: "Please create a password." }]}
+            rules={[
+              { required: true, message: "Please create a password." },
+              { min: 8, message: "Password must be at least 8 characters." },
+              {
+                pattern: /[A-Z]/,
+                message: "Password must contain at least one uppercase letter.",
+              },
+              {
+                pattern: /[0-9]/,
+                message: "Password must contain at least one number.",
+              },]}
           >
             <Input.Password placeholder="Create a password" />
           </Form.Item>
