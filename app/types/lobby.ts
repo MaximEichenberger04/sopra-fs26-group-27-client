@@ -3,8 +3,13 @@ export interface Lobby {
   name: string | null;
   inviteCode: string | null;
   hostId: number | null;
-  playerCount: number | null;
+  maxPlayers: number | null;
   currentPlayers: number | null;
   gameMode: string | null;
   gameStatus: string | null;
+  theme: string | null;
+  map: string | null;
+  startAblities: number | null;
+  playerIds: number[] | null;
+
 }

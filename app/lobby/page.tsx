@@ -4,6 +4,7 @@
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
+import { Lobby } from "@/types/lobby";
 import { Button, Card, Form, Input, Select } from "antd";
 
 const LobbyCreationPage: React.FC = () => {
@@ -11,14 +12,24 @@ const LobbyCreationPage: React.FC = () => {
   const apiService = useApi();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (values: { name: string; gameMode: string; playerCount: number }) => {
+  const handleSubmit = async (values: {
+    name: string;
+    gameMode: string;
+    maxPlayers: number;
+    startAbilities: number;
+    theme: string;
+    map: string;
+  }) => {
     setLoading(true);
     try {
       // POST /lobby — backend creates lobby and returns it
       const newLobby = await apiService.post<{ id: string }>("/lobby", {
         name: values.name,
         gameMode: values.gameMode,
-        playerCount: values.playerCount
+        maxPlayers: values.maxPlayers,
+        startAbilities: values.startAbilities,
+        theme: values.theme,
+        map: values.map
       });
       // Navigate into the newly created lobby
       router.push(`/lobby/${newLobby.id}`);
