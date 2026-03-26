@@ -5,6 +5,7 @@ import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { User } from "@/types/user";
 import { Button, Form, Input } from "antd";
+import Image from "next/image";
 // Optionally, you can import a CSS module or file for additional styling:
 // import styles from "@/styles/page.module.css";
 
@@ -49,47 +50,66 @@ const Regisration: React.FC = () => {
   };
 
   return (
-    <div className="registration-container">
-      <Form
-        form={form}
-        name="Regisration"
-        size="large"
-        variant="outlined"
-        onFinish={handleRegistration}
-        layout="vertical"
-      >
-        <Form.Item
-          name="username"
-          label="Username"
-          rules={[{ required: true, message: "Please input a username!" }]}
+    <div className="auth-page">
+      <div className="auth-card">
+        <div className="auth-logo-wrap">
+          <Image
+            className="auth-logo"
+            src="/quoridor.png"
+            alt="Quoridor Chaos Arena"
+            width={400}
+            height={267}
+            priority
+          />
+        </div>
+
+        <Form
+          form={form}
+          name="registration"
+          size="large"
+          variant="outlined"
+          onFinish={handleRegistration}
+          layout="vertical"
+          className="auth-form"
+          style={{ width: "100%" }}
         >
-          <Input placeholder="Enter username" />
-        </Form.Item>
-        <Form.Item
-          name="displayName"
-          label="Display Name"
-          rules={[{ required: true, message: "Please input a display name!" }]}
-        >
-          <Input placeholder="Enter display name" />
-        </Form.Item>
-        <Form.Item
-          name="password"
-          label="Password"
-          rules={[{ required: true, message: "Please input a password!" }]}
-        >
-          <Input type="password" placeholder="Enter password" />
-        </Form.Item>
-        <Form.Item>
-          <Button type="primary" htmlType="submit" className="registration-button">
-            Register
-          </Button>
-        </Form.Item>
-        <Form.Item>
-          <Button type="default" onClick={() => router.push("/login")} className="login-button">
-            Login
-          </Button>
-        </Form.Item>
-      </Form>
+          <Form.Item
+            name="username"
+            label="Username"
+            rules={[{ required: true, message: "Please choose a username." }]}
+          >
+            <Input placeholder="Choose a username" />
+          </Form.Item>
+
+          <Form.Item
+            name="displayName"
+            label="Display Name"
+            rules={[{ required: true, message: "Please enter a display name." }]}
+          >
+            <Input placeholder="Enter your display name" />
+          </Form.Item>
+
+          <Form.Item
+            name="password"
+            label="Password"
+            rules={[{ required: true, message: "Please create a password." }]}
+          >
+            <Input.Password placeholder="Create a password" />
+          </Form.Item>
+
+          <Form.Item style={{ marginTop: "20px" }}>
+            <Button type="primary" htmlType="submit" className="auth-btn-primary">
+              Register
+            </Button>
+          </Form.Item>
+
+          <Form.Item>
+            <Button type="default" onClick={() => router.push("/login")} className="auth-btn-secondary">
+              Back to Login
+            </Button>
+          </Form.Item>
+        </Form>
+      </div>
     </div>
   );
 };
