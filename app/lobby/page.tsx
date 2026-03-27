@@ -16,9 +16,6 @@ const LobbyCreationPage: React.FC = () => {
     name: string;
     gameMode: string;
     maxPlayers: number;
-    startAbilities: number;
-    theme: string;
-    map: string;
   }) => {
     setLoading(true);
     try {
@@ -26,10 +23,8 @@ const LobbyCreationPage: React.FC = () => {
       const newLobby = await apiService.post<{ id: string }>("/lobby", {
         name: values.name,
         gameMode: values.gameMode,
-        maxPlayers: values.maxPlayers,
-        startAbilities: values.startAbilities,
-        theme: values.theme,
-        map: values.map
+        maxPlayers: values.maxPlayers
+        // theme/map is only frontend rendering.
       });
       // Navigate into the newly created lobby
       router.push(`/lobby/${newLobby.id}`);
