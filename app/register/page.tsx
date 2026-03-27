@@ -38,8 +38,8 @@ const Regisration: React.FC = () => {
         setToken(response.token);
       }
 
-      // Navigate to the user's profile
-      router.push(`/user/${response.id}`);
+      // Navigate to /users (dashboard)
+      router.push("/users");
     } catch (error) {
       if (error instanceof Error) {
         alert(`Something went wrong during the login:\n${error.message}`);

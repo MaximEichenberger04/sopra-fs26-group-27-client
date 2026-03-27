@@ -1,0 +1,47 @@
+.users-card {
+  width: 560px;
+  max-width: calc(100vw - 40px);
+}
+
+.users-table-title {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(201,147,42,0.6);
+}
+
+.users-table .ant-table {
+  background: transparent !important;
+}
+.users-table .ant-table-title {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(201,147,42,0.2) !important;
+  padding: 0 0 12px 0 !important;
+}
+.users-table .ant-table-thead > tr > th {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(201,147,42,0.15) !important;
+  font-family: 'Cinzel', serif !important;
+  font-size: 9px !important;
+  letter-spacing: 0.18em !important;
+  text-transform: uppercase !important;
+  color: rgba(201,147,42,0.5) !important;
+}
+.users-table .ant-table-tbody > tr > td {
+  background: transparent !important;
+  border-bottom: 1px solid rgba(201,147,42,0.08) !important;
+  color: #f5ead8 !important;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 16px !important;
+}
+.users-table .ant-table-tbody > tr:hover > td {
+  background: rgba(201,147,42,0.06) !important;
+}
+.users-table .ant-pagination .ant-pagination-item-active {
+  border-color: rgba(201,147,42,0.5) !important;
+}
+.users-table .ant-pagination .ant-pagination-item-active a {
+  color: #c9932a !important;
+}
