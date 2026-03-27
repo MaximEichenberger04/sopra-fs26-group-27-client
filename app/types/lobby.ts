@@ -7,9 +7,5 @@ export interface Lobby {
   currentPlayers: number | null;
   gameMode: string | null;
   gameStatus: string | null;
-  theme: string | null;
-  map: string | null;
-  startAblities: number | null;
   playerIds: number[] | null;
-
 }
