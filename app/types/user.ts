@@ -5,3 +5,4 @@ export interface User {
   token: string | null;
   status: string | null;
 }
+ 
