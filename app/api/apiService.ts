@@ -60,17 +60,22 @@ export class ApiService {
    * @param endpoint - The API endpoint (e.g. "/users").
    * @returns JSON data of type T.
    */
-  public async get<T>(endpoint: string): Promise<T> {
+  public async get<T>(endpoint: string, token?: string): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const headers: Record<string, string> = { ...this.defaultHeaders as Record<string, string> };
+    if (token) {
+      headers["Authorization"] = token;
+    }
     const res = await fetch(url, {
       method: "GET",
-      headers: this.defaultHeaders,
+      headers,
     });
     return this.processResponse<T>(
       res,
       "An error occurred while fetching the data.\n",
     );
   }
+
 
   /**
    * POST request.
@@ -97,11 +102,15 @@ export class ApiService {
    * @param data - The payload to update.
    * @returns JSON data of type T.
    */
-  public async put<T>(endpoint: string, data: unknown): Promise<T> {
+  public async put<T>(endpoint: string, data: unknown, token?: string): Promise<T> {
     const url = `${this.baseURL}${endpoint}`;
+    const headers: Record<string, string> = { ...this.defaultHeaders as Record<string, string> };
+    if (token) {
+      headers["Authorization"] = token;
+    }
     const res = await fetch(url, {
       method: "PUT",
-      headers: this.defaultHeaders,
+      headers: headers,
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(

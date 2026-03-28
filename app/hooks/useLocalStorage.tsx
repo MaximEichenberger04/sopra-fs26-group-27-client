@@ -25,7 +25,17 @@ export default function useLocalStorage<T>(
   key: string,
   defaultValue: T,
 ): LocalStorage<T> {
-  const [value, setValue] = useState<T>(defaultValue);
+  // Initialize directly from localStorage to avoid a blank render with defaultValue
+  // before the useEffect runs, which would cause auth checks to fail on first render
+  const [value, setValue] = useState<T>(() => {
+    if (typeof window === "undefined") return defaultValue;
+    try {
+      const stored = globalThis.localStorage.getItem(key);
+      return stored ? JSON.parse(stored) as T : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  });
 
   // On mount, try to read the stored value
   useEffect(() => {

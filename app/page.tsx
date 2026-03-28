@@ -1,9 +1,10 @@
 "use client";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { Button } from "antd";
 import { BookOutlined, CodeOutlined, GlobalOutlined } from "@ant-design/icons";
 import styles from "@/styles/page.module.css";
+import Image from "next/image";
+
 
 export default function Home() {
   const router = useRouter();

@@ -1,0 +1,333 @@
+/* ═══════════════════════════════════════════════
+   SHARED
+   ═══════════════════════════════════════════════ */
+
+.profile-card {
+  position: relative;
+  z-index: 10;
+  width: 480px;
+  max-width: calc(100vw - 40px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1px solid rgba(201, 147, 42, .15);
+  border-radius: 6px;
+  background: rgba(15, 10, 5, .85);
+  padding: 32px 36px;
+}
+
+.profile-avatar {
+  border: 2px solid rgba(201, 147, 42, .5) !important;
+  background: #2a1f12 !important;
+}
+
+/* ═══════════════════════════════════════════════
+   EDIT MODE (owner's own profile)
+   ═══════════════════════════════════════════════ */
+
+.edit-title {
+  font-family: 'Cinzel', serif;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  text-align: center;
+}
+
+/* ── Avatar ── */
+.edit-avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.edit-avatar-wrap {
+  position: relative;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.edit-avatar-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .55);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity .2s;
+  color: var(--gold-bright);
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+
+.edit-avatar-wrap:hover .edit-avatar-overlay {
+  opacity: 1;
+}
+
+/* ── Form fields ── */
+.edit-field {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.edit-label {
+  display: block;
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: rgba(201, 147, 42, .55);
+  margin-bottom: 6px;
+}
+
+.edit-input.ant-input,
+.edit-input.ant-input-affix-wrapper {
+  background: #1a1210 !important;
+  border: 1px solid rgba(201, 147, 42, .3) !important;
+  border-radius: 4px !important;
+  color: #f5ead8 !important;
+  font-family: 'Crimson Text', serif !important;
+  font-size: 16px !important;
+  padding: 10px 14px !important;
+  box-shadow: none !important;
+  clip-path: none !important;
+}
+
+/* Fix: text inside password wrapper */
+.edit-input.ant-input-affix-wrapper .ant-input {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #f5ead8 !important;
+  clip-path: none !important;
+  padding: 0 !important;
+}
+
+.edit-input.ant-input-affix-wrapper .ant-input-suffix {
+  color: rgba(201, 147, 42, .4) !important;
+}
+
+.edit-input.ant-input:focus,
+.edit-input.ant-input-affix-wrapper:focus-within {
+  border-color: rgba(201, 147, 42, .7) !important;
+  background: #221a12 !important;
+}
+
+.edit-input.ant-input::placeholder {
+  color: rgba(201, 147, 42, .35) !important;
+  font-style: italic !important;
+}
+
+/* Fix for Ant Design overriding input colors on focus/active/filled states */
+.edit-input.ant-input:hover,
+.edit-input.ant-input:active,
+.edit-input.ant-input-affix-wrapper:hover {
+  border-color: rgba(201, 147, 42, .5) !important;
+  background: #1a1210 !important;
+  color: #f5ead8 !important;
+}
+
+.edit-textarea.ant-input {
+  resize: vertical;
+  min-height: 70px;
+}
+
+/* ── Password section ── */
+.edit-password-section {
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.edit-password-toggle {
+  background: none;
+  border: none;
+  color: rgba(201, 147, 42, .6);
+  font-family: 'Crimson Text', serif;
+  font-size: 15px;
+  cursor: pointer;
+  padding: 4px 0;
+  transition: color .2s;
+}
+
+.edit-password-toggle:hover {
+  color: var(--gold-bright);
+}
+
+.edit-password-fields {
+  margin-top: 12px;
+}
+
+/* ── Action buttons ── */
+.edit-actions {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.edit-actions .auth-btn-primary {
+  flex: 1;
+}
+
+.edit-actions .auth-btn-secondary {
+  flex: 1;
+}
+
+/* ═══════════════════════════════════════════════
+   VIEW MODE (other user's profile)
+   ═══════════════════════════════════════════════ */
+
+.view-avatar-wrap {
+  margin-bottom: 16px;
+}
+
+.view-display-name {
+  font-family: 'Cinzel', serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: #f5ead8;
+  margin: 0 0 4px;
+  text-align: center;
+}
+
+.view-subtitle {
+  font-family: 'Crimson Text', serif;
+  font-size: 14px;
+  color: rgba(201, 147, 42, .55);
+  margin: 0 0 16px;
+  text-align: center;
+}
+
+/* ── XP bar ── */
+.view-xp-section {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.view-xp-bar-bg {
+  width: 100%;
+  height: 8px;
+  background: #1a1210;
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(201, 147, 42, .15);
+}
+
+.view-xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--gold) 0%, var(--gold-bright) 100%);
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+
+.view-xp-text {
+  display: block;
+  text-align: center;
+  font-family: 'Crimson Text', serif;
+  font-size: 12px;
+  color: rgba(201, 147, 42, .5);
+  margin-top: 4px;
+}
+
+/* ── Bio ── */
+.view-bio {
+  font-family: 'Crimson Text', serif;
+  font-size: 16px;
+  font-style: italic;
+  color: rgba(245, 234, 216, .6);
+  text-align: center;
+  margin: 8px 0 20px;
+}
+
+/* ── Stats boxes ── */
+.view-stats {
+  width: 100%;
+  display: flex;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.view-stat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 8px;
+  background: #1a1210;
+  border: 1px solid rgba(201, 147, 42, .15);
+  border-radius: 4px;
+}
+
+.view-stat-value {
+  font-family: 'Cinzel', serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+}
+
+.view-stat-label {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: rgba(201, 147, 42, .4);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════════════════
+   GLOBAL ANT DESIGN OVERRIDES — fix white text
+   These force dark-themed inputs regardless of
+   Ant Design's internal state classes.
+   ═══════════════════════════════════════════════ */
+
+.profile-card .ant-input,
+.profile-card .ant-input-affix-wrapper,
+.profile-card .ant-input-affix-wrapper .ant-input {
+  color: #f5ead8 !important;
+  background: #1a1210 !important;
+}
+
+.profile-card .ant-input:focus,
+.profile-card .ant-input:active,
+.profile-card .ant-input:hover,
+.profile-card .ant-input-focused,
+.profile-card .ant-input-affix-wrapper:focus,
+.profile-card .ant-input-affix-wrapper:hover,
+.profile-card .ant-input-affix-wrapper-focused {
+  color: #f5ead8 !important;
+  background: #221a12 !important;
+}
+
+/* Override Ant's filled/outlined variant states */
+.profile-card .ant-input-outlined,
+.profile-card .ant-input-outlined:focus,
+.profile-card .ant-input-outlined:hover,
+.profile-card .ant-input-outlined.ant-input-status-error {
+  color: #f5ead8 !important;
+  background: #1a1210 !important;
+}
+
+.profile-card .ant-input-affix-wrapper-outlined,
+.profile-card .ant-input-affix-wrapper-outlined:focus,
+.profile-card .ant-input-affix-wrapper-outlined:hover {
+  color: #f5ead8 !important;
+  background: #1a1210 !important;
+}
+
+.profile-card .ant-input-affix-wrapper-outlined .ant-input {
+  color: #f5ead8 !important;
+  background: transparent !important;
+}
