@@ -30,12 +30,12 @@ reason).
 
 ---
 
-## Contributions Week 1 - [Begin Date] to [End Date]
+## Contributions Week 1 - 23.03.2026 to 01.04.2026
 
 | **Student**        | **Date** | **Link to Commit** | **Description**                 | **Relevance**                       |
 | ------------------ | -------- | ------------------ | ------------------------------- | ----------------------------------- |
-| **[@githubUser1]** | [date]   | [Link to Commit 1] | [Brief description of the task] | [Why this contribution is relevant] |
-|                    | [date]   | [Link to Commit 2] | [Brief description of the task] | [Why this contribution is relevant] |
+**eldarrr21** | 28.03.2026   | eb5a48125f48ac4e11211fd811a190368040b6e9 | upsateUser method with owner-only access, username uniqueness validation, and password change with currentpassword auth, PUT mapping in controller, changed avatarURL column to TEXT, add currentpasword transient field to userentity and currentpassword field to postdto and DTOmapper | secure changing user credential especially password |
+|                    | 28.03.2026   | ae1efe18a66c16d7641c63835539b3b86aa8b1a0 -13826abbc81ff3dc85deba0273e4f43c5f26dbab| redesign page.tsx with owner edit view and read-only view for other users, owner view: editable username, name, bio, avatat upload and collapsible password change with validation, other user: read-only view, redirect to dashboard on successful save, add token to apiservice for auth updates, store response.id via localstorage in login&register/page.tsx for profile owner identificiation | needed for ingame experience to see others as well as change own profile if needed |
 | **[@githubUser2]** | [date]   | [Link to Commit 1] | [Brief description of the task] | [Why this contribution is relevant] |
 |                    | [date]   | [Link to Commit 2] | [Brief description of the task] | [Why this contribution is relevant] |
 | **[@githubUser3]** | [date]   | [Link to Commit 1] | [Brief description of the task] | [Why this contribution is relevant] |

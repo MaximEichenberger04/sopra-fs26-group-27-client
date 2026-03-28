@@ -28,6 +28,8 @@ const Regisration: React.FC = () => {
   } = useLocalStorage<string>("token", ""); // note that the key we are selecting is "token" and the default value we are setting is an empty string
   // if you want to pick a different token, i.e "usertoken", the line above would look as follows: } = useLocalStorage<string>("usertoken", "");
 
+  const { set: setUserId } = useLocalStorage<string>("userId", ""); // we need this method to set the value of the userId to the one we receive from the POST request to the backend server API
+
   const handleRegistration = async (values: FormFieldProps) => {
     try {
       // Call the API service and let it handle JSON serialization and error handling
@@ -36,6 +38,11 @@ const Regisration: React.FC = () => {
       // Use the useLocalStorage hook that returned a setter function (setToken in line 41) to store the token if available
       if (response.token) {
         setToken(response.token);
+      }
+
+      // Use the useLocalStorage hook that returned a setter function (setUserId in line 48) to store the userId if available
+      if (response.id) {
+        setUserId(response.id);
       }
 
       // Navigate to /users (dashboard)
