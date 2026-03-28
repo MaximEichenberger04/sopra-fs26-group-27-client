@@ -83,10 +83,10 @@ const Regisration: React.FC = () => {
 
           <Form.Item
             name="displayName"
-            label="Display Name"
-            rules={[{ required: true, message: "Please enter a display name." }]}
+            label="Name"
+            rules={[{ required: true, message: "Please enter a name." }]}
           >
-            <Input placeholder="Enter your display name" />
+            <Input placeholder="Enter your name" />
           </Form.Item>
 
           <Form.Item
@@ -105,6 +105,14 @@ const Regisration: React.FC = () => {
               },]}
           >
             <Input.Password placeholder="Create a password" />
+          </Form.Item>
+
+          <Form.Item
+            name="biography"
+            label="Bio"
+            rules={[{ required: false, message: "Please enter a bio." }]}
+          >
+            <Input placeholder="Enter your bio" />
           </Form.Item>
 
           <Form.Item style={{ marginTop: "20px" }}>
