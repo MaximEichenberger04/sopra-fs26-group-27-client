@@ -44,6 +44,17 @@ const LobbyBrowserPage: React.FC = () => {
     }
   };
 
+  const joinLobbyById = async (lobbyId: number) => {
+    try {
+      const joinedLobby = await apiService.post<Lobby>(`/lobbies/${lobbyId}/join`, {});
+      router.push(`/lobby/${joinedLobby.id}`);
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Failed to join lobby:\n${error.message}`);
+      }
+    }
+  };
+
   const columns: ColumnsType<Lobby> = [
     { title: "Name", dataIndex: "name", key: "name" },
     { title: "Mode", dataIndex: "gameMode", key: "gameMode" },
@@ -54,7 +65,11 @@ const LobbyBrowserPage: React.FC = () => {
       title: "Action",
       key: "action",
       render: (_, record) => (
+        <Space>
         <Button onClick={() => router.push(`/lobby/${record.id}`)}>Open</Button>
+        <Button type="primary" onClick={() => {if (record.id !== null){ joinLobbyById(record.id)}}}>
+            Join</Button>
+        </Space>
       ),
     },
   ];
