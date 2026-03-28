@@ -6,6 +6,6 @@ export interface Lobby {
   maxPlayers: number | null;
   currentPlayers: number | null;
   gameMode: string | null;
-  gameStatus: string | null;
+  lobbyStatus: string | null;
   playerIds: number[] | null;
 }

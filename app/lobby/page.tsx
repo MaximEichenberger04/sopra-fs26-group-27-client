@@ -18,12 +18,21 @@ const LobbyCreationPage: React.FC = () => {
     maxPlayers: number;
   }) => {
     setLoading(true);
+
+    const storedUserId = localStorage.getItem("Id"); 
+    if (!storedUserId) {
+      alert("You must be logged in to create a lobby.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // POST /lobby — backend creates lobby and returns it
-      const newLobby = await apiService.post<{ id: string }>("/lobby", {
+      const newLobby = await apiService.post<{ id: string }>("/lobbies", {
         name: values.name,
         gameMode: values.gameMode,
-        maxPlayers: values.maxPlayers
+        maxPlayers: parseInt(values.maxPlayers),
+        hostId: parseInt(storedUserId, 10)
         // theme/map is only frontend rendering.
       });
       // Navigate into the newly created lobby
@@ -50,7 +59,7 @@ const LobbyCreationPage: React.FC = () => {
               <Select.Option value="CHAOS">Chaos</Select.Option>
             </Select>
           </Form.Item>
-          <Form.Item label="Player Count" name="playerCount" rules={[{ required: true }]}>
+          <Form.Item label="Player Count" name="maxPlayers" rules={[{ required: true }]}>
             <Select placeholder="Select player count">
               <Select.Option value="2">2</Select.Option>
               <Select.Option value="4">4</Select.Option>
