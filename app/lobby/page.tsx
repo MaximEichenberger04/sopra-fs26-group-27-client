@@ -19,7 +19,7 @@ const LobbyCreationPage: React.FC = () => {
   }) => {
     setLoading(true);
 
-    const storedUserId = localStorage.getItem("Id"); 
+    const storedUserId = localStorage.getItem("userId");
     if (!storedUserId) {
       alert("You must be logged in to create a lobby.");
       setLoading(false);
