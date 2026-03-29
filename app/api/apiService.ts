@@ -8,7 +8,8 @@ export class ApiService {
   }
  
   private getHeaders(): HeadersInit {
-    const token = localStorage.getItem("token");
+    const raw = localStorage.getItem("token");
+    const token = raw ? JSON.parse(raw) : null;
     return {
       "Content-Type": "application/json",
       ...(token ? { Authorization: token } : {}),
@@ -70,7 +71,7 @@ export class ApiService {
     }
     const res = await fetch(url, {
       method: "GET",
-      headers: this.getHeaders,
+      headers: this.getHeaders(),
     });
     return this.processResponse<T>(
       res,
@@ -89,7 +90,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "POST",
-      headers: this.getHeaders,
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
@@ -112,7 +113,7 @@ export class ApiService {
     }
     const res = await fetch(url, {
       method: "PUT",
-      headers: this.getHeaders,
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
@@ -130,7 +131,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "DELETE",
-      headers: this.getHeaders,
+      headers: this.getHeaders(),
     });
     return this.processResponse<T>(
       res,
