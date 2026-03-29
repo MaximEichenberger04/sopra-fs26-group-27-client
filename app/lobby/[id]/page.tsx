@@ -33,12 +33,19 @@ const LobbyPage: React.FC = () => {
   const fetchLobby = async () => {
     try {
       const response = await apiService.get<Lobby>(`/lobbies/${lobbyId}`);
+
+      // Redirect all players when game starts (US#7)
+      if (response.lobbyStatus === "INGAME") {
+        router.push(`/game/${lobbyId}`);
+        return;
+      }
+
       setLobby(response);
       if (response.playerIds) await fetchUsers(response.playerIds);
     } catch (error) {
       if (error instanceof Error) alert(`Failed to load lobby:\n${error.message}`);
     }
-  };
+  }, [lobbyId, router, fetchMissingUsernames, apiService]);
 
   useEffect(() => {
     fetchLobby();
@@ -78,6 +85,10 @@ const LobbyPage: React.FC = () => {
   const isHost = String(currentUserId) === String(lobby.hostId);
   const canStart = isHost && lobby.currentPlayers === lobby.maxPlayers && lobby.lobbyStatus === "WAITING";
   const emptySlots = Math.max(0, (lobby.maxPlayers ?? 0) - users.length);
+
+  const isHost = currentUserId !== null && Number(currentUserId) === lobby.hostId;
+  const isFull = lobby.currentPlayers === lobby.maxPlayers;
+  const canStart = isHost && isFull;
 
   return (
     <div className="lobby-room-wrap">
