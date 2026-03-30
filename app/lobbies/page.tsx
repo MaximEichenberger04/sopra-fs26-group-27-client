@@ -60,7 +60,7 @@ const LobbyBrowserPage: React.FC = () => {
     { title: "Mode", dataIndex: "gameMode", key: "gameMode" },
     { title: "Players", key: "players", render: (_, record) => `${record.currentPlayers}/${record.maxPlayers}` },
     { title: "Theme", dataIndex: "theme", key: "theme" },
-    { title: "Status", key: "status", render: (_, record) => <Tag>{record.gameStatus}</Tag> },
+    { title: "Status", key: "status", render: (_, record) => <Tag>{record.lobbyStatus}</Tag> },
     {
       title: "Action",
       key: "action",
