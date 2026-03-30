@@ -58,7 +58,7 @@ const Dashboard: React.FC = () => {
       try {
         // apiService.get<User[]> returns the parsed JSON object directly,
         // thus we can simply assign it to our users variable.
-        const users: User[] = await apiService.get<User[]>("/users", token);
+        const users: User[] = await apiService.get<User[]>("/users");
         setUsers(users);
         console.log("Fetched users:", users);
       } catch (error) {

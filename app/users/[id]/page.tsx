@@ -51,8 +51,7 @@ const Profile: React.FC = () => {
     const fetchUser = async () => {
       try {
         const fetchedUser = await apiService.get<User>(
-          `/users/${params.id}`,
-          token
+          `/users/${params.id}`
         );
         setUser(fetchedUser);
         // Populate edit fields
@@ -139,8 +138,7 @@ const Profile: React.FC = () => {
     try {
       await apiService.put<User>(
         `/users/${params.id}`,
-        payload,
-        token
+        payload
       );
       messageApi.success("Profile updated!");
       setTimeout(() => {

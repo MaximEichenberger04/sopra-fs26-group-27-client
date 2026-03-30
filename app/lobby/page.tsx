@@ -31,7 +31,7 @@ const LobbyCreationPage: React.FC = () => {
       const newLobby = await apiService.post<{ id: string }>("/lobbies", {
         name: values.name,
         gameMode: values.gameMode,
-        maxPlayers: parseInt(values.maxPlayers),
+        maxPlayers: values.maxPlayers,
         hostId: parseInt(storedUserId, 10)
         // theme/map is only frontend rendering.
       });

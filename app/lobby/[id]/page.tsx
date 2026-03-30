@@ -90,8 +90,8 @@ const LobbyPage: React.FC = () => {
               <p><strong>Players:</strong> {lobby.currentPlayers} / {lobby.maxPlayers}</p>
               <p>
                 <strong>Status:</strong>{" "}
-                <Tag color={lobby.gameStatus === "WAITING" ? "green" : "blue"}>
-                  {lobby.gameStatus}
+                <Tag color={lobby.lobbyStatus === "WAITING" ? "green" : "blue"}>
+                  {lobby.lobbyStatus}
                 </Tag>
               </p>
               <p><strong>Invite Code:</strong> {lobby.inviteCode}</p>
