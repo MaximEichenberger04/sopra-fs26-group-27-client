@@ -13,7 +13,7 @@
   border: 1px solid rgba(201, 147, 42, .15);
   border-radius: 6px;
   background: rgba(15, 10, 5, .85);
-  padding: 32px 36px;
+  padding: 32px 36px 32px;
 }
 
 .profile-avatar {
@@ -177,10 +177,7 @@
   margin-top: 8px;
 }
 
-.edit-actions .auth-btn-primary {
-  flex: 1;
-}
-
+.edit-actions .auth-btn-primary,
 .edit-actions .auth-btn-secondary {
   flex: 1;
 }
@@ -330,4 +327,29 @@
 .profile-card .ant-input-affix-wrapper-outlined .ant-input {
   color: #f5ead8 !important;
   background: transparent !important;
+}
+
+/* ── Fix antd notification/message text color ── */
+.ant-message .ant-message-notice-content {
+  color: #000000 !important;
+}
+
+/* ── Password validation rules ── */
+.edit-password-rules {
+  margin-top: 4px;
+}
+
+.edit-rule-error {
+  font-family: 'Crimson Text', serif;
+  font-size: 13px;
+  font-style: italic;
+  color: #c05030;
+  margin: 2px 0;
+}
+
+/* ── Fix edit mode overflow when content is tall ── */
+.auth-page:has(.edit-mode) {
+  height: auto;
+  min-height: 100vh;
+  padding: 40px 0;
 }

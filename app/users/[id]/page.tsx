@@ -97,32 +97,16 @@ const Profile: React.FC = () => {
 
     // Password validation
     if (showPasswordChange && (currentPassword || newPassword || confirmPassword)) {
-      if (!currentPassword) {
+      if (!currentPassword.trim()) {
         messageApi.error("Please enter your current password.");
         return;
       }
-      if (!newPassword) {
+      if (!newPassword.trim()) {
         messageApi.error("Please enter a new password.");
-        return;
-      }
-      if (newPassword.length < 8) {
-        messageApi.error("New password must be at least 8 characters.");
-        return;
-      }
-      if (!/[A-Z]/.test(newPassword)) {
-        messageApi.error("New password must contain at least one uppercase letter.");
-        return;
-      }
-      if (!/[0-9]/.test(newPassword)) {
-        messageApi.error("New password must contain at least one number.");
         return;
       }
       if (newPassword !== confirmPassword) {
         messageApi.error("Passwords do not match.");
-        return;
-      }
-      if (newPassword === currentPassword) {
-        messageApi.error("New password must be different from current password.");
         return;
       }
       payload.currentPassword = currentPassword;
@@ -281,6 +265,19 @@ const Profile: React.FC = () => {
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="New Password"
                   />
+                  {showPasswordChange && newPassword.length > 0 && (
+                    <div className="edit-password-rules">
+                      {newPassword.length < 8 && (
+                        <p className="edit-rule-error">Must be at least 8 characters long.</p>
+                      )}
+                      {!/[A-Z]/.test(newPassword) && (
+                        <p className="edit-rule-error">Must contain at least one uppercase letter.</p>
+                      )}
+                      {!/[0-9]/.test(newPassword) && (
+                        <p className="edit-rule-error">Must contain at least one number.</p>
+                      )}
+                    </div>
+                  )}
                 </div>
                 <div className="edit-field">
                   <label className="edit-label">Confirm New Password</label>
