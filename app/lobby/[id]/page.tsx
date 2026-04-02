@@ -22,7 +22,7 @@ const LobbyPage: React.FC = () => {
   const lobbyId = params.id;
 
   const [users, setUsers] = useState<User[]>([]);
-  const fetchUsers = async (playerIds: string[]) => { // fetch all users in the lobby
+  const fetchUsers = async (playerIds: number[]) => { // fetch all users in the lobby
     try {
       const userPromises = playerIds.map(id => apiService.get<User>(`/users/${id}`));
       const fetchedUsers = await Promise.all(userPromises);
