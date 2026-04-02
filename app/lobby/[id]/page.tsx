@@ -5,10 +5,8 @@ import { useRouter, useParams } from "next/navigation";
 import { Lobby } from "@/types/lobby";
 import { User } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
-import { Button, Card, Col, Form, Input, InputNumber, Row, Select, Tag, Typography } from "antd";
+import { Button, Card, Col, Form, Input, Row, Select, Tag } from "antd";
 import { useSearchParams } from "next/navigation";
-import "@/styles/maps/forest.css"; // base design
-import "@/styles/maps/castle.css";  
 
 const LobbyPage: React.FC = () => {
   const router = useRouter();
@@ -131,16 +129,16 @@ const LobbyPage: React.FC = () => {
             <Card title="Edit Lobby (Host Only)">
               <Form layout="vertical" onFinish={handleSave}>
                 <Form.Item label="Lobby Name" name="name">
-                  <Input placeholder={lobby.name} />
+                  <Input placeholder={lobby.name ?? ""} />
                 </Form.Item>
                 <Form.Item label="Game Mode" name="gameMode">
-                  <Select placeholder={lobby.gameMode}>
+                  <Select placeholder={lobby.gameMode ?? ""}>
                     <Select.Option value="CLASSIC">Classic</Select.Option>
                     <Select.Option value="CHAOS">Chaos</Select.Option>
                   </Select>
                 </Form.Item>
                 <Form.Item label="Player Count" name="maxPlayers">
-                  <Select placeholder={String(lobby.maxPlayers)}>
+                  <Select placeholder={String(lobby.maxPlayers ?? "")}>
                     <Select.Option value={2}>2</Select.Option>
                     <Select.Option value={4}>4</Select.Option>
                   </Select>
