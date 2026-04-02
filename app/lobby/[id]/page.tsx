@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Lobby } from "@/types/lobby";
+import { User } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import { Button, Card, Col, Form, Input, InputNumber, Row, Select, Tag, Typography } from "antd";
 import { useSearchParams } from "next/navigation";
