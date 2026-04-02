@@ -179,7 +179,7 @@ const LobbyPage: React.FC = () => {
               Start Game
             </Button>
           )}
-          {isHost && !canStart && lobby.currentPlayers < lobby.maxPlayers && (
+          {isHost && !canStart && (lobby.currentPlayers ?? 0) < (lobby.maxPlayers ?? 0) && (
             <Button type="primary" disabled>
               Waiting for players ({lobby.currentPlayers}/{lobby.maxPlayers})
             </Button>
