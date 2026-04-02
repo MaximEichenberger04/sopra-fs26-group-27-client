@@ -6,9 +6,17 @@ export class ApiService {
   constructor() {
     this.baseURL = getApiDomain();
   }
- 
+
   private getHeaders(): HeadersInit {
-    const token = localStorage.getItem("token");
+    const raw = localStorage.getItem("token");
+    let token: string | null = null;
+    if (raw) {
+      try {
+        token = JSON.parse(raw);
+      } catch {
+        // If parsing fails, token remains null
+      }
+    }
     return {
       "Content-Type": "application/json",
       ...(token ? { Authorization: token } : {}),
@@ -34,6 +42,8 @@ export class ApiService {
         const errorInfo = await res.json();
         if (errorInfo?.message) {
           errorDetail = errorInfo.message;
+        } else if (errorInfo?.detail) {
+          errorDetail = errorInfo.detail;
         } else {
           errorDetail = JSON.stringify(errorInfo);
         }
