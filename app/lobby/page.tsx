@@ -19,7 +19,7 @@ const LobbyCreationPage: React.FC = () => {
   }) => {
     setLoading(true);
 
-    const storedUserId = localStorage.getItem("Id"); 
+    const storedUserId = localStorage.getItem("id"); 
     if (!storedUserId) {
       alert("You must be logged in to create a lobby.");
       setLoading(false);
@@ -28,7 +28,7 @@ const LobbyCreationPage: React.FC = () => {
 
     try {
       // POST /lobby — backend creates lobby and returns it
-      const newLobby = await apiService.post<{ id: string }>("/lobbies", {
+      const newLobby = await apiService.post<{ id: string }>("/lobbies", { //backend returns id
         name: values.name,
         gameMode: values.gameMode,
         maxPlayers: values.maxPlayers,
@@ -49,7 +49,7 @@ const LobbyCreationPage: React.FC = () => {
   return (
     <div className="card-container">
       <Card title="Create Lobby" className="dashboard-container">
-        <Form layout="vertical" onFinish={handleSubmit}> {/* Form is sent to server via handleSubmit */}
+        <Form layout="vertical" onFinish={handleSubmit} initialValues={{ map: "forest" }}> {/* Form is sent to server via handleSubmit */}
           <Form.Item label="Lobby Name" name="name" rules={[{ required: true }]}>
             <Input placeholder="Enter lobby name" />
           </Form.Item>
@@ -63,6 +63,12 @@ const LobbyCreationPage: React.FC = () => {
             <Select placeholder="Select player count">
               <Select.Option value="2">2</Select.Option>
               <Select.Option value="4">4</Select.Option>
+            </Select>
+          </Form.Item>
+          <Form.Item label="Map" name="map" rules={[{ required: true }]}>
+            <Select placeholder="Select map">
+              <Select.Option value="forest">Magic Forest</Select.Option>
+              <Select.Option value="castle">Dark Castle</Select.Option>
             </Select>
           </Form.Item>
           <Button type="primary" htmlType="submit" loading={loading}>
