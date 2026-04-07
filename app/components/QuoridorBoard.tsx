@@ -8,7 +8,7 @@ const GAP   = 0;
 
 // ── Colour tokens (CSS variables so dark mode works) ──────────
 const C = {
-  cell:        "var(--q-cell,        #2e2a22)",
+  cell:        "var(--q-cell,        #2e2a22)", 
   cellBorder:  "var(--q-cell-border, #4a4438)",
   wallEmpty:   "var(--q-wall-empty,  #1e1c18)",
   wallActive:  "var(--q-wall-active, #c8a44a)",
