@@ -54,8 +54,8 @@ reason).
 
 | **Student**         | **Date** | **Link to Commit**  | **Description**                  | **Relevance**                        |
 | ------------------- | -------- | ------------------- | -------------------------------- | ------------------------------------ |
-| **\[@githubUser1]** | \[date]  | \[Link to Commit 1] | \[Brief description of the task] | \[Why this contribution is relevant] |
-|                     | \[date]  | \[Link to Commit 2] | \[Brief description of the task] | \[Why this contribution is relevant] |
+| **Timi1893** | 07.04.2026  | [7db321e](https://github.com/MaximEichenberger04/sopra-fs26-group-27-client/commit/7db321e7145af798994d1453d1dd4e6292f177b0) | I made a first design of the gameboard that automatically polls the gamestate every 2 seconds from the backend | Without a gameboard you cannot play the game |
+|                     | 08.04.2026  | [f3b7c41](https://github.com/MaximEichenberger04/sopra-fs26-group-27-client/commit/f3b7c4130a962dc4f8f313771dce89fba3f45d82) | a player can move his pawn if it is his turn and he clicks on his pawn | player movement is part of the core gameplay |
 | **\[@githubUser2]** | \[date]  | \[Link to Commit 1] | \[Brief description of the task] | \[Why this contribution is relevant] |
 |                     | \[date]  | \[Link to Commit 2] | \[Brief description of the task] | \[Why this contribution is relevant] |
 | **\[@githubUser3]** | \[date]  | \[Link to Commit 1] | \[Brief description of the task] | \[Why this contribution is relevant] |
