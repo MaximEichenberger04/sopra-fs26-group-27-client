@@ -3,7 +3,9 @@ export type CellValue = 0 | 1 | 2 | 3;
 
 export interface GameState {
   matrix: CellValue[][];
-  // extend later: currentTurn, players, status, etc.
+  currentTurnUserId: number;
+  player1Id: number;
+  player2Id: number;
 }
 
 export const BOARD_CELLS = 9;
