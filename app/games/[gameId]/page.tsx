@@ -75,6 +75,20 @@ export default function GamePage() {
     }
   }
 
+    async function handleWall(matrixRow: number, matrixCol: number, orientation: "HORIZONTAL" | "VERTICAL") {
+    if (!isMyTurn) return;
+    try {
+      await api.post(`/games/${gameId}/wall`, {
+        targetField: [matrixRow, matrixCol],
+        orientation: orientation
+      });
+      poll();
+    } catch (e) {
+      setError("Invalid wall placement.");
+    }
+  }
+
+
   return (
     <main style={{
       minHeight: "100vh",
@@ -99,6 +113,7 @@ export default function GamePage() {
         isMyTurn={isMyTurn}
         validMoves={validMoves}
         onMove={handleMove}
+        onWall={handleWall}
       />
 
       {lastSync && (

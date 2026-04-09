@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 import { CellValue, MATRIX_SIZE } from "@/types/game";
 
 const CELL = 52;
@@ -18,6 +18,7 @@ const C = {
   p2:           "var(--q-p2,          #d96b6b)",
   pawnRing:     "rgba(255,255,255,0.30)",
   pawnShine:    "rgba(255,255,255,0.22)",
+  wallHover: "#8a6a28",
 };
 
 function PawnCell({
@@ -65,30 +66,61 @@ function PawnCell({
     </div>
   );
 }
+function getWallSlots(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL"): Array<[number, number]> {
+  if (orientation === "HORIZONTAL") {
+    // extends left-right: [mr, mc], [mr, mc+1], [mr, mc+2]
+    return [[mr, mc], [mr, mc + 1], [mr, mc + 2]];
+  } else {
+    // extends up-down: [mr, mc], [mr+1, mc], [mr+2, mc]
+    return [[mr, mc], [mr + 1, mc], [mr + 2, mc]];
+  }
+}
 
-function WallSlot({ orientation, value }: {
-  orientation: "horizontal" | "vertical";
+function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHoverEnd, isHighlighted }: {
+  orientation: "HORIZONTAL" | "VERTICAL";
   value: CellValue;
+  mr: number;
+  mc: number;
+  isMyTurn: boolean;
+  isHighlighted: boolean;
+  onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
+  onHover: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
+  onHoverEnd: () => void;
 }) {
   const active = value === 3;
-  const isH = orientation === "horizontal";
+  const isH = orientation === "HORIZONTAL";
   return (
-    <div style={{
-      width:      isH ? CELL : WALL,
-      height:     isH ? WALL : CELL,
-      background: active ? C.wallActive : C.wallEmpty,
-      borderRadius: 2,
-      transition: "background 0.12s",
-    }} />
+    <div
+      onClick={() => isMyTurn && !active && onWall(mr, mc, orientation)}
+      onMouseEnter={() => isMyTurn && !active && onHover(mr, mc, orientation)}
+      onMouseLeave={() => onHoverEnd()}
+      style={{
+        width:      isH ? CELL : WALL,
+        height:     isH ? WALL : CELL,
+        background: active
+          ? C.wallActive
+          : isHighlighted
+            ? C.wallHover       // new colour token — see below
+            : C.wallEmpty,
+        borderRadius: 2,
+        cursor: isMyTurn && !active ? "pointer" : "default",
+        transition: "background 0.08s",
+      }}
+    />
   );
 }
 
-function Pillar({ value }: { value: CellValue }) {
+function Pillar({ value, isHighlighted }: { value: CellValue; isHighlighted: boolean }) {
   return (
     <div style={{
       width: WALL, height: WALL,
-      background: value === 3 ? C.pillarActive : C.pillarEmpty,
+      background: value === 3
+        ? C.pillarActive
+        : isHighlighted
+          ? C.wallHover
+          : C.pillarEmpty,
       borderRadius: 2,
+      transition: "background 0.08s",
     }} />
   );
 }
@@ -96,12 +128,25 @@ function Pillar({ value }: { value: CellValue }) {
 interface QuoridorBoardProps {
   matrix: CellValue[][];
   isMyTurn: boolean;
-  validMoves: Array<[number, number]>; // matrix coordinates
-  onMove: (matrixRow: number, matrixCol: number) => void;
+  validMoves: Array<[number, number]>;
+  onMove: (mr: number, mc: number) => void;
+  onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
 }
 
-export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove }: QuoridorBoardProps) {
-  return (
+export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove, onWall }: QuoridorBoardProps) {
+  const [hoveredWall, setHoveredWall] = useState<Array<[number, number]>>([]);
+
+  function handleHover(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") {
+    setHoveredWall(getWallSlots(mr, mc, orientation));
+  }
+
+  function handleHoverEnd() {
+    setHoveredWall([]);
+  }
+
+  function isWallHighlighted(mr: number, mc: number): boolean {
+    return hoveredWall.some(([hr, hc]) => hr === mr && hc === mc);
+  }  return (
     <div style={{
       display: "inline-grid",
       gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) =>
@@ -119,27 +164,28 @@ export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove }: 
           const evenCol = mc % 2 === 0;
 
           if (evenRow && evenCol) {
-            // use different variable names to avoid shadowing mr/mc
             const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
             return (
-              <PawnCell
-                key={`${mr}-${mc}`}
-                value={value}
-                boardRow={mr / 2}
-                boardCol={mc / 2}
-                isValidMove={isValidMove}
-                onMove={onMove}
-              />
+              <PawnCell key={`${mr}-${mc}`} value={value}
+                boardRow={mr / 2} boardCol={mc / 2}
+                isValidMove={isValidMove} onMove={onMove} />
             );
           }
 
           if (!evenRow && evenCol)
-            return <WallSlot key={`${mr}-${mc}`} orientation="horizontal" value={value} />;
+            return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
+              mr={mr} mc={mc} isMyTurn={isMyTurn}
+              isHighlighted={isWallHighlighted(mr, mc)}
+              onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
 
           if (evenRow && !evenCol)
-            return <WallSlot key={`${mr}-${mc}`} orientation="vertical" value={value} />;
+            return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
+              mr={mr} mc={mc} isMyTurn={isMyTurn}
+              isHighlighted={isWallHighlighted(mr, mc)}
+              onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
 
-          return <Pillar key={`${mr}-${mc}`} value={value} />;
+          return <Pillar key={`${mr}-${mc}`} value={value}
+            isHighlighted={isWallHighlighted(mr, mc)} />;
         })
       )}
     </div>
