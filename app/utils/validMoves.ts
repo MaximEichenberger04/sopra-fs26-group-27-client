@@ -1,20 +1,22 @@
-export type CellValue = string | number;
+import { CellValue, MATRIX_SIZE } from "@/types/game";
 
 export function getValidMoves(
-  matrix: CellValue[][],
-  playerValue: CellValue  // "a", 1, whatever your player symbol is
+  matrix: CellValue[][] | undefined | null,
+  playerValue: CellValue
 ): Array<[number, number]> {
-  // find current pawn position in matrix
+  if (!matrix || matrix.length === 0) return [];
+
+  // find current pawn position
   let pr = -1, pc = -1;
   for (let r = 0; r < matrix.length; r++)
-    for (let c = 0; c < matrix[r].length; c++)
+    for (let c = 0; c < (matrix[r]?.length ?? 0); c++)
       if (matrix[r][c] === playerValue) { pr = r; pc = c; }
 
   if (pr === -1) return [];
 
+  const size = MATRIX_SIZE;
   const moves: Array<[number, number]> = [];
 
-  // [rowOffset, colOffset] in matrix coords — step of 2 = one board cell
   const directions: Array<[number, number]> = [
     [-2, 0], // up
     [ 2, 0], // down
@@ -23,20 +25,19 @@ export function getValidMoves(
   ];
 
   for (const [dr, dc] of directions) {
-    const wallR = pr + dr / 2; // matrix slot between current and target
+    const wallR = pr + dr / 2;
     const wallC = pc + dc / 2;
     const targetR = pr + dr;
     const targetC = pc + dc;
 
-    // bounds check
-    if (targetR < 0 || targetR >= matrix.length) continue;
-    if (targetC < 0 || targetC >= matrix[0].length) continue;
+    if (targetR < 0 || targetR >= size) continue;
+    if (targetC < 0 || targetC >= size) continue;
 
-    // check no wall between current cell and target
-    if (matrix[wallR][wallC] === 3) continue; // adjust 3 to your wall symbol
+    // wall between current and target blocks the move
+    if (matrix[wallR]?.[wallC] === 3) continue;
 
-    // check target cell is empty
-    if (matrix[targetR][targetC] !== 0) continue; // adjust 0 to your empty symbol
+    // target must be empty
+    if (matrix[targetR]?.[targetC] !== 0) continue;
 
     moves.push([targetR, targetC]);
   }
