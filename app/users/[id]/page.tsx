@@ -120,7 +120,7 @@ const Profile: React.FC = () => {
 
     setIsSaving(true);
     try {
-      await apiService.put<User>(
+      await apiService.patch<User>(
         `/users/${params.id}`,
         payload
       );
