@@ -130,7 +130,7 @@ const Regisration: React.FC = () => {
 
           <Form.Item>
             <Button type="default" onClick={() => router.push("/login")} className="auth-btn-secondary">
-              Back to Login
+              Login
             </Button>
           </Form.Item>
         </Form>

@@ -1,11 +1,12 @@
 "use client";
 
+import "./lobbies.css";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import { Lobby } from "@/types/lobby";
-import { Button, Card, Input, Space, Table, Tag } from "antd";
-import type { ColumnsType } from "antd/es/table";
+import NavBar from "@/components/NavBar";
+import useLocalStorage from "@/hooks/useLocalStorage";
 
 const LobbyBrowserPage: React.FC = () => {
   const router = useRouter();
@@ -13,15 +14,18 @@ const LobbyBrowserPage: React.FC = () => {
   const [lobbies, setLobbies] = useState<Lobby[]>([]);
   const [inviteCode, setInviteCode] = useState("");
   const [loading, setLoading] = useState(true);
+  const { value: token } = useLocalStorage<string>("token", "");
+
+  useEffect(() => {
+    if (!token) router.push("/login");
+  }, [token, router]);
 
   const fetchLobbies = async () => {
     try {
       const response = await apiService.get<Lobby[]>("/lobbies");
       setLobbies(response);
     } catch (error) {
-      if (error instanceof Error) {
-        alert('Failed to load lobbies:\n${error.message}');
-      }
+      if (error instanceof Error) alert(`Failed to load lobbies:\n${error.message}`);
     } finally {
       setLoading(false);
     }
@@ -38,57 +42,78 @@ const LobbyBrowserPage: React.FC = () => {
       const lobby = await apiService.post<Lobby>(`/lobbies/join/${inviteCode}`, {});
       router.push(`/lobby/${lobby.id}`);
     } catch (error) {
-      if (error instanceof Error) {
-        alert(`Failed to join lobby:\n${error.message}`);
-      }
+      if (error instanceof Error) alert(`Failed to join lobby:\n${error.message}`);
     }
   };
 
   const joinLobbyById = async (lobbyId: number) => {
     try {
-      const joinedLobby = await apiService.post<Lobby>(`/lobbies/${lobbyId}/join`, {});
-      router.push(`/lobby/${joinedLobby.id}`);
+      const joined = await apiService.post<Lobby>(`/lobbies/${lobbyId}/join`, {});
+      router.push(`/lobby/${joined.id}`);
     } catch (error) {
-      if (error instanceof Error) {
-        alert(`Failed to join lobby:\n${error.message}`);
-      }
+      if (error instanceof Error) alert(`Failed to join lobby:\n${error.message}`);
     }
   };
 
-  const columns: ColumnsType<Lobby> = [
-    { title: "Name", dataIndex: "name", key: "name" },
-    { title: "Mode", dataIndex: "gameMode", key: "gameMode" },
-    { title: "Players", key: "players", render: (_, record) => `${record.currentPlayers}/${record.maxPlayers}` },
-    { title: "Theme", dataIndex: "theme", key: "theme" },
-    { title: "Status", key: "status", render: (_, record) => <Tag>{record.lobbyStatus}</Tag> },
-    {
-      title: "Action",
-      key: "action",
-      render: (_, record) => (
-        <Space>
-        <Button onClick={() => router.push(`/lobby/${record.id}`)}>Open</Button>
-        <Button type="primary" onClick={() => {if (record.id !== null){ joinLobbyById(record.id)}}}>
-            Join</Button>
-        </Space>
-      ),
-    },
-  ];
-
   return (
-    <div className="card-container">
-      <Card title="Lobby Browser" className="dashboard-container">
-        <Space style={{ marginBottom: 16 }}>
-          <Button type="primary" onClick={() => router.push("/lobby")}>Create Lobby</Button>
-          <Input
-            placeholder="Invite code"
-            value={inviteCode}
-            onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
-            style={{ width: 180 }}
-          />
-          <Button onClick={joinByCode} disabled={!inviteCode}>Join via Code</Button>
-        </Space>
-        <Table rowKey="id" loading={loading} columns={columns} dataSource={lobbies} />
-      </Card>
+    <div className="lobby-page-wrap">
+      <NavBar />
+      <div className="lobby-content">
+        {/* Header row */}
+        <div className="lobby-header-row">
+          <h2 className="lobby-page-title">Browse Lobbies</h2>
+          <div className="lobby-header-actions">
+            <input
+              className="g-input lobby-code-input"
+              placeholder="Invite code..."
+              value={inviteCode}
+              onChange={(e) => setInviteCode(e.target.value.toUpperCase())}
+            />
+            <button className="btn-gold" onClick={() => router.push("/lobby")}>
+              + Create Lobby
+            </button>
+          </div>
+        </div>
+
+        {/* Lobby list */}
+        <div className="lobby-list">
+          {loading ? (
+            <p className="lobby-empty">Loading...</p>
+          ) : lobbies.length === 0 ? (
+            <p className="lobby-empty">No lobbies available. Create one!</p>
+          ) : (
+            lobbies.map((lobby) => (
+              <div key={lobby.id} className="g-card lobby-row-card">
+                <div className="lobby-row-info">
+                  <span className="lobby-row-name">{lobby.name}</span>
+                  <span className="lobby-row-meta">
+                    {lobby.currentPlayers}/{lobby.maxPlayers} players
+                  </span>
+                </div>
+                <div className="lobby-row-right">
+                  <span className="lobby-mode-tag">{lobby.gameMode}</span>
+                  <span className={`lobby-status-tag ${lobby.lobbyStatus === "WAITING" ? "status-waiting" : "status-other"}`}>
+                    {lobby.lobbyStatus}
+                  </span>
+                  <button className="btn-gold lobby-join-btn" onClick={() => { if (lobby.id !== null) joinLobbyById(lobby.id); }}>
+                    Join
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {inviteCode && (
+          <button className="btn-outline" style={{ marginTop: 16 }} onClick={joinByCode}>
+            Join via Code: {inviteCode}
+          </button>
+        )}
+
+        <button className="btn-outline" style={{ marginTop: 16 }} onClick={() => router.push("/users")}>
+          ← Back to Dashboard
+        </button>
+      </div>
     </div>
   );
 };
