@@ -7,9 +7,21 @@ export class ApiService {
 
   constructor(token?: string) {
     this.baseURL = getApiDomain();
-    this.defaultHeaders = {
+  }
+
+  private getHeaders(): HeadersInit {
+    const raw = localStorage.getItem("token");
+    let token: string | null = null;
+    if (raw) {
+      try {
+        token = JSON.parse(raw);
+      } catch {
+        // If parsing fails, token remains null
+      }
+    }
+    return {
       "Content-Type": "application/json",
-      "Access-Control-Allow-Origin": "*",
+      ...(token ? { Authorization: token } : {}),
     };
   }
 
@@ -32,6 +44,8 @@ export class ApiService {
         const errorInfo = await res.json();
         if (errorInfo?.message) {
           errorDetail = errorInfo.message;
+        } else if (errorInfo?.detail) {
+          errorDetail = errorInfo.detail;
         } else {
           errorDetail = JSON.stringify(errorInfo);
         }
@@ -64,13 +78,11 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "GET",
-      headers: this.defaultHeaders,
+      headers: this.getHeaders(),
     });
-    return this.processResponse<T>(
-      res,
-      "An error occurred while fetching the data.\n",
-    );
+    return this.processResponse<T>(res, "An error occurred while fetching the data.\n");
   }
+
 
   /**
    * POST request.
@@ -82,7 +94,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "POST",
-      headers: this.defaultHeaders,
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
     return this.processResponse<T>(
@@ -101,13 +113,10 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "PUT",
-      headers: this.defaultHeaders,
+      headers: this.getHeaders(),
       body: JSON.stringify(data),
     });
-    return this.processResponse<T>(
-      res,
-      "An error occurred while updating the data.\n",
-    );
+    return this.processResponse<T>(res, "An error occurred while updating the data.\n");
   }
 
   /**
@@ -119,7 +128,7 @@ export class ApiService {
     const url = `${this.baseURL}${endpoint}`;
     const res = await fetch(url, {
       method: "DELETE",
-      headers: this.defaultHeaders,
+      headers: this.getHeaders(),
     });
     return this.processResponse<T>(
       res,
