@@ -3,7 +3,8 @@ import { ApplicationError } from "@/types/error";
 
 export class ApiService {
   private baseURL: string;
-  constructor() {
+
+  constructor(token?: string) {
     this.baseURL = getApiDomain();
   }
 
