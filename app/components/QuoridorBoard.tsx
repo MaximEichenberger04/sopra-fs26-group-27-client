@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CellValue, MATRIX_SIZE } from "@/types/game";
 
 const CELL = 52;
@@ -22,17 +22,27 @@ const C = {
 };
 
 function PawnCell({
-  value, boardRow, boardCol, isValidMove, onMove,
+  value, boardRow, boardCol, isValidMove, onMove, isMyPawn, onPawnClick,
 }: {
   value: CellValue;
   boardRow: number;
   boardCol: number;
   isValidMove: boolean;
+  isMyPawn: boolean;
   onMove: (mr: number, mc: number) => void;
+  onPawnClick: () => void;
 }) {
+  function handleClick() {
+    if (isMyPawn) {
+      onPawnClick(); // deactivate wall mode when clicking own pawn
+      return;
+    }
+    if (isValidMove) onMove(boardRow * 2, boardCol * 2);
+  }
+
   return (
     <div
-      onClick={() => isValidMove && onMove(boardRow * 2, boardCol * 2)}
+      onClick={handleClick}
       style={{
         width: CELL, height: CELL,
         background:  isValidMove ? C.cellValid : C.cell,
@@ -42,7 +52,7 @@ function PawnCell({
         borderRadius: 5,
         display: "flex", alignItems: "center", justifyContent: "center",
         boxSizing: "border-box",
-        cursor: isValidMove ? "pointer" : "default",
+        cursor: (isValidMove || isMyPawn) ? "pointer" : "default",
         transition: "background 0.12s, border 0.12s",
       }}
     >
@@ -76,12 +86,12 @@ function getWallSlots(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTI
   }
 }
 
-function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHoverEnd, isHighlighted }: {
+function WallSlot({ orientation, value, mr, mc, canPlace, onWall, onHover, onHoverEnd, isHighlighted }: {
   orientation: "HORIZONTAL" | "VERTICAL";
   value: CellValue;
   mr: number;
   mc: number;
-  isMyTurn: boolean;
+  canPlace: boolean;
   isHighlighted: boolean;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
   onHover: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
@@ -91,8 +101,8 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHov
   const isH = orientation === "HORIZONTAL";
   return (
     <div
-      onClick={() => isMyTurn && !active && onWall(mr, mc, orientation)}
-      onMouseEnter={() => isMyTurn && !active && onHover(mr, mc, orientation)}
+      onClick={() => canPlace && !active && onWall(mr, mc, orientation)}
+      onMouseEnter={() => canPlace && !active && onHover(mr, mc, orientation)}
       onMouseLeave={() => onHoverEnd()}
       style={{
         width:      isH ? CELL : WALL,
@@ -100,10 +110,10 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHov
         background: active
           ? C.wallActive
           : isHighlighted
-            ? C.wallHover       // new colour token — see below
+            ? C.wallHover
             : C.wallEmpty,
         borderRadius: 2,
-        cursor: isMyTurn && !active ? "pointer" : "default",
+        cursor: canPlace && !active ? "pointer" : "default",
         transition: "background 0.08s",
       }}
     />
@@ -128,65 +138,145 @@ function Pillar({ value, isHighlighted }: { value: CellValue; isHighlighted: boo
 interface QuoridorBoardProps {
   matrix: CellValue[][];
   isMyTurn: boolean;
+  mySymbol: CellValue;
   validMoves: Array<[number, number]>;
   onMove: (mr: number, mc: number) => void;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
 }
 
-export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove, onWall }: QuoridorBoardProps) {
+export default function QuoridorBoard({ matrix, isMyTurn, mySymbol, validMoves, onMove, onWall }: QuoridorBoardProps) {
   const [hoveredWall, setHoveredWall] = useState<Array<[number, number]>>([]);
-
+  const [wallMode, setWallMode]       = useState(false);
+ 
+  // deactivate wall mode whenever it stops being our turn
+  useEffect(() => {
+    if (!isMyTurn) setWallMode(false);
+  }, [isMyTurn]);
+ 
   function handleHover(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") {
     setHoveredWall(getWallSlots(mr, mc, orientation));
   }
-
+ 
   function handleHoverEnd() {
     setHoveredWall([]);
   }
-
+ 
   function isWallHighlighted(mr: number, mc: number): boolean {
     return hoveredWall.some(([hr, hc]) => hr === mr && hc === mc);
-  }  return (
-    <div style={{
-      display: "inline-grid",
-      gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) =>
-        i % 2 === 0 ? `${CELL}px` : `${WALL}px`
-      ).join(" "),
-      gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) =>
-        i % 2 === 0 ? `${CELL}px` : `${WALL}px`
-      ).join(" "),
-      gap: GAP,
-    }}>
-      {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
-        Array.from({ length: MATRIX_SIZE }, (_, mc) => {
-          const value: CellValue = (matrix[mr]?.[mc] ?? 0) as CellValue;
-          const evenRow = mr % 2 === 0;
-          const evenCol = mc % 2 === 0;
-
-          if (evenRow && evenCol) {
-            const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
-            return (
-              <PawnCell key={`${mr}-${mc}`} value={value}
-                boardRow={mr / 2} boardCol={mc / 2}
-                isValidMove={isValidMove} onMove={onMove} />
-            );
-          }
-
-          if (!evenRow && evenCol)
-            return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
-              mr={mr} mc={mc} isMyTurn={isMyTurn}
-              isHighlighted={isWallHighlighted(mr, mc)}
-              onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
-
-          if (evenRow && !evenCol)
-            return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
-              mr={mr} mc={mc} isMyTurn={isMyTurn}
-              isHighlighted={isWallHighlighted(mr, mc)}
-              onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
-
-          return <Pillar key={`${mr}-${mc}`} value={value}
-            isHighlighted={isWallHighlighted(mr, mc)} />;
-        })
+  }
+ 
+  function handlePawnClick() {
+    setWallMode(false); // clicking own pawn deactivates wall mode
+  }
+ 
+  const canPlaceWall = isMyTurn && wallMode;
+ 
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      {/* Board grid */}
+      <div style={{
+        display: "inline-grid",
+        gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) =>
+          i % 2 === 0 ? `${CELL}px` : `${WALL}px`
+        ).join(" "),
+        gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) =>
+          i % 2 === 0 ? `${CELL}px` : `${WALL}px`
+        ).join(" "),
+        gap: GAP,
+        // dim the wall slots when wall mode is off and it's our turn, to hint they're inactive
+        opacity: 1,
+      }}>
+        {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
+          Array.from({ length: MATRIX_SIZE }, (_, mc) => {
+            const value: CellValue = (matrix[mr]?.[mc] ?? 0) as CellValue;
+            const evenRow = mr % 2 === 0;
+            const evenCol = mc % 2 === 0;
+ 
+            if (evenRow && evenCol) {
+              const isValidMove = !wallMode && validMoves.some(([vr, vc]) => vr === mr && vc === mc);
+              const isMyPawn    = value === mySymbol;
+              return (
+                <PawnCell key={`${mr}-${mc}`} value={value}
+                  boardRow={mr / 2} boardCol={mc / 2}
+                  isValidMove={isValidMove}
+                  isMyPawn={isMyPawn}
+                  onMove={onMove}
+                  onPawnClick={handlePawnClick} />
+              );
+            }
+ 
+            if (!evenRow && evenCol)
+              return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
+                mr={mr} mc={mc} canPlace={canPlaceWall}
+                isHighlighted={isWallHighlighted(mr, mc)}
+                onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+ 
+            if (evenRow && !evenCol)
+              return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
+                mr={mr} mc={mc} canPlace={canPlaceWall}
+                isHighlighted={isWallHighlighted(mr, mc)}
+                onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+ 
+            return <Pillar key={`${mr}-${mc}`} value={value}
+              isHighlighted={isWallHighlighted(mr, mc)} />;
+          })
+        )}
+      </div>
+ 
+      {/* Wall placement toggle button — bottom right corner */}
+      {isMyTurn && (
+        <button
+          onClick={() => setWallMode(prev => !prev)}
+          title={wallMode ? "Wall mode ON — click to switch to move mode" : "Click to place a wall"}
+          style={{
+            position:   "absolute",
+            bottom:     -52,
+            right:      0,
+            width:      44,
+            height:     44,
+            borderRadius: "50%",
+            border:     wallMode
+              ? "2px solid #c8a44a"
+              : "2px solid #4a4438",
+            background: wallMode
+              ? "rgba(200,164,74,0.18)"
+              : "rgba(30,28,24,0.85)",
+            color:      wallMode ? "#c8a44a" : "#6a5a3a",
+            fontSize:   20,
+            cursor:     "pointer",
+            display:    "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            transition: "all 0.15s ease",
+            boxShadow:  wallMode
+              ? "0 0 12px rgba(200,164,74,0.35)"
+              : "none",
+          }}
+        >
+          {/* Wall icon — two stacked bars */}
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <rect x="2" y="5"  width="16" height="3" rx="1.5" fill="currentColor" />
+            <rect x="2" y="12" width="16" height="3" rx="1.5" fill="currentColor" />
+          </svg>
+        </button>
+      )}
+ 
+      {/* Mode label below the button */}
+      {isMyTurn && (
+        <div style={{
+          position:   "absolute",
+          bottom:     -72,
+          right:      0,
+          width:      44,
+          textAlign:  "center",
+          fontSize:   9,
+          letterSpacing: "0.06em",
+          color:      wallMode ? "#c8a44a" : "#4a4438",
+          transition: "color 0.15s",
+          userSelect: "none",
+        }}>
+          {wallMode ? "WALL" : "MOVE"}
+        </div>
       )}
     </div>
   );
