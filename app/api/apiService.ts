@@ -3,7 +3,6 @@ import { ApplicationError } from "@/types/error";
 
 export class ApiService {
   private baseURL: string;
-  private defaultHeaders: HeadersInit;
 
   constructor(token?: string) {
     this.baseURL = getApiDomain();
