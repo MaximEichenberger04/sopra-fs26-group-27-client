@@ -33,15 +33,15 @@ const LobbyCreationPage: React.FC = () => {
       return;
     }
 
-    setLoading(true);
-    try {
-      const newLobby = await apiService.post<{ id: string }>("/lobbies", {
-        name,
-        gameMode,
-        maxPlayers: parseInt(maxPlayers, 10),
-        hostId: Number(userId),
-      });
-      router.push(`/lobby/${newLobby.id}`);
+setLoading(true);
+try {
+  const newLobby = await apiService.post<{ id: string }>("/lobbies", {
+    name,
+    gameMode,
+    maxPlayers: parseInt(maxPlayers, 10),
+    hostId: Number(userId),
+  });
+  router.push(`/lobby/${newLobby.id}`);
     } catch (error) {
       if (error instanceof Error) alert(`Failed to create lobby:\n${error.message}`);
     } finally {
