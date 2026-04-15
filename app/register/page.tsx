@@ -43,7 +43,7 @@ const Regisration: React.FC = () => {
         setToken(response.token);
         setUserId(Number(response.id));
       }
-      router.push(`/users/`);
+      router.push(`/users`);
 
     } catch (error) {
       if (error instanceof Error) {
