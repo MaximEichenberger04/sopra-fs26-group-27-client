@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CellValue, MATRIX_SIZE } from "@/types/game";
 
 const CELL = 52;
@@ -22,13 +22,14 @@ const C = {
 };
 
 function PawnCell({
-  value, boardRow, boardCol, isValidMove, onMove,
+  value, boardRow, boardCol, isValidMove, onMove, flipped
 }: {
   value: CellValue;
   boardRow: number;
   boardCol: number;
   isValidMove: boolean;
   onMove: (mr: number, mc: number) => void;
+  flipped: boolean;
 }) {
   return (
     <div
@@ -44,6 +45,7 @@ function PawnCell({
         boxSizing: "border-box",
         cursor: isValidMove ? "pointer" : "default",
         transition: "background 0.12s, border 0.12s",
+        transform: flipped ? "rotate(180deg)" : "none",
       }}
     >
       {(value === 1 || value === 2) && (
@@ -126,14 +128,25 @@ function Pillar({ value, isHighlighted }: { value: CellValue; isHighlighted: boo
 }
 
 interface QuoridorBoardProps {
+  mySymbol: 1 | 2;
+  remainingWalls: number;
+  totalWalls: number;
   matrix: CellValue[][];
   isMyTurn: boolean;
   validMoves: Array<[number, number]>;
   onMove: (mr: number, mc: number) => void;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
+  onForfeit: () => void;
 }
 
-export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove, onWall }: QuoridorBoardProps) {
+export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove, onWall, remainingWalls, totalWalls, onForfeit, mySymbol }: QuoridorBoardProps) {
+  const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+      setMounted(true);
+    }, []);
+
+  const flipped = mounted && mySymbol === 2;
   const [hoveredWall, setHoveredWall] = useState<Array<[number, number]>>([]);
 
   function handleHover(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") {
@@ -147,47 +160,104 @@ export default function QuoridorBoard({ matrix, isMyTurn, validMoves, onMove, on
   function isWallHighlighted(mr: number, mc: number): boolean {
     return hoveredWall.some(([hr, hc]) => hr === mr && hc === mc);
   }  return (
-    <div style={{
-      display: "inline-grid",
-      gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) =>
-        i % 2 === 0 ? `${CELL}px` : `${WALL}px`
-      ).join(" "),
-      gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) =>
-        i % 2 === 0 ? `${CELL}px` : `${WALL}px`
-      ).join(" "),
-      gap: GAP,
-    }}>
-      {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
-        Array.from({ length: MATRIX_SIZE }, (_, mc) => {
-          const value: CellValue = (matrix[mr]?.[mc] ?? 0) as CellValue;
-          const evenRow = mr % 2 === 0;
-          const evenCol = mc % 2 === 0;
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <div style={{
+        display: "inline-grid",
+        gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) =>
+          i % 2 === 0 ? `${CELL}px` : `${WALL}px`
+        ).join(" "),
+        gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) =>
+          i % 2 === 0 ? `${CELL}px` : `${WALL}px`
+        ).join(" "),
+        gap: GAP,
+        transform: mySymbol === 2 ? "rotate(180deg)" : "none",
+      }}>
+        {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
+          Array.from({ length: MATRIX_SIZE }, (_, mc) => {
+            const value: CellValue = (matrix[mr]?.[mc] ?? 0) as CellValue;
+            const evenRow = mr % 2 === 0;
+            const evenCol = mc % 2 === 0;
 
-          if (evenRow && evenCol) {
-            const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
-            return (
-              <PawnCell key={`${mr}-${mc}`} value={value}
-                boardRow={mr / 2} boardCol={mc / 2}
-                isValidMove={isValidMove} onMove={onMove} />
-            );
-          }
+            if (evenRow && evenCol) {
+              const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
+              return (
+                <PawnCell key={`${mr}-${mc}`} value={value}
+                  boardRow={mr / 2} boardCol={mc / 2}
+                  isValidMove={isValidMove} onMove={onMove} flipped={flipped} />
+              );
+            }
 
-          if (!evenRow && evenCol)
-            return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
-              mr={mr} mc={mc} isMyTurn={isMyTurn}
-              isHighlighted={isWallHighlighted(mr, mc)}
-              onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+            if (!evenRow && evenCol)
+              return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
+                mr={mr} mc={mc} isMyTurn={isMyTurn}
+                isHighlighted={isWallHighlighted(mr, mc)}
+                onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
 
-          if (evenRow && !evenCol)
-            return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
-              mr={mr} mc={mc} isMyTurn={isMyTurn}
-              isHighlighted={isWallHighlighted(mr, mc)}
-              onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+            if (evenRow && !evenCol)
+              return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
+                mr={mr} mc={mc} isMyTurn={isMyTurn}
+                isHighlighted={isWallHighlighted(mr, mc)}
+                onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
 
-          return <Pillar key={`${mr}-${mc}`} value={value}
-            isHighlighted={isWallHighlighted(mr, mc)} />;
-        })
-      )}
-    </div>
-  );
-}
+            return <Pillar key={`${mr}-${mc}`} value={value}
+              isHighlighted={isWallHighlighted(mr, mc)} />;
+          })
+        )}
+      </div>
+        <div style={{
+          position: "absolute",
+          bottom: -40,
+          right: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "6px 12px",
+          background: "#1a1714",
+          border: "1px solid #3a3228",
+          borderRadius: 6,
+        }}>
+          <div style={{ color: "#4a4438", fontSize: 9, letterSpacing: "0.12em" }}>
+            WALLS
+          </div>
+          <div style={{
+            color: remainingWalls === 0 ? "#3a3228" : "#c8a44a",
+            fontSize: 16,
+            fontFamily: "Cinzel, serif",
+            lineHeight: 1,
+          }}>
+            {remainingWalls}
+            <span style={{ color: "#3a3228", fontSize: 11 }}>/{totalWalls}</span>
+          </div>
+        </div>
+        <div style={{
+          position: "absolute",
+          bottom: -40,
+          left: 0,
+          display: "flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "6px 12px",
+          background: "#1a1714",
+          border: "1px solid #3a3228",
+          borderRadius: 6,
+          cursor: "pointer",
+          transition: "border 0.15s, background 0.15s",
+        }}
+          onClick={onForfeit}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLDivElement).style.border = "1px solid #c8a44a";
+            (e.currentTarget as HTMLDivElement).style.background = "rgba(200,164,74,0.08)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLDivElement).style.border = "1px solid #3a3228";
+            (e.currentTarget as HTMLDivElement).style.background = "#1a1714";
+          }}
+        >
+          <div style={{ color: "#4a4438", fontSize: 9, letterSpacing: "0.12em" }}>
+            FORFEIT
+          </div>
+        </div>
+      </div>
+      
+    );
+  }

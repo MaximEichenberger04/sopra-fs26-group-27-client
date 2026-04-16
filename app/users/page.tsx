@@ -15,8 +15,8 @@ const Dashboard: React.FC = () => {
   const apiService = useApi();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const { value: token } = useLocalStorage<string>("token", "");
-  const { value: userId } = useLocalStorage<string>("userId", "");
+  const { value: token, clear: clearToken } = useLocalStorage<string>("token", "");
+  const { value: userId, clear: clearUserId } = useLocalStorage<string>("userId", "");
 
   useEffect(() => {
     if (!token) { router.push("/login"); return; }

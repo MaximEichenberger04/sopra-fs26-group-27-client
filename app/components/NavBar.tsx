@@ -42,10 +42,17 @@ const NavBar: React.FC = () => {
         fetchUser();
     }, [apiService, token, userId]);
 
-    const handleLogout = () => {
-        clearToken();
-        router.push("/login");
-    };
+    
+  async function handleLogout() {
+    try {
+      await apiService.put("/logout", {});
+    } catch {
+
+    } finally {
+      clearToken();
+      router.push("/login");
+    }
+  }
 
     return (
         <nav className="nav-bar">
