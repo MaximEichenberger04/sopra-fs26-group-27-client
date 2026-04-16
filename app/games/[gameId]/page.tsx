@@ -8,6 +8,7 @@ import { GameDTO, GameState, CellValue, MATRIX_SIZE } from "@/types/game";
 import { useApi } from "@/hooks/useApi";
 import { getValidMoves } from "@/utils/validMoves";
 import { getApiDomain } from "@/utils/domain";
+import { useRouter } from "next/navigation";
 
 function getWsDomain(): string {
   return getApiDomain().replace(/^http/, "ws");
@@ -52,6 +53,8 @@ const EMPTY_GAME_STATE: GameState = {
   player2Id: -1,
   winnerId: null,
   gameStatus: "WAITING_FOR_USER",
+  wallsPerPlayer: 0,
+  remainingWalls: {},
 };
 
 export default function GamePage() {
@@ -63,9 +66,11 @@ export default function GamePage() {
   const [error, setError]         = useState<string | null>(null);
   const [lastSync, setLastSync]   = useState<Date | null>(null);
   const wsRef                     = useRef<WebSocket | null>(null);
+  const router = useRouter();
 
   // token is passed into ApiService so Authorization header is included
   const api = useApi(token);
+  
 
   const fetchGame = useCallback(async () => {
     if (!token) return;
@@ -78,13 +83,20 @@ export default function GamePage() {
         player2Id:         dto.playerIds?.[1] ?? -1,
         winnerId:          dto.winnerId,
         gameStatus:        dto.gameStatus,
+        wallsPerPlayer:    dto.wallsPerPlayer,
+        remainingWalls:    dto.remainingWalls,
       });
       setLastSync(new Date());
+      if (dto.gameStatus === "ENDED") {
+        router.push(`/games/${gameId}/gameend`);
+      }
       setError(null);
     } catch {
       setError("Could not reach server.");
     }
-  }, [gameId, token, api]);
+  }, [useState, gameId, token, api]);
+
+  const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
 
   // WebSocket: open once, re-fetch on any event for this game
   useEffect(() => {
@@ -135,6 +147,14 @@ export default function GamePage() {
     }
   }
 
+  async function handleForfeit() {
+    try {
+      await api.post(`/games/${gameId}/forfeit`, {});
+    } catch {
+      setError("Could not forfeit.");
+    }
+  }
+
   return (
     <main style={{
       minHeight: "100vh", background: "#12100d",
@@ -155,11 +175,15 @@ export default function GamePage() {
       )}
 
       <QuoridorBoard
+        remainingWalls={myRemainingWalls}
+        totalWalls={game.wallsPerPlayer}
+        mySymbol={mySymbol}
         matrix={game.matrix}
         isMyTurn={isMyTurn}
         validMoves={validMoves}
         onMove={handleMove}
         onWall={handleWall}
+        onForfeit={handleForfeit}
       />
 
       {lastSync && (

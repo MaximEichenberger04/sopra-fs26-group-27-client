@@ -30,10 +30,13 @@ export interface GameDTO {
   playerIds: number[];
   pawns: PawnDTO[];
   walls: WallDTO[];
+  remainingWalls: Record<string, number>;
 }
 
 // What the board component works with (derived)
 export interface GameState {
+  remainingWalls: Record<string, number>;
+  wallsPerPlayer: number;
   matrix: CellValue[][];
   currentTurnUserId: number;
   player1Id: number;
