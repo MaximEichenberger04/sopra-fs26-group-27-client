@@ -137,7 +137,7 @@ export default function GamePage() {
   async function handleMove(matrixRow: number, matrixCol: number) {
     if (!isMyTurn) return;
     try {
-      await apiRef.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] });
+      await apiRef.current.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] });
       fetchGame();
     } catch {
       setError("Invalid move.");
@@ -149,7 +149,7 @@ export default function GamePage() {
     try {
       const centerRow = orientation === "HORIZONTAL" ? matrixRow     : matrixRow + 1;
       const centerCol = orientation === "HORIZONTAL" ? matrixCol + 1 : matrixCol;
-      await apiRef.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
+      await apiRef.current.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
       fetchGame();
     } catch {
       setError("Invalid wall placement.");
