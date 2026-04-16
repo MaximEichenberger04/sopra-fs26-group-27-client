@@ -24,7 +24,7 @@ const Regisration: React.FC = () => {
   const {
     // value: token, // is commented out because we do not need the token value
     set: setToken,
-   // we need this method to set the value of the user ID to the one we receive from the POST request to the backend server API
+    // we need this method to set the value of the user ID to the one we receive from the POST request to the backend server API
     // clear: clearToken, // is commented out because we do not need to clear the token when logging in
   } = useLocalStorage<string>("token", ""); // note that the key we are selecting is "token" and the default value we are setting is an empty string
   // if you want to pick a different token, i.e "usertoken", the line above would look as follows: } = useLocalStorage<string>("usertoken", "");
@@ -43,7 +43,7 @@ const Regisration: React.FC = () => {
         setToken(response.token);
         setUserId(Number(response.id));
       }
-      router.push(`/users/${response.id}`);
+      router.push(`/users`);
 
     } catch (error) {
       if (error instanceof Error) {

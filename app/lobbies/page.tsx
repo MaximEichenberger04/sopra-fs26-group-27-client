@@ -1,6 +1,6 @@
 "use client";
 
-import "./lobbies.css";
+import "../lobbies/lobbies.css";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";

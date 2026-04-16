@@ -11,7 +11,7 @@ import { getApiDomain } from "@/utils/domain";
 import { useRouter } from "next/navigation";
 
 function getWsDomain(): string {
-  return getApiDomain().replace(/^http/, "ws");
+  return getApiDomain().replace(/^https/, "wss").replace(/^http/, "ws");
 }
 
 function makeEmptyMatrix(): CellValue[][] {
@@ -68,14 +68,18 @@ export default function GamePage() {
   const wsRef                     = useRef<WebSocket | null>(null);
   const router = useRouter();
 
-  // token is passed into ApiService so Authorization header is included
+  // Keep api in a ref so fetchGame doesn't change when api object changes
   const api = useApi(token);
-  
+  const apiRef = useRef(api);
+  useEffect(() => { apiRef.current = api; }, [api]);
+
+  const tokenRef = useRef(token);
+  useEffect(() => { tokenRef.current = token; }, [token]);
 
   const fetchGame = useCallback(async () => {
-    if (!token) return;
+    if (!tokenRef.current) return;
     try {
-      const dto = await api.get<GameDTO>(`/games/${gameId}`);
+      const dto = await apiRef.current.get<GameDTO>(`/games/${gameId}`);
       setGame({
         matrix:            buildMatrix(dto),
         currentTurnUserId: dto.currentTurnUserId,
@@ -102,23 +106,40 @@ export default function GamePage() {
   useEffect(() => {
     fetchGame();
 
-    const ws = new WebSocket(`${getWsDomain()}/game-refresh-websocket`);
-    wsRef.current = ws;
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
 
-    ws.onmessage = (event) => {
-      try {
-        const msg = JSON.parse(event.data) as { type: string; gameId: string };
-        if (msg.gameId === gameId) fetchGame();
-      } catch { /* ignore malformed frames */ }
-    };
+    function connect() {
+      ws = new WebSocket(`${getWsDomain()}/game-refresh-websocket`);
 
-    ws.onerror = () => setError("WebSocket error — falling back to last known state.");
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data) as { type: string; gameId: string };
+          if (msg.gameId === gameId) fetchGame();
+        } catch { /* ignore malformed frames */ }
+      };
+
+      ws.onerror = () => {
+        setError("WebSocket error — retrying...");
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) {
+          // reconnect after 3 seconds
+          reconnectTimeout = setTimeout(connect, 3000);
+        }
+      };
+    }
+
+    connect();
 
     return () => {
-      ws.close();
-      wsRef.current = null;
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
     };
-  }, [gameId, fetchGame]);
+  }, [gameId, fetchGame]); // ← fetchGame is now stable
 
   // derived
   const isMyTurn  = userId !== -1 && game.currentTurnUserId === userId;
@@ -128,7 +149,7 @@ export default function GamePage() {
   async function handleMove(matrixRow: number, matrixCol: number) {
     if (!isMyTurn) return;
     try {
-      await api.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] });
+      await apiRef.current.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] });
       fetchGame();
     } catch {
       setError("Invalid move.");
@@ -140,7 +161,7 @@ export default function GamePage() {
     try {
       const centerRow = orientation === "HORIZONTAL" ? matrixRow     : matrixRow + 1;
       const centerCol = orientation === "HORIZONTAL" ? matrixCol + 1 : matrixCol;
-      await api.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
+      await apiRef.current.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
       fetchGame();
     } catch {
       setError("Invalid wall placement.");
