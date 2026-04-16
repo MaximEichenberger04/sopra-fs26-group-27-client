@@ -157,7 +157,6 @@ export default function GamePage() {
       <QuoridorBoard
         matrix={game.matrix}
         isMyTurn={isMyTurn}
-        mySymbol={mySymbol}
         validMoves={validMoves}
         onMove={handleMove}
         onWall={handleWall}
