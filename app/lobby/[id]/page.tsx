@@ -57,6 +57,7 @@ const LobbyPage: React.FC = () => {
 
   useEffect(() => {
     fetchLobby();
+    const interval = globalThis.setInterval(fetchLobby, 2000);
 
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
@@ -72,7 +73,6 @@ const LobbyPage: React.FC = () => {
       ws.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data) as { type: string; gameId: string };
-          // GAME_STARTED means the lobby started — re-fetch to get redirected
           if (msg.type === "GAME_STARTED") fetchLobby();
         } catch { /* ignore */ }
       };
@@ -88,6 +88,7 @@ const LobbyPage: React.FC = () => {
       destroyed = true;
       clearTimeout(reconnectTimeout);
       ws?.close();
+      globalThis.clearInterval(interval);
     };
   }, [fetchLobby]);
 
