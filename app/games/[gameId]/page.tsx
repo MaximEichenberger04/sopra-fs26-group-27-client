@@ -126,7 +126,9 @@ export default function GamePage() {
   async function handleWall(matrixRow: number, matrixCol: number, orientation: "HORIZONTAL" | "VERTICAL") {
     if (!isMyTurn) return;
     try {
-      await api.post(`/games/${gameId}/wall`, { targetField: [matrixRow, matrixCol], orientation });
+      const centerRow = orientation === "HORIZONTAL" ? matrixRow     : matrixRow + 1;
+      const centerCol = orientation === "HORIZONTAL" ? matrixCol + 1 : matrixCol;
+      await api.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
       fetchGame();
     } catch {
       setError("Invalid wall placement.");
@@ -155,7 +157,6 @@ export default function GamePage() {
       <QuoridorBoard
         matrix={game.matrix}
         isMyTurn={isMyTurn}
-        mySymbol={mySymbol}
         validMoves={validMoves}
         onMove={handleMove}
         onWall={handleWall}
