@@ -57,29 +57,39 @@ const LobbyPage: React.FC = () => {
 
   useEffect(() => {
     fetchLobby();
-    const interval = globalThis.setInterval(fetchLobby, 2000);
-    return () => globalThis.clearInterval(interval);
-  }, [fetchLobby]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    const payload: Record<string, string | number> = {};
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
 
-    if (editName.trim()) payload.name = editName.trim();
-    if (editGameMode) payload.gameMode = editGameMode;
-    if (editMaxPlayers) payload.maxPlayers = parseInt(editMaxPlayers, 10);
+    function connect() {
+      const wsDomain = (process.env.NEXT_PUBLIC_PROD_API_URL || "http://localhost:8080")
+        .replace(/^https/, "wss")
+        .replace(/^http/, "ws");
 
-    try {
-      await apiService.put(`/lobbies/${lobbyId}`, payload);
-      await fetchLobby();
-    } catch (error) {
-      if (error instanceof Error) {
-        alert(`Failed to update:\n${error.message}`);
-      }
-    } finally {
-      setSaving(false);
+      ws = new WebSocket(`${wsDomain}/game-refresh-websocket`);
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data) as { type: string; gameId: string };
+          // GAME_STARTED means the lobby started — re-fetch to get redirected
+          if (msg.type === "GAME_STARTED") fetchLobby();
+        } catch { /* ignore */ }
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+      };
     }
-  };
+
+    connect();
+
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+    };
+  }, [fetchLobby]);
 
   const handleLeave = async () => {
     try {
@@ -106,6 +116,27 @@ const LobbyPage: React.FC = () => {
     }
   };
 
+  const handleSave = async () => {
+    if (!lobby) return;
+  
+    setSaving(true);
+    try {
+      await apiService.put(`/lobbies/${lobbyId}`, {
+        name: editName || lobby.name,
+        gameMode: editGameMode || lobby.gameMode,
+        maxPlayers: editMaxPlayers ? Number(editMaxPlayers) : lobby.maxPlayers,
+      });
+  
+      await fetchLobby(); // refresh UI after save
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Failed to save:\n${error.message}`);
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+  
   if (!lobby) return null;
 
   const raw = localStorage.getItem("userId");
