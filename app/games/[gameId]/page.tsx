@@ -64,7 +64,9 @@ export default function GamePage() {
 
   const [game, setGame]           = useState<GameState>(EMPTY_GAME_STATE);
   const [error, setError]         = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
   const [lastSync, setLastSync]   = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
   const wsRef                     = useRef<WebSocket | null>(null);
   const router = useRouter();
 
@@ -75,6 +77,10 @@ export default function GamePage() {
 
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const fetchGame = useCallback(async () => {
     if (!tokenRef.current) return;
@@ -108,16 +114,60 @@ export default function GamePage() {
 
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let bannerTimeout: ReturnType<typeof setTimeout> | undefined;
     let destroyed = false;
 
     function connect() {
       ws = new WebSocket(`${getWsDomain()}/game-refresh-websocket`);
+      wsRef.current = ws;
+
+      ws.onopen = () => {
+        setError(null);
+
+        if (!tokenRef.current) return;
+
+        ws.send(JSON.stringify({
+          type: "REGISTER",
+          gameId: Number(gameId),
+          token: tokenRef.current,
+        }));
+      };
 
       ws.onmessage = (event) => {
         try {
-          const msg = JSON.parse(event.data) as { type: string; gameId: string };
-          if (msg.gameId === gameId) fetchGame();
-        } catch { /* ignore malformed frames */ }
+          const msg = JSON.parse(event.data) as {
+            type: string;
+            gameId: string | number;
+            userId?: string | number;
+            gracePeriodSeconds?: number;
+          };
+
+          if (String(msg.gameId) !== String(gameId)) return;
+
+          if (msg.type === "PLAYER_DISCONNECTED") {
+            if (Number(msg.userId) !== userId) {
+              setBanner(
+                `A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30} seconds for reconnection.`
+              );
+            }
+          } else if (msg.type === "PLAYER_RECONNECTED") {
+            setBanner("The disconnected player reconnected.");
+            if (bannerTimeout) clearTimeout(bannerTimeout);
+            bannerTimeout = setTimeout(() => setBanner(null), 3000);
+          } else if (msg.type === "PLAYER_FORFEITED") {
+            if (Number(msg.userId) === userId) {
+              setBanner("You were removed from the game after not reconnecting in time.");
+            } else {
+              setBanner("A disconnected player did not return and was removed from the game.");
+            }
+          } else if (msg.type === "MOVE" || msg.type === "WALL" || msg.type === "FORFEIT" || msg.type === "GAME_UPDATED") {
+            setBanner(null);
+          }
+
+          fetchGame();
+        } catch {
+          // ignore malformed frames
+        }
       };
 
       ws.onerror = () => {
@@ -125,8 +175,8 @@ export default function GamePage() {
       };
 
       ws.onclose = () => {
+        wsRef.current = null;
         if (!destroyed) {
-          // reconnect after 3 seconds
           reconnectTimeout = setTimeout(connect, 3000);
         }
       };
@@ -137,9 +187,10 @@ export default function GamePage() {
     return () => {
       destroyed = true;
       clearTimeout(reconnectTimeout);
+      if (bannerTimeout) clearTimeout(bannerTimeout);
       ws?.close();
     };
-  }, [gameId, fetchGame]); // ← fetchGame is now stable
+  }, [gameId, fetchGame, userId]); // ← fetchGame is now stable
 
   // derived
   const isMyTurn  = userId !== -1 && game.currentTurnUserId === userId;
@@ -188,6 +239,7 @@ export default function GamePage() {
       </h1>
 
       {error && <p style={{ color: "#d96b6b", fontSize: 13 }}>{error}</p>}
+      {banner && <p style={{ color: "#c8a44a", fontSize: 13 }}>{banner}</p>}
 
       {game.gameStatus === "ENDED" && (
         <p style={{ color: "#c8a44a", fontSize: 15 }}>
@@ -195,17 +247,19 @@ export default function GamePage() {
         </p>
       )}
 
-      <QuoridorBoard
-        remainingWalls={myRemainingWalls}
-        totalWalls={game.wallsPerPlayer}
-        mySymbol={mySymbol}
-        matrix={game.matrix}
-        isMyTurn={isMyTurn}
-        validMoves={validMoves}
-        onMove={handleMove}
-        onWall={handleWall}
-        onForfeit={handleForfeit}
-      />
+      {mounted && (
+        <QuoridorBoard
+          remainingWalls={myRemainingWalls}
+          totalWalls={game.wallsPerPlayer}
+          mySymbol={mySymbol}
+          matrix={game.matrix}
+          isMyTurn={isMyTurn}
+          validMoves={validMoves}
+          onMove={handleMove}
+          onWall={handleWall}
+          onForfeit={handleForfeit}
+        />
+      )}
 
       {lastSync && (
         <p style={{ color: "#4a4438", fontSize: 11, margin: 0 }}>
