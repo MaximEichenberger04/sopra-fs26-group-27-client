@@ -20,7 +20,11 @@ const Dashboard: React.FC = () => {
   const { value: userId } = useLocalStorage<string>("userId", "");
 
   useEffect(() => {
-    if (!token) { router.push("/login"); return; }
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
     const fetchUser = async () => {
       try {
         if (userId) {
