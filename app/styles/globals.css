@@ -534,3 +534,7 @@ a {
 .registration-button {
   width: 100%;
 }
+
+.avatar-ring-sm {
+  padding: 2px;
+}

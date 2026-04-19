@@ -9,6 +9,7 @@ import { User } from "@/types/user";
 import { Avatar } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
+import { getCosmeticById } from "@/types/cosmetics";
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
@@ -32,6 +33,8 @@ const Dashboard: React.FC = () => {
     };
     fetchUser();
   }, [apiService, token, userId, router]);
+
+  const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
 
   if (!currentUser) return null;
 
@@ -62,12 +65,14 @@ const Dashboard: React.FC = () => {
         <div className="dash-col-right">
           <div className="g-card dash-profile-card">
             <div className="dash-profile-header">
-              <Avatar
-                size={48}
-                src={currentUser.avatarURL ?? undefined}
-                icon={!currentUser.avatarURL && <UserOutlined />}
-                className="nav-avatar"
-              />
+              <div className={`avatar-ring-wrap ${borderItem ? borderItem.cssClass : ""}`}>
+                <Avatar
+                  size={48}
+                  src={currentUser.avatarURL ?? undefined}
+                  icon={!currentUser.avatarURL && <UserOutlined />}
+                  className="nav-avatar"
+                />
+              </div>
               <div className="dash-profile-info">
                 <span className="dash-profile-name">{currentUser.displayName}</span>
                 <span className="dash-profile-level">Level {currentUser.level ?? 0}</span>

@@ -11,5 +11,9 @@ export interface User {
   score: number | null;
   xp: number | null;
   level: number | null;
+  coins: number | null;
+  ownedCosmetics: string | null;
+  equippedBorder: string | null;
+  equippedPawnSkin: string | null;
 }
 
