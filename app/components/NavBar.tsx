@@ -8,6 +8,7 @@ import { User } from "@/types/user";
 import { Avatar } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import Image from "next/image";
+import { getCosmeticById } from "@/types/cosmetics";
 
 const NavBar: React.FC = () => {
     const router = useRouter();
@@ -42,17 +43,19 @@ const NavBar: React.FC = () => {
         fetchUser();
     }, [apiService, token, userId]);
 
-    
-  async function handleLogout() {
-    try {
-      await apiService.put("/logout", {});
-    } catch {
+    const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
 
-    } finally {
-      clearToken();
-      router.push("/login");
+
+    async function handleLogout() {
+        try {
+            await apiService.put("/logout", {});
+        } catch {
+
+        } finally {
+            clearToken();
+            router.push("/login");
+        }
     }
-  }
 
     return (
         <nav className="nav-bar">
@@ -67,12 +70,14 @@ const NavBar: React.FC = () => {
                             onClick={() => setDropdownOpen(!dropdownOpen)}
                             type="button"
                         >
-                            <Avatar
-                                size={30}
-                                src={currentUser.avatarURL ?? undefined}
-                                icon={!currentUser.avatarURL && <UserOutlined />}
-                                className="nav-avatar"
-                            />
+                            <div className={`avatar-ring-wrap avatar-ring-sm ${borderItem ? borderItem.cssClass : ""}`}>
+                                <Avatar
+                                    size={30}
+                                    src={currentUser.avatarURL ?? undefined}
+                                    icon={!currentUser.avatarURL && <UserOutlined />}
+                                    className="nav-avatar"
+                                />
+                            </div>
                             <span className="nav-user-name">{currentUser.displayName}</span>
                             <span className="nav-caret">▾</span>
                         </button>
@@ -81,7 +86,9 @@ const NavBar: React.FC = () => {
                                 <button className="nav-dd-item" onClick={() => { setDropdownOpen(false); router.push(`/users/${userId}`); }}>
                                     Profile
                                 </button>
-                                <button className="nav-dd-item nav-dd-disabled">Cosmetics Shop</button>
+                                <button className="nav-dd-item" onClick={() => { setDropdownOpen(false); router.push("/shop"); }}>
+                                    Cosmetics Shop
+                                </button>
                                 <button className="nav-dd-item nav-dd-disabled">Match History</button>
                                 <div className="nav-dd-divider" />
                                 <button className="nav-dd-item nav-dd-logout" onClick={handleLogout}>

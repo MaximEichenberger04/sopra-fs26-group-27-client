@@ -119,7 +119,7 @@ const LobbyPage: React.FC = () => {
 
   const handleSave = async () => {
     if (!lobby) return;
-  
+
     setSaving(true);
     try {
       await apiService.put(`/lobbies/${lobbyId}`, {
@@ -127,7 +127,7 @@ const LobbyPage: React.FC = () => {
         gameMode: editGameMode || lobby.gameMode,
         maxPlayers: editMaxPlayers ? Number(editMaxPlayers) : lobby.maxPlayers,
       });
-  
+
       await fetchLobby(); // refresh UI after save
     } catch (error) {
       if (error instanceof Error) {
@@ -137,7 +137,7 @@ const LobbyPage: React.FC = () => {
       setSaving(false);
     }
   };
-  
+
   if (!lobby) return null;
 
   const raw = localStorage.getItem("userId");
