@@ -45,10 +45,17 @@ const NavBar: React.FC = () => {
 
     const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
 
-    const handleLogout = () => {
-        clearToken();
-        router.push("/login");
-    };
+
+    async function handleLogout() {
+        try {
+            await apiService.put("/logout", {});
+        } catch {
+
+        } finally {
+            clearToken();
+            router.push("/login");
+        }
+    }
 
     return (
         <nav className="nav-bar">

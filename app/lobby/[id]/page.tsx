@@ -1,7 +1,7 @@
 "use client";
 
 import "../../lobbies/lobbies.css";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Lobby } from "@/types/lobby";
 import { User } from "@/types/user";
@@ -12,89 +12,157 @@ const LobbyPage: React.FC = () => {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const apiService = useApi();
+
   const [lobby, setLobby] = useState<Lobby | null>(null);
   const [saving, setSaving] = useState(false);
   const [starting, setStarting] = useState(false);
   const [users, setUsers] = useState<User[]>([]);
   const lobbyId = params.id;
 
-  // Edit fields
   const [editName, setEditName] = useState("");
   const [editGameMode, setEditGameMode] = useState("");
   const [editMaxPlayers, setEditMaxPlayers] = useState("");
 
-  const fetchUsers = async (playerIds: number[]) => {
+  const fetchUsers = useCallback(async (playerIds: number[]) => {
     try {
-      const fetched = await Promise.all(playerIds.map((id) => apiService.get<User>(`/users/${id}`)));
+      const fetched = await Promise.all(
+        playerIds.map((id) => apiService.get<User>(`/users/${id}`))
+      );
       setUsers(fetched);
-    } catch { }
-  };
+    } catch {
+      // ignore for now
+    }
+  }, [apiService]);
 
-  const fetchLobby = async () => {
+  const fetchLobby = useCallback(async () => {
     try {
       const response = await apiService.get<Lobby>(`/lobbies/${lobbyId}`);
+
+      if (response.lobbyStatus === "INGAME") {
+        router.push(`/games/${lobbyId}`);
+        return;
+      }
+
       setLobby(response);
-      if (response.playerIds) await fetchUsers(response.playerIds);
+
+      if (response.playerIds) {
+        await fetchUsers(response.playerIds);
+      }
     } catch (error) {
-      if (error instanceof Error) alert(`Failed to load lobby:\n${error.message}`);
+      if (error instanceof Error) {
+        alert(`Failed to load lobby:\n${error.message}`);
+      }
     }
-  };
+  }, [lobbyId, router, fetchUsers, apiService]);
 
   useEffect(() => {
     fetchLobby();
     const interval = globalThis.setInterval(fetchLobby, 2000);
-    return () => globalThis.clearInterval(interval);
-  }, [lobbyId]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    const payload: Record<string, string | number> = {};
-    if (editName.trim()) payload.name = editName.trim();
-    if (editGameMode) payload.gameMode = editGameMode;
-    if (editMaxPlayers) payload.maxPlayers = parseInt(editMaxPlayers, 10);
-    try { await apiService.put(`/lobbies/${lobbyId}`, payload); await fetchLobby(); } catch (error) {
-      if (error instanceof Error) alert(`Failed to update:\n${error.message}`);
-    } finally { setSaving(false); }
-  };
+    let ws: WebSocket;
+    let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let destroyed = false;
+
+    function connect() {
+      const wsDomain = (process.env.NEXT_PUBLIC_PROD_API_URL || "http://localhost:8080")
+        .replace(/^https/, "wss")
+        .replace(/^http/, "ws");
+
+      ws = new WebSocket(`${wsDomain}/game-refresh-websocket`);
+
+      ws.onmessage = (event) => {
+        try {
+          const msg = JSON.parse(event.data) as { type: string; gameId: string };
+          if (msg.type === "GAME_STARTED") fetchLobby();
+        } catch { /* ignore */ }
+      };
+
+      ws.onclose = () => {
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
+      };
+    }
+
+    connect();
+
+    return () => {
+      destroyed = true;
+      clearTimeout(reconnectTimeout);
+      ws?.close();
+      globalThis.clearInterval(interval);
+    };
+  }, [fetchLobby]);
 
   const handleLeave = async () => {
-    try { await apiService.post(`/lobbies/${lobbyId}/leave`, {}); router.push("/lobbies"); } catch (error) {
-      if (error instanceof Error) alert(`Failed to leave:\n${error.message}`);
+    try {
+      await apiService.post(`/lobbies/${lobbyId}/leave`, {});
+      router.push("/lobbies");
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Failed to leave:\n${error.message}`);
+      }
     }
   };
 
   const handleStart = async () => {
     setStarting(true);
     try {
-      const game = await apiService.post<{ id: string }>(`/lobbies/${lobbyId}/start`, {});
-      router.push(`/game/${game.id}`);
+      await apiService.post(`/lobbies/${lobbyId}/start`, {});
+      await fetchLobby();
     } catch (error) {
-      if (error instanceof Error) alert(`Failed to start:\n${error.message}`);
-    } finally { setStarting(false); }
+      if (error instanceof Error) {
+        alert(`Failed to start:\n${error.message}`);
+      }
+    } finally {
+      setStarting(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!lobby) return;
+
+    setSaving(true);
+    try {
+      await apiService.put(`/lobbies/${lobbyId}`, {
+        name: editName || lobby.name,
+        gameMode: editGameMode || lobby.gameMode,
+        maxPlayers: editMaxPlayers ? Number(editMaxPlayers) : lobby.maxPlayers,
+      });
+
+      await fetchLobby(); // refresh UI after save
+    } catch (error) {
+      if (error instanceof Error) {
+        alert(`Failed to save:\n${error.message}`);
+      }
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!lobby) return null;
 
   const raw = localStorage.getItem("userId");
   let currentUserId: string | null = null;
-  try { currentUserId = JSON.parse(raw ?? ""); } catch { currentUserId = raw; }
-  const isHost = String(currentUserId) === String(lobby.hostId);
-  const canStart = isHost && lobby.currentPlayers === lobby.maxPlayers && lobby.lobbyStatus === "WAITING";
+  try {
+    currentUserId = JSON.parse(raw ?? "");
+  } catch {
+    currentUserId = raw;
+  }
+
+  const isHost = currentUserId !== null && Number(currentUserId) === lobby.hostId;
+  const isFull = lobby.currentPlayers === lobby.maxPlayers;
+  const canStart = isHost && isFull && lobby.lobbyStatus === "WAITING";
   const emptySlots = Math.max(0, (lobby.maxPlayers ?? 0) - users.length);
 
   return (
     <div className="lobby-room-wrap">
       <NavBar />
       <div className="lobby-room-content">
-        {/* Header */}
         <div className="lobby-room-header">
           <h2 className="lobby-room-title">{lobby.name}</h2>
           <button className="btn-danger" onClick={handleLeave}>Leave Lobby</button>
         </div>
 
-        {/* Two-column grid */}
         <div className="lobby-room-grid">
-          {/* Left: Settings / Info */}
           <div className="lobby-room-section">
             <h3 className="g-section-title">{isHost ? "Lobby Settings (Host)" : "Lobby Info"}</h3>
             <div className="lobby-info-row">
@@ -117,7 +185,6 @@ const LobbyPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Right: Players */}
           <div className="lobby-room-section">
             <h3 className="g-section-title">Players ({lobby.currentPlayers}/{lobby.maxPlayers})</h3>
             {users.map((user) => (
@@ -128,18 +195,24 @@ const LobbyPage: React.FC = () => {
                 )}
               </div>
             ))}
+
             {Array.from({ length: emptySlots }).map((_, i) => (
               <p key={`empty-${i}`} className="lobby-slot-empty">
                 Slot {users.length + i + 1} — Awaiting challenger...
               </p>
             ))}
 
-            {/* Start button */}
             {canStart && (
-              <button className="btn-gold" style={{ width: "100%", marginTop: 16 }} onClick={handleStart} disabled={starting}>
+              <button
+                className="btn-gold"
+                style={{ width: "100%", marginTop: 16 }}
+                onClick={handleStart}
+                disabled={starting}
+              >
                 {starting ? "Starting..." : "Start Game"}
               </button>
             )}
+
             {isHost && !canStart && (lobby.currentPlayers ?? 0) < (lobby.maxPlayers ?? 0) && (
               <button className="btn-outline" style={{ width: "100%", marginTop: 16 }} disabled>
                 Waiting for players ({lobby.currentPlayers}/{lobby.maxPlayers})
@@ -148,18 +221,21 @@ const LobbyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Host Edit */}
         {isHost && (
           <div className="g-card lobby-edit-section">
             <h3 className="g-section-title">Edit Lobby (Host Only)</h3>
             <div className="g-field">
               <label className="g-label">Lobby Name</label>
-              <input className="g-input" placeholder={lobby.name ?? ""} value={editName} onChange={(e) => setEditName(e.target.value)} />
+              <input
+                className="g-input"
+                placeholder={lobby.name ?? ""}
+                value={editName}
+                onChange={(e) => setEditName(e.target.value)}
+              />
             </div>
             <div className="g-field">
               <label className="g-label">Game Mode</label>
               <select className="g-select" value={editGameMode} onChange={(e) => setEditGameMode(e.target.value)}>
-                <option value="">{lobby.gameMode}</option>
                 <option value="CLASSIC">Classic</option>
                 <option value="CHAOS">Chaos</option>
               </select>
@@ -167,7 +243,6 @@ const LobbyPage: React.FC = () => {
             <div className="g-field">
               <label className="g-label">Player Count</label>
               <select className="g-select" value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)}>
-                <option value="">{lobby.maxPlayers}</option>
                 <option value="2">2</option>
                 <option value="4">4</option>
               </select>
@@ -178,7 +253,6 @@ const LobbyPage: React.FC = () => {
           </div>
         )}
 
-        {/* Chat placeholder */}
         <div className="lobby-chat-section">
           <h3 className="g-section-title">Chat</h3>
           <div className="lobby-chat-messages">
@@ -190,7 +264,6 @@ const LobbyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Bottom actions */}
         <div className="lobby-bottom-actions">
           <button className="btn-outline" onClick={() => router.push("/lobbies")}>
             ← Back to Browser
