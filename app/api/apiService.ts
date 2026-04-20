@@ -153,23 +153,4 @@ export class ApiService {
       "An error occurred while patching the data.\n",
     );
   }
-
-  /**
-   * PATCH request.
-   * @param endpoint - The API endpoint (e.g. "/users/123").
-   * @param data - The payload to patch.
-   * @returns JSON data of type T.
-  */
-  public async patch<T>(endpoint: string, data: unknown): Promise<T> {
-    const url = `${this.baseURL}${endpoint}`;
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers: this.getHeaders(),
-      body: JSON.stringify(data),
-    });
-    return this.processResponse<T>(
-      res,
-      "An error occurred while patching the data.\n",
-    );
-  }
 }
