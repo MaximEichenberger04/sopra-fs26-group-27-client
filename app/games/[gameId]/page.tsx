@@ -5,11 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard from "@/components/QuoridorBoard";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { GameDTO, GameState, CellValue, MATRIX_SIZE } from "@/types/game";
+import { User } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import { getValidMoves } from "@/utils/validMoves";
 import { getApiDomain } from "@/utils/domain";
 
-// Import our new theme stylesheet
 import "@/styles/gameBoard.css";
 
 export type BoardTheme = "mystic-grove" | "obsidian-keep" | "celestial-sanctum";
@@ -50,6 +50,12 @@ function buildMatrix(dto: GameDTO): CellValue[][] {
   return matrix;
 }
 
+interface PlayerInfo {
+  id: number;
+  username: string;
+  walls: number;
+}
+
 const EMPTY_GAME_STATE: GameState = {
   matrix: makeEmptyMatrix(),
   currentTurnUserId: -1,
@@ -68,16 +74,15 @@ export default function GamePage() {
   const { value: userId } = useLocalStorage<number>("userId", -1);
 
   const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
 
-
   const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
 
-  // Keep api in a ref so fetchGame doesn't change when api object changes
   const api = useApi(token);
   const apiRef = useRef(api);
   useEffect(() => { apiRef.current = api; }, [api]);
@@ -85,9 +90,10 @@ export default function GamePage() {
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => { setMounted(true); }, []);
+
+  // Track which player IDs we've already fetched names for
+  const fetchedPlayerIdsRef = useRef<string>("");
 
   const fetchGame = useCallback(async () => {
     if (!tokenRef.current) return;
@@ -102,9 +108,36 @@ export default function GamePage() {
         gameStatus: dto.gameStatus,
         wallsPerPlayer: dto.wallsPerPlayer,
         remainingWalls: dto.remainingWalls,
-        mapTheme: dto.mapTheme || "mystic-grove", // <-- Initialize map theme
+        mapTheme: dto.mapTheme || "mystic-grove",
       });
       setLastSync(new Date());
+
+      // Fetch player names (only once per unique set of player IDs)
+      const idsKey = (dto.playerIds ?? []).join(",");
+      if (idsKey && idsKey !== fetchedPlayerIdsRef.current) {
+        fetchedPlayerIdsRef.current = idsKey;
+        const playerInfos: PlayerInfo[] = [];
+        for (const pid of dto.playerIds ?? []) {
+          try {
+            const u = await apiRef.current.get<User>(`/users/${pid}`);
+            playerInfos.push({
+              id: pid,
+              username: u.displayName || u.username || `Player ${pid}`,
+              walls: dto.remainingWalls?.[String(pid)] ?? 0,
+            });
+          } catch {
+            playerInfos.push({ id: pid, username: `Player ${pid}`, walls: 0 });
+          }
+        }
+        setPlayers(playerInfos);
+      } else {
+        // Update wall counts without re-fetching names
+        setPlayers(prev => prev.map(p => ({
+          ...p,
+          walls: dto.remainingWalls?.[String(p.id)] ?? 0,
+        })));
+      }
+
       if (dto.gameStatus === "ENDED") {
         router.push(`/games/${gameId}/gameend`);
       }
@@ -116,7 +149,7 @@ export default function GamePage() {
 
   const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
 
-  // WebSocket: open once, re-fetch on any event for this game
+  // WebSocket
   useEffect(() => {
     fetchGame();
 
@@ -131,9 +164,7 @@ export default function GamePage() {
 
       ws.onopen = () => {
         setError(null);
-
         if (!tokenRef.current) return;
-
         ws.send(JSON.stringify({
           type: "REGISTER",
           gameId: Number(gameId),
@@ -171,20 +202,14 @@ export default function GamePage() {
           }
 
           fetchGame();
-        } catch {
-          // ignore malformed frames
-        }
+        } catch { /* ignore */ }
       };
 
-      ws.onerror = () => {
-        setError("WebSocket error — retrying...");
-      };
+      ws.onerror = () => { setError("WebSocket error — retrying..."); };
 
       ws.onclose = () => {
         wsRef.current = null;
-        if (!destroyed) {
-          reconnectTimeout = setTimeout(connect, 3000);
-        }
+        if (!destroyed) reconnectTimeout = setTimeout(connect, 3000);
       };
     }
 
@@ -196,9 +221,8 @@ export default function GamePage() {
       if (bannerTimeout) clearTimeout(bannerTimeout);
       ws?.close();
     };
-  }, [gameId, fetchGame, userId]); // ← fetchGame is now stable
+  }, [gameId, fetchGame, userId]);
 
-  // derived
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const mySymbol: CellValue = game.player1Id === userId ? 1 : 2;
   const validMoves = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
@@ -208,9 +232,7 @@ export default function GamePage() {
     try {
       await apiRef.current.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] });
       fetchGame();
-    } catch {
-      setError("Invalid move.");
-    }
+    } catch { setError("Invalid move."); }
   }
 
   async function handleWall(matrixRow: number, matrixCol: number, orientation: "HORIZONTAL" | "VERTICAL") {
@@ -220,19 +242,14 @@ export default function GamePage() {
       const centerCol = orientation === "HORIZONTAL" ? matrixCol + 1 : matrixCol;
       await apiRef.current.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
       fetchGame();
-    } catch {
-      setError("Invalid wall placement.");
-    }
+    } catch { setError("Invalid wall placement."); }
   }
 
   async function handleForfeit() {
-    try {
-      await api.post(`/games/${gameId}/forfeit`, {});
-    } catch {
-      setError("Could not forfeit.");
-    }
+    try { await api.post(`/games/${gameId}/forfeit`, {}); }
+    catch { setError("Could not forfeit."); }
   }
-  // Add this right above return (
+
   const activeTheme = game.mapTheme;
 
   return (
@@ -244,19 +261,19 @@ export default function GamePage() {
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         gap: 20, fontFamily: "system-ui, sans-serif",
-        transition: "background 0.3s ease"
+        transition: "background 0.3s ease",
       }}>
 
-      <h1 style={{ color: "var(--q-title)", fontSize: 18, fontWeight: 500, margin: 0, letterSpacing: "0.08em" }}>
+      <h1 style={{ color: "var(--q-title, #c8a44a)", fontSize: 18, fontWeight: 500, margin: 0, letterSpacing: "0.08em" }}>
         QUORIDOR
       </h1>
 
       {error && <p style={{ color: "#d96b6b", fontSize: 13 }}>{error}</p>}
-      {banner && <p style={{ color: "var(--q-title)", fontSize: 13 }}>{banner}</p>}
+      {banner && <p style={{ color: "var(--q-title, #c8a44a)", fontSize: 13 }}>{banner}</p>}
 
       {game.gameStatus === "ENDED" && (
-        <p style={{ color: "var(--q-title)", fontSize: 15 }}>
-          {game.winnerId === userId ? "🏆 You win!" : "💀 You lose."}
+        <p style={{ color: "var(--q-title, #c8a44a)", fontSize: 15 }}>
+          {game.winnerId === userId ? "You win!" : "You lose."}
         </p>
       )}
 
@@ -271,11 +288,12 @@ export default function GamePage() {
           onMove={handleMove}
           onWall={handleWall}
           onForfeit={handleForfeit}
+          players={players}
         />
       )}
 
       {lastSync && (
-        <p style={{ color: "var(--q-chat-text)", opacity: 0.6, fontSize: 11, margin: 0 }}>
+        <p style={{ color: "var(--q-text-muted, #4a4438)", fontSize: 11, margin: 0 }}>
           last sync {lastSync.toLocaleTimeString()}
         </p>
       )}

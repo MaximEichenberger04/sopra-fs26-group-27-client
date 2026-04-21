@@ -9,15 +9,22 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped }: a
   return (
     <div
       onClick={() => isValidMove && onMove(boardRow * 2, boardCol * 2)}
-      className={`pawn-cell ${isValidMove ? 'valid-move' : ''}`}
+      className={`pawn-cell ${isValidMove ? "valid-move" : ""}`}
       style={{
         width: CELL, height: CELL,
         cursor: isValidMove ? "pointer" : "default",
         transform: flipped ? "rotate(180deg)" : "none",
+        display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >
       {(value === 1 || value === 2) && (
-        <div className={`pawn pawn-${value}`}>
+        <div
+          className={`pawn pawn-${value}`}
+          style={{
+            width: CELL * 0.58,
+            height: CELL * 0.58,
+          }}
+        >
           <div className="pawn-highlight" />
         </div>
       )}
@@ -38,7 +45,7 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHov
       onClick={() => isMyTurn && !active && onWall(mr, mc, orientation)}
       onMouseEnter={() => isMyTurn && !active && onHover(mr, mc, orientation)}
       onMouseLeave={() => onHoverEnd()}
-      className={`wall-slot ${active ? 'active' : ''} ${isHighlighted ? 'highlighted' : ''}`}
+      className={`wall-slot ${active ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
       style={{
         width: isH ? CELL : WALL,
         height: isH ? WALL : CELL,
@@ -51,10 +58,16 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHov
 function Pillar({ value, isHighlighted }: any) {
   return (
     <div
-      className={`pillar ${value === 3 ? 'active' : ''} ${isHighlighted ? 'highlighted' : ''}`}
+      className={`pillar ${value === 3 ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
       style={{ width: WALL, height: WALL }}
     />
   );
+}
+
+interface PlayerInfo {
+  id: number;
+  username: string;
+  walls: number;
 }
 
 interface QuoridorBoardProps {
@@ -67,10 +80,11 @@ interface QuoridorBoardProps {
   onMove: (mr: number, mc: number) => void;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
   onForfeit: () => void;
+  players?: PlayerInfo[];
 }
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, remainingWalls, totalWalls, onForfeit, mySymbol
+  matrix, isMyTurn, validMoves, onMove, onWall, remainingWalls, totalWalls, onForfeit, mySymbol, players,
 }: QuoridorBoardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -123,7 +137,7 @@ export default function QuoridorBoard({
           </div>
         </div>
 
-        {/* Bottom Beam: Disabled Chat */}
+        {/* Bottom: Chat (disabled) */}
         <div className="horizontal-beam chat-beam disabled-beam">
           <input disabled placeholder="Chat disabled in this mode..." className="chat-input" />
           <button disabled className="chat-btn">GIF</button>
@@ -132,33 +146,42 @@ export default function QuoridorBoard({
 
       </div>
 
-      {/* RIGHT COLUMN: Stats & Actions Beam */}
+      {/* RIGHT COLUMN: Players + Forfeit */}
       <div className="right-column">
         <div className="vertical-beam">
 
+          {/* Players */}
           <div className="beam-section">
             <h4>PLAYERS</h4>
-            <div className="player-badge">
-              <div className="pawn-icon pawn-1-icon"></div>
-              <span>Player 1 {mySymbol === 1 && "(You)"}</span>
-            </div>
-            <div className="player-badge">
-              <div className="pawn-icon pawn-2-icon"></div>
-              <span>Player 2 {mySymbol === 2 && "(You)"}</span>
-            </div>
+            {players && players.length > 0 ? (
+              players.map((p, i) => (
+                <div key={p.id} className="player-row">
+                  <div className="player-badge">
+                    <div className={`pawn-icon pawn-${i + 1}-icon`} />
+                    <span className="player-name">{p.username}</span>
+                  </div>
+                  <span className="player-walls">Walls: {p.walls}</span>
+                </div>
+              ))
+            ) : (
+              <>
+                <div className="player-row">
+                  <div className="player-badge">
+                    <div className="pawn-icon pawn-1-icon" />
+                    <span className="player-name">Player 1 {mySymbol === 1 && "(You)"}</span>
+                  </div>
+                </div>
+                <div className="player-row">
+                  <div className="player-badge">
+                    <div className="pawn-icon pawn-2-icon" />
+                    <span className="player-name">Player 2 {mySymbol === 2 && "(You)"}</span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
 
-          <div className="beam-divider"></div>
-
-          <div className="beam-section">
-            <h4>WALLS LEFT</h4>
-            <div className="walls-counter">
-              <span className="walls-current">{remainingWalls}</span>
-              <span className="walls-total">/ {totalWalls}</span>
-            </div>
-          </div>
-
-          <div className="beam-spacer"></div>
+          <div className="beam-spacer" />
 
           <button onClick={onForfeit} className="forfeit-btn">
             FORFEIT

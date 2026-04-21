@@ -14,7 +14,7 @@ const LobbyCreationPage: React.FC = () => {
   const [name, setName] = useState("");
   const [gameMode, setGameMode] = useState("");
   const [maxPlayers, setMaxPlayers] = useState("");
-  const [map, setMap] = useState("forest");
+  const [map, setMap] = useState("mystic-grove");
 
   const { value: token } = useLocalStorage<string>("token", "");
   const { value: userId } = useLocalStorage<string>("userId", "");
@@ -40,6 +40,7 @@ const LobbyCreationPage: React.FC = () => {
         gameMode,
         maxPlayers: parseInt(maxPlayers, 10),
         hostId: Number(userId),
+        mapTheme: map,
       });
       router.push(`/lobby/${newLobby.id}`);
     } catch (error) {
