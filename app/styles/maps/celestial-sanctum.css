@@ -1,0 +1,19 @@
+.theme-celestial-sanctum {
+    --q-main-bg: #ffffff;
+    --q-title: #d4af37;
+    --q-board-bg: transparent;
+    --q-cell: #f4f7f9;
+    --q-cell-border: #d1dce5;
+    --q-cell-valid: rgba(152, 255, 152, 0.6);
+    --q-cell-valid-border: #78e08f;
+    --q-wall-empty: transparent;
+    --q-wall-active: #ffd700;
+    --q-wall-border: 1px solid #d4af37;
+    --q-wall-shadow: 0 0 4px rgba(255, 215, 0, 0.6);
+    --q-pillar-empty: transparent;
+    --q-wall-hover: rgba(255, 215, 0, 0.4);
+    --q-p1: #5b8dd9;
+    --q-p2: #e0c068;
+    --q-chat-bg: rgba(255, 255, 255, 0.6);
+    --q-chat-text: #333333;
+}

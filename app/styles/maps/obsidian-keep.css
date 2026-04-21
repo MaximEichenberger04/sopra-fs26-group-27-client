@@ -1,0 +1,19 @@
+.theme-obsidian-keep {
+    --q-main-bg: #0d0d12;
+    --q-title: #c8a44a;
+    --q-board-bg: transparent;
+    --q-cell: #15151b;
+    --q-cell-border: #2a2a35;
+    --q-cell-valid: rgba(57, 255, 20, 0.15);
+    --q-cell-valid-border: #39ff14;
+    --q-wall-empty: transparent;
+    --q-wall-active: #ff5722;
+    --q-wall-border: none;
+    --q-wall-shadow: 0 0 8px #ff4500;
+    --q-pillar-empty: transparent;
+    --q-wall-hover: rgba(255, 87, 34, 0.4);
+    --q-p1: #8a8a8a;
+    --q-p2: #d96b6b;
+    --q-chat-bg: rgba(0, 0, 0, 0.6);
+    --q-chat-text: #ffffff;
+}

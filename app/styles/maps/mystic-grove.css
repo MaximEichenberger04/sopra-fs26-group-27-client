@@ -1,0 +1,19 @@
+.theme-mystic-grove {
+    --q-main-bg: #1e2e1e;
+    --q-title: #c8a44a;
+    --q-board-bg: transparent;
+    --q-cell: #5c6b53;
+    --q-cell-border: #3a4a33;
+    --q-cell-valid: rgba(46, 204, 113, 0.4);
+    --q-cell-valid-border: #2ecc71;
+    --q-wall-empty: transparent;
+    --q-wall-active: #8b5a2b;
+    --q-wall-border: 1px solid #5c3a21;
+    --q-wall-shadow: none;
+    --q-pillar-empty: transparent;
+    --q-wall-hover: rgba(139, 90, 43, 0.5);
+    --q-p1: #5b8dd9;
+    --q-p2: #d96b6b;
+    --q-chat-bg: rgba(0, 0, 0, 0.4);
+    --q-chat-text: #e0e0e0;
+}

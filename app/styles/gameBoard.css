@@ -1,0 +1,349 @@
+/* app/styles/gameBoard.css */
+
+/* --- LAYOUT BEAMS --- */
+.game-layout {
+    display: flex;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 30px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.left-column {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 40px;
+    /* Space between board and chat */
+}
+
+/* Horizontal & Vertical Beams (Solid Color) */
+.horizontal-beam,
+.vertical-beam {
+    background: var(--q-beam-bg, rgba(20, 20, 25, 0.85));
+    backdrop-filter: blur(10px);
+    border: 1px solid var(--q-beam-border, rgba(255, 255, 255, 0.1));
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    padding: 16px;
+}
+
+.horizontal-beam {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+}
+
+.vertical-beam {
+    width: 220px;
+    height: 100%;
+    min-height: 400px;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+}
+
+.beam-section h4 {
+    color: var(--q-text-muted);
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    margin: 0 0 12px 0;
+}
+
+.beam-divider {
+    height: 1px;
+    background: var(--q-beam-border);
+    margin: 20px 0;
+}
+
+.beam-spacer {
+    flex-grow: 1;
+}
+
+.player-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--q-text);
+    font-size: 14px;
+    margin-bottom: 12px;
+}
+
+.pawn-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.walls-counter {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+}
+
+.walls-current {
+    color: var(--q-text);
+    font-size: 32px;
+    font-weight: bold;
+}
+
+.walls-total {
+    color: var(--q-text-muted);
+    font-size: 16px;
+}
+
+.forfeit-btn {
+    background: rgba(217, 107, 107, 0.1);
+    border: 1px solid rgba(217, 107, 107, 0.3);
+    color: #d96b6b;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: bold;
+    letter-spacing: 0.1em;
+    transition: all 0.2s;
+}
+
+.forfeit-btn:hover {
+    background: rgba(217, 107, 107, 0.2);
+}
+
+/* Chat Elements */
+.disabled-beam {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+.chat-input {
+    flex-grow: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: none;
+    padding: 12px;
+    border-radius: 6px;
+    color: var(--q-text);
+}
+
+.chat-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    padding: 12px 16px;
+    border-radius: 6px;
+    color: var(--q-text);
+    font-weight: bold;
+}
+
+.send-btn {
+    background: var(--q-wall-active);
+    color: #000;
+}
+
+/* --- 3D BOARD TRANSFORM --- */
+.board-3d-wrapper {
+    perspective: 1200px;
+    margin-top: 20px;
+}
+
+.board-surface {
+    background: var(--q-board-base);
+    padding: 12px;
+    border-radius: 12px;
+    transform: rotateX(25deg) scale(1.05);
+    /* The subtle bird's eye tilt! */
+    transform-style: preserve-3d;
+    box-shadow:
+        0 30px 40px rgba(0, 0, 0, 0.6),
+        inset 0 2px 10px rgba(255, 255, 255, 0.1);
+    border-bottom: 12px solid var(--q-board-thickness);
+    /* Fake 3D depth */
+    transition: transform 0.3s ease;
+}
+
+/* TILES (Realistic Gradients) */
+.pawn-cell {
+    background: var(--q-tile-bg);
+    border-radius: 6px;
+    box-shadow: var(--q-tile-shadow);
+    border: var(--q-tile-border);
+    transition: all 0.2s;
+    position: relative;
+}
+
+.pawn-cell.valid-move {
+    background: var(--q-tile-valid);
+    box-shadow: var(--q-tile-valid-shadow);
+    border: 1px solid var(--q-tile-valid-border);
+}
+
+/* WALLS */
+.wall-slot,
+.pillar {
+    background: transparent;
+    border-radius: 4px;
+    z-index: 10;
+    transition: all 0.15s;
+}
+
+.wall-slot.active,
+.pillar.active {
+    background: var(--q-wall-active);
+    box-shadow: var(--q-wall-shadow);
+    transform: translateZ(15px);
+    /* Pops up in 3D */
+}
+
+.wall-slot.highlighted,
+.pillar.highlighted {
+    background: var(--q-wall-hover);
+}
+
+/* 3D PAWNS */
+.pawn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 65%;
+    height: 65%;
+    border-radius: 50%;
+    box-shadow: 0 8px 12px rgba(0, 0, 0, 0.5), inset 0 -4px 8px rgba(0, 0, 0, 0.3);
+    /* Centers the pawn perfectly and lifts it in 3D */
+    transform: translate(-50%, -50%) translateZ(20px);
+    /* Prevents jagged pixelated edges on the circles */
+    backface-visibility: hidden;
+    outline: 1px solid transparent;
+}
+
+/* Hardcoded Universal Blue and Red */
+.pawn-1 {
+    background: radial-gradient(circle at 30% 30%, #6ba4ff, #2b5599);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.pawn-2 {
+    background: radial-gradient(circle at 30% 30%, #ff7b7b, #992b2b);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.pawn-1-icon {
+    background: radial-gradient(circle at 30% 30%, #6ba4ff, #2b5599);
+}
+
+.pawn-2-icon {
+    background: radial-gradient(circle at 30% 30%, #ff7b7b, #992b2b);
+}
+
+.pawn-highlight {
+    position: absolute;
+    top: 10%;
+    left: 15%;
+    width: 30%;
+    height: 25%;
+    background: rgba(255, 255, 255, 0.4);
+    border-radius: 50%;
+    transform: rotate(-30deg);
+}
+
+
+/* =========================================
+   THEMES (The Realistic Textures)
+========================================= */
+
+/* 1. Mystic Grove (Mossy Stone & Wood) */
+.theme-mystic-grove {
+    --q-main-bg: url('/maps/forest.png') center/cover no-repeat;
+    --q-beam-bg: rgba(20, 30, 20, 0.85);
+    --q-beam-border: rgba(100, 150, 100, 0.2);
+    --q-text: #e0e0e0;
+    --q-text-muted: #8ba88b;
+
+    --q-board-base: #2a3324;
+    --q-board-thickness: #161c12;
+
+    /* Mossy Stone gradient */
+    --q-tile-bg: radial-gradient(circle at 30% 30%, #6e7a5c, #3a4731);
+    --q-tile-border: 1px solid #2a3324;
+    --q-tile-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1), 0 4px 6px rgba(0, 0, 0, 0.4);
+
+    --q-tile-valid: radial-gradient(circle at 50% 50%, rgba(46, 204, 113, 0.6), #3a4731);
+    --q-tile-valid-shadow: inset 0 0 15px rgba(46, 204, 113, 0.8);
+    --q-tile-valid-border: #2ecc71;
+
+    --q-wall-active: linear-gradient(to bottom, #8b5a2b, #4a3016);
+    /* Wooden Log */
+    --q-wall-shadow: 0 10px 10px rgba(0, 0, 0, 0.6);
+    --q-wall-hover: rgba(139, 90, 43, 0.5);
+
+    --q-p1: radial-gradient(circle at 30% 30%, #6ba4ff, #2b5599);
+    --q-p2: radial-gradient(circle at 30% 30%, #ff7b7b, #992b2b);
+}
+
+/* 2. Obsidian Keep (Volcanic Glass & Lava) */
+.theme-obsidian-keep {
+    --q-main-bg: url('/maps/castle.png') center/cover no-repeat;
+    --q-beam-bg: rgba(15, 10, 20, 0.9);
+    --q-beam-border: rgba(100, 50, 150, 0.3);
+    --q-text: #ffffff;
+    --q-text-muted: #887799;
+
+    --q-board-base: #0a0a0e;
+    --q-board-thickness: #050508;
+
+    /* Shiny Obsidian gradient */
+    --q-tile-bg: radial-gradient(circle at 20% 20%, #3a3a4a, #101015);
+    --q-tile-border: 1px solid #000;
+    --q-tile-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.15), 0 5px 10px rgba(0, 0, 0, 0.8);
+
+    --q-tile-valid: radial-gradient(circle at 50% 50%, rgba(57, 255, 20, 0.3), #101015);
+    --q-tile-valid-shadow: inset 0 0 20px rgba(57, 255, 20, 0.6);
+    --q-tile-valid-border: #39ff14;
+
+    --q-wall-active: #ff4500;
+    /* Glowing Lava */
+    --q-wall-shadow: 0 0 15px #ff4500, 0 10px 10px rgba(0, 0, 0, 0.8);
+    --q-wall-hover: rgba(255, 69, 0, 0.4);
+
+    --q-p1: radial-gradient(circle at 30% 30%, #a0a0a0, #303030);
+    --q-p2: radial-gradient(circle at 30% 30%, #ff5050, #801010);
+}
+
+/* 3. Celestial Sanctum (White Marble & Gold) */
+.theme-celestial-sanctum {
+    /* Main Background: Detailed heavenly sky with swirling clouds simulated via stacked gradients */
+    --q-main-bg: linear-gradient(to bottom, #89cff0 0%, #a2d7ff 30%, #ccebff 70%, #f0f7fa 100%),
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 60%, transparent 100%),
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%, transparent 100%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%, transparent 100%);
+    --q-main-bg-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+    --q-main-bg-position: center, 20% 10%, top left, top right;
+    --q-main-bg-size: cover, 150% 150%, 80% 80%, 80% 80%;
+    /* Add multiple pseudo-elements to the main-wrapper to further stack gradients for cloud depth and stylized elements (pillars/arches) not directly possible in main background */
+
+    --q-beam-bg: rgba(255, 255, 255, 0.85);
+    --q-beam-border: rgba(200, 210, 220, 0.5);
+    --q-text: #333333;
+    --q-text-muted: #778899;
+
+    --q-board-base: #e8eef2;
+    --q-board-thickness: #b0c0d0;
+
+    /* Polished quartz/marble tiles with detailed veining simulated via layered gradients */
+    --q-tile-bg: linear-gradient(135deg, #ffffff 0%, #f7f9fc 30%, #eef3f8 70%, #e2e8f0 100%),
+        linear-gradient(110deg, transparent 40%, rgba(210, 220, 230, 0.2) 50%, rgba(210, 220, 230, 0.1) 60%, transparent 70%),
+        linear-gradient(20deg, transparent 30%, rgba(210, 220, 230, 0.1) 40%, rgba(210, 220, 230, 0.15) 50%, transparent 60%);
+    --q-tile-border: 1px solid #cdd5df;
+    --q-tile-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), 0 6px 18px rgba(0, 0, 0, 0.12), inset 0 0 10px rgba(200, 210, 220, 0.1);
+
+    --q-tile-valid: radial-gradient(circle at 50% 50%, rgba(120, 224, 143, 0.4), #ffffff);
+    --q-tile-valid-shadow: inset 0 0 15px rgba(120, 224, 143, 0.6);
+    --q-tile-valid-border: #78e08f;
+
+    --q-wall-active: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+    /* Gilded Gold */
+    --q-wall-shadow: 0 10px 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(253, 203, 110, 0.5);
+    --q-wall-hover: rgba(253, 203, 110, 0.4);
+
+    /* Variables left empty here since pawns are now universally handled above */
+    --q-p1: transparent;
+    --q-p2: transparent;
+}

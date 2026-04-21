@@ -1,14 +1,18 @@
 "use client";
 
 import { useEffect, useState, useCallback, useRef } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard from "@/components/QuoridorBoard";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { GameDTO, GameState, CellValue, MATRIX_SIZE } from "@/types/game";
 import { useApi } from "@/hooks/useApi";
 import { getValidMoves } from "@/utils/validMoves";
 import { getApiDomain } from "@/utils/domain";
-import { useRouter } from "next/navigation";
+
+// Import our new theme stylesheet
+import "@/styles/gameBoard.css";
+
+export type BoardTheme = "mystic-grove" | "obsidian-keep" | "celestial-sanctum";
 
 function getWsDomain(): string {
   return getApiDomain().replace(/^https/, "wss").replace(/^http/, "ws");
@@ -28,12 +32,12 @@ function buildMatrix(dto: GameDTO): CellValue[][] {
     if (orientation === "HORIZONTAL") {
       if (matrix[row]) {
         matrix[row][col - 1] = 3;
-        matrix[row][col]     = 3;
+        matrix[row][col] = 3;
         matrix[row][col + 1] = 3;
       }
     } else {
       if (matrix[row - 1]) matrix[row - 1][col] = 3;
-      if (matrix[row])     matrix[row][col]     = 3;
+      if (matrix[row]) matrix[row][col] = 3;
       if (matrix[row + 1]) matrix[row + 1][col] = 3;
     }
   }
@@ -55,19 +59,22 @@ const EMPTY_GAME_STATE: GameState = {
   gameStatus: "WAITING_FOR_USER",
   wallsPerPlayer: 0,
   remainingWalls: {},
+  mapTheme: null,
 };
 
 export default function GamePage() {
   const { gameId } = useParams<{ gameId: string }>();
-  const { value: token }  = useLocalStorage<string>("token", "");
+  const { value: token } = useLocalStorage<string>("token", "");
   const { value: userId } = useLocalStorage<number>("userId", -1);
 
-  const [game, setGame]           = useState<GameState>(EMPTY_GAME_STATE);
-  const [error, setError]         = useState<string | null>(null);
+  const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
+  const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
-  const [lastSync, setLastSync]   = useState<Date | null>(null);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
-  const wsRef                     = useRef<WebSocket | null>(null);
+
+
+  const wsRef = useRef<WebSocket | null>(null);
   const router = useRouter();
 
   // Keep api in a ref so fetchGame doesn't change when api object changes
@@ -87,14 +94,15 @@ export default function GamePage() {
     try {
       const dto = await apiRef.current.get<GameDTO>(`/games/${gameId}`);
       setGame({
-        matrix:            buildMatrix(dto),
+        matrix: buildMatrix(dto),
         currentTurnUserId: dto.currentTurnUserId,
-        player1Id:         dto.playerIds?.[0] ?? -1,
-        player2Id:         dto.playerIds?.[1] ?? -1,
-        winnerId:          dto.winnerId,
-        gameStatus:        dto.gameStatus,
-        wallsPerPlayer:    dto.wallsPerPlayer,
-        remainingWalls:    dto.remainingWalls,
+        player1Id: dto.playerIds?.[0] ?? -1,
+        player2Id: dto.playerIds?.[1] ?? -1,
+        winnerId: dto.winnerId,
+        gameStatus: dto.gameStatus,
+        wallsPerPlayer: dto.wallsPerPlayer,
+        remainingWalls: dto.remainingWalls,
+        mapTheme: dto.mapTheme || "mystic-grove", // <-- Initialize map theme
       });
       setLastSync(new Date());
       if (dto.gameStatus === "ENDED") {
@@ -104,7 +112,7 @@ export default function GamePage() {
     } catch {
       setError("Could not reach server.");
     }
-  }, [useState, gameId, token, api]);
+  }, [gameId, token, api]);
 
   const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
 
@@ -146,9 +154,7 @@ export default function GamePage() {
 
           if (msg.type === "PLAYER_DISCONNECTED") {
             if (Number(msg.userId) !== userId) {
-              setBanner(
-                `A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30} seconds for reconnection.`
-              );
+              setBanner(`A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30} seconds for reconnection.`);
             }
           } else if (msg.type === "PLAYER_RECONNECTED") {
             setBanner("The disconnected player reconnected.");
@@ -193,7 +199,7 @@ export default function GamePage() {
   }, [gameId, fetchGame, userId]); // ← fetchGame is now stable
 
   // derived
-  const isMyTurn  = userId !== -1 && game.currentTurnUserId === userId;
+  const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const mySymbol: CellValue = game.player1Id === userId ? 1 : 2;
   const validMoves = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
 
@@ -210,7 +216,7 @@ export default function GamePage() {
   async function handleWall(matrixRow: number, matrixCol: number, orientation: "HORIZONTAL" | "VERTICAL") {
     if (!isMyTurn) return;
     try {
-      const centerRow = orientation === "HORIZONTAL" ? matrixRow     : matrixRow + 1;
+      const centerRow = orientation === "HORIZONTAL" ? matrixRow : matrixRow + 1;
       const centerCol = orientation === "HORIZONTAL" ? matrixCol + 1 : matrixCol;
       await apiRef.current.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
       fetchGame();
@@ -226,23 +232,30 @@ export default function GamePage() {
       setError("Could not forfeit.");
     }
   }
+  // Add this right above return (
+  const activeTheme = game.mapTheme;
 
   return (
-    <main style={{
-      minHeight: "100vh", background: "#12100d",
-      display: "flex", flexDirection: "column",
-      alignItems: "center", justifyContent: "center",
-      gap: 20, fontFamily: "system-ui, sans-serif",
-    }}>
-      <h1 style={{ color: "#c8a44a", fontSize: 18, fontWeight: 500, margin: 0, letterSpacing: "0.08em" }}>
+    <main
+      className={`theme-${activeTheme}`}
+      style={{
+        minHeight: "100vh",
+        background: "var(--q-main-bg)",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 20, fontFamily: "system-ui, sans-serif",
+        transition: "background 0.3s ease"
+      }}>
+
+      <h1 style={{ color: "var(--q-title)", fontSize: 18, fontWeight: 500, margin: 0, letterSpacing: "0.08em" }}>
         QUORIDOR
       </h1>
 
       {error && <p style={{ color: "#d96b6b", fontSize: 13 }}>{error}</p>}
-      {banner && <p style={{ color: "#c8a44a", fontSize: 13 }}>{banner}</p>}
+      {banner && <p style={{ color: "var(--q-title)", fontSize: 13 }}>{banner}</p>}
 
       {game.gameStatus === "ENDED" && (
-        <p style={{ color: "#c8a44a", fontSize: 15 }}>
+        <p style={{ color: "var(--q-title)", fontSize: 15 }}>
           {game.winnerId === userId ? "🏆 You win!" : "💀 You lose."}
         </p>
       )}
@@ -262,7 +275,7 @@ export default function GamePage() {
       )}
 
       {lastSync && (
-        <p style={{ color: "#4a4438", fontSize: 11, margin: 0 }}>
+        <p style={{ color: "var(--q-chat-text)", opacity: 0.6, fontSize: 11, margin: 0 }}>
           last sync {lastSync.toLocaleTimeString()}
         </p>
       )}
