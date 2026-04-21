@@ -98,7 +98,7 @@ const InstructionsPage: React.FC = () => {
         <div className="g-card" style={{ padding: "24px", marginBottom: "24px" }}>
           <h3 style={{ marginTop: 0 }}>Credits</h3>
           <p style={{ lineHeight: 1.6 }}>
-            This is a project for the module "Software Engineering Lab" in HS26 and has been 
+            This is a project for the module &quot;Software Engineering Lab&quot; in HS26 and has been 
             created by a team of students (Group 27) at the University of Zurich, including:
           </p>
 
