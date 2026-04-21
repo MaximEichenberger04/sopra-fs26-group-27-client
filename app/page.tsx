@@ -66,10 +66,13 @@ export default function Home() {
         {/* Buttons */}
         <div className="landing-buttons">
           <button className="btn-gold landing-btn" onClick={() => router.push("/login")}>
-            Go to Login
+            Login
           </button>
           <button className="btn-outline landing-btn" onClick={() => router.push("/register")}>
             Create Account
+          </button>
+          <button className="btn-outline landing-btn" onClick={() => router.push("/instructions")}>
+            → How to play
           </button>
         </div>
       </div>
