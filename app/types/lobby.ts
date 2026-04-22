@@ -8,4 +8,5 @@ export interface Lobby {
   gameMode: string | null;
   lobbyStatus: string | null;
   playerIds: number[] | null;
+  mapTheme: string | null;
 }

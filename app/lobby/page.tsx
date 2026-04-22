@@ -14,7 +14,7 @@ const LobbyCreationPage: React.FC = () => {
   const [name, setName] = useState("");
   const [gameMode, setGameMode] = useState("");
   const [maxPlayers, setMaxPlayers] = useState("");
-  const [map, setMap] = useState("forest");
+  const [map, setMap] = useState("mystic-grove");
 
   const { value: token } = useLocalStorage<string>("token", "");
   const { value: userId } = useLocalStorage<string>("userId", "");
@@ -33,15 +33,16 @@ const LobbyCreationPage: React.FC = () => {
       return;
     }
 
-setLoading(true);
-try {
-  const newLobby = await apiService.post<{ id: string }>("/lobbies", {
-    name,
-    gameMode,
-    maxPlayers: parseInt(maxPlayers, 10),
-    hostId: Number(userId),
-  });
-  router.push(`/lobby/${newLobby.id}`);
+    setLoading(true);
+    try {
+      const newLobby = await apiService.post<{ id: string }>("/lobbies", {
+        name,
+        gameMode,
+        maxPlayers: parseInt(maxPlayers, 10),
+        hostId: Number(userId),
+        mapTheme: map,
+      });
+      router.push(`/lobby/${newLobby.id}`);
     } catch (error) {
       if (error instanceof Error) alert(`Failed to create lobby:\n${error.message}`);
     } finally {
@@ -78,8 +79,9 @@ try {
           <div className="g-field">
             <label className="g-label"><span className="required">*</span> Map</label>
             <select className="g-select" value={map} onChange={(e) => setMap(e.target.value)}>
-              <option value="forest">Magic Forest</option>
-              <option value="castle">Dark Castle</option>
+              <option value="mystic-grove">Mystic Grove</option>
+              <option value="obsidian-keep">Obsidian Keep</option>
+              <option value="celestial-sanctum">Celestial Sanctum</option>
             </select>
           </div>
           <div className="lobby-form-actions">

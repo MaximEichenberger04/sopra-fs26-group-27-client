@@ -1,0 +1,27 @@
+.theme-mystic-grove {
+    --q-main-bg: url('/maps/forest.png') center/cover no-repeat;
+    --q-beam-bg: rgba(20, 30, 20, 0.85);
+    --q-beam-border: rgba(100, 150, 100, 0.2);
+    --q-text: #e0e0e0;
+    --q-text-muted: #8ba88b;
+
+    --q-board-base: #2a3324;
+    --q-board-thickness: #161c12;
+
+    /* Mossy Stone gradient */
+    --q-tile-bg: radial-gradient(circle at 30% 30%, #6e7a5c, #3a4731);
+    --q-tile-border: 1px solid #2a3324;
+    --q-tile-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.1), 0 4px 6px rgba(0, 0, 0, 0.4);
+
+    --q-tile-valid: radial-gradient(circle at 50% 50%, rgba(46, 204, 113, 0.6), #3a4731);
+    --q-tile-valid-shadow: inset 0 0 15px rgba(46, 204, 113, 0.8);
+    --q-tile-valid-border: #2ecc71;
+
+    --q-wall-active: linear-gradient(to bottom, #8b5a2b, #4a3016);
+    /* Wooden Log */
+    --q-wall-shadow: 0 10px 10px rgba(0, 0, 0, 0.6);
+    --q-wall-hover: rgba(139, 90, 43, 0.5);
+
+    --q-p1: radial-gradient(circle at 30% 30%, #6ba4ff, #2b5599);
+    --q-p2: radial-gradient(circle at 30% 30%, #ff7b7b, #992b2b);
+}

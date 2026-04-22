@@ -22,6 +22,7 @@ const LobbyPage: React.FC = () => {
   const [editName, setEditName] = useState("");
   const [editGameMode, setEditGameMode] = useState("");
   const [editMaxPlayers, setEditMaxPlayers] = useState("");
+  const [editMapTheme, setEditMapTheme] = useState("mystic-grove"); // <-- Added Map State
 
   const fetchUsers = useCallback(async (playerIds: number[]) => {
     try {
@@ -44,6 +45,11 @@ const LobbyPage: React.FC = () => {
       }
 
       setLobby(response);
+
+      // Sync the edit states with the fetched lobby data so the dropdowns show the correct current value
+      if (response.mapTheme) setEditMapTheme(response.mapTheme);
+      if (response.gameMode) setEditGameMode(response.gameMode);
+      if (response.maxPlayers) setEditMaxPlayers(String(response.maxPlayers));
 
       if (response.playerIds) {
         await fetchUsers(response.playerIds);
@@ -126,6 +132,7 @@ const LobbyPage: React.FC = () => {
         name: editName || lobby.name,
         gameMode: editGameMode || lobby.gameMode,
         maxPlayers: editMaxPlayers ? Number(editMaxPlayers) : lobby.maxPlayers,
+        mapTheme: editMapTheme, // <-- Send the map selection to backend
       });
 
       await fetchLobby(); // refresh UI after save
@@ -240,6 +247,16 @@ const LobbyPage: React.FC = () => {
                 <option value="CHAOS">Chaos</option>
               </select>
             </div>
+
+            <div className="g-field">
+              <label className="g-label"><span className="required">*</span> Map</label>
+              <select className="g-select" value={editMapTheme} onChange={(e) => setEditMapTheme(e.target.value)}>
+                <option value="mystic-grove">Mystic Grove</option>
+                <option value="obsidian-keep">Obsidian Keep</option>
+                <option value="celestial-sanctum">Celestial Sanctum</option>
+              </select>
+            </div>
+
             <div className="g-field">
               <label className="g-label">Player Count</label>
               <select className="g-select" value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)}>

@@ -1,0 +1,39 @@
+.theme-celestial-sanctum {
+    /* Main Background: Detailed heavenly sky with swirling clouds simulated via stacked gradients */
+    --q-main-bg: linear-gradient(to bottom, #89cff0 0%, #a2d7ff 30%, #ccebff 70%, #f0f7fa 100%),
+        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 60%, transparent 100%),
+        radial-gradient(circle at top left, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%, transparent 100%),
+        radial-gradient(circle at top right, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%, transparent 100%);
+    --q-main-bg-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
+    --q-main-bg-position: center, 20% 10%, top left, top right;
+    --q-main-bg-size: cover, 150% 150%, 80% 80%, 80% 80%;
+    /* Add multiple pseudo-elements to the main-wrapper to further stack gradients for cloud depth and stylized elements (pillars/arches) not directly possible in main background */
+
+    --q-beam-bg: rgba(255, 255, 255, 0.85);
+    --q-beam-border: rgba(200, 210, 220, 0.5);
+    --q-text: #333333;
+    --q-text-muted: #778899;
+
+    --q-board-base: #e8eef2;
+    --q-board-thickness: #b0c0d0;
+
+    /* Polished quartz/marble tiles with detailed veining simulated via layered gradients */
+    --q-tile-bg: linear-gradient(135deg, #ffffff 0%, #f7f9fc 30%, #eef3f8 70%, #e2e8f0 100%),
+        linear-gradient(110deg, transparent 40%, rgba(210, 220, 230, 0.2) 50%, rgba(210, 220, 230, 0.1) 60%, transparent 70%),
+        linear-gradient(20deg, transparent 30%, rgba(210, 220, 230, 0.1) 40%, rgba(210, 220, 230, 0.15) 50%, transparent 60%);
+    --q-tile-border: 1px solid #cdd5df;
+    --q-tile-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.9), 0 6px 18px rgba(0, 0, 0, 0.12), inset 0 0 10px rgba(200, 210, 220, 0.1);
+
+    --q-tile-valid: radial-gradient(circle at 50% 50%, rgba(120, 224, 143, 0.4), #ffffff);
+    --q-tile-valid-shadow: inset 0 0 15px rgba(120, 224, 143, 0.6);
+    --q-tile-valid-border: #78e08f;
+
+    --q-wall-active: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+    /* Gilded Gold */
+    --q-wall-shadow: 0 10px 10px rgba(0, 0, 0, 0.2), 0 0 10px rgba(253, 203, 110, 0.5);
+    --q-wall-hover: rgba(253, 203, 110, 0.4);
+
+    /* Variables left empty here since pawns are now universally handled above */
+    --q-p1: transparent;
+    --q-p2: transparent;
+}

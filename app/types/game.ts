@@ -31,6 +31,7 @@ export interface GameDTO {
   pawns: PawnDTO[];
   walls: WallDTO[];
   remainingWalls: Record<string, number>;
+  mapTheme: string | null;
 }
 
 // What the board component works with (derived)
@@ -43,4 +44,5 @@ export interface GameState {
   player2Id: number;
   winnerId: number | null;
   gameStatus: GameDTO["gameStatus"];
+  mapTheme: string | null;
 }

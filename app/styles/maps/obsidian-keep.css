@@ -1,0 +1,27 @@
+.theme-obsidian-keep {
+    --q-main-bg: url('/maps/castle.png') center/cover no-repeat;
+    --q-beam-bg: rgba(15, 10, 20, 0.9);
+    --q-beam-border: rgba(100, 50, 150, 0.3);
+    --q-text: #ffffff;
+    --q-text-muted: #887799;
+
+    --q-board-base: #0a0a0e;
+    --q-board-thickness: #050508;
+
+    /* Shiny Obsidian gradient */
+    --q-tile-bg: radial-gradient(circle at 20% 20%, #3a3a4a, #101015);
+    --q-tile-border: 1px solid #000;
+    --q-tile-shadow: inset 0 2px 8px rgba(255, 255, 255, 0.15), 0 5px 10px rgba(0, 0, 0, 0.8);
+
+    --q-tile-valid: radial-gradient(circle at 50% 50%, rgba(57, 255, 20, 0.3), #101015);
+    --q-tile-valid-shadow: inset 0 0 20px rgba(57, 255, 20, 0.6);
+    --q-tile-valid-border: #39ff14;
+
+    --q-wall-active: #ff4500;
+    /* Glowing Lava */
+    --q-wall-shadow: 0 0 15px #ff4500, 0 10px 10px rgba(0, 0, 0, 0.8);
+    --q-wall-hover: rgba(255, 69, 0, 0.4);
+
+    --q-p1: radial-gradient(circle at 30% 30%, #a0a0a0, #303030);
+    --q-p2: radial-gradient(circle at 30% 30%, #ff5050, #801010);
+}
