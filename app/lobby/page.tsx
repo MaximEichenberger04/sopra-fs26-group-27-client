@@ -1,78 +1,95 @@
-// lobby creation / management
 "use client";
 
-import React, { useState } from "react";
+import "../lobbies/lobbies.css";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
-import { Lobby } from "@/types/lobby";
-import { Button, Card, Form, Input, Select } from "antd";
+import useLocalStorage from "@/hooks/useLocalStorage";
+import NavBar from "@/components/NavBar";
 
 const LobbyCreationPage: React.FC = () => {
   const router = useRouter();
   const apiService = useApi();
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [gameMode, setGameMode] = useState("");
+  const [maxPlayers, setMaxPlayers] = useState("");
+  const [map, setMap] = useState("forest");
 
-  const handleSubmit = async (values: {
-    name: string;
-    gameMode: string;
-    maxPlayers: number;
-  }) => {
-    setLoading(true);
+  const { value: token } = useLocalStorage<string>("token", "");
+  const { value: userId } = useLocalStorage<string>("userId", "");
 
-    const storedUserId = localStorage.getItem("Id"); 
-    if (!storedUserId) {
-      alert("You must be logged in to create a lobby.");
-      setLoading(false);
+  useEffect(() => {
+    if (!token) router.push("/login");
+  }, [token, router]);
+
+  const handleSubmit = async () => {
+    if (!name || !gameMode || !maxPlayers) {
+      alert("Please fill in all required fields.");
+      return;
+    }
+    if (!userId) {
+      alert("You must be logged in.");
       return;
     }
 
-    try {
-      // POST /lobby — backend creates lobby and returns it
-      const newLobby = await apiService.post<{ id: string }>("/lobbies", {
-        name: values.name,
-        gameMode: values.gameMode,
-        maxPlayers: values.maxPlayers,
-        hostId: parseInt(storedUserId, 10)
-        // theme/map is only frontend rendering.
-      });
-      // Navigate into the newly created lobby
-      router.push(`/lobby/${newLobby.id}`);
+setLoading(true);
+try {
+  const newLobby = await apiService.post<{ id: string }>("/lobbies", {
+    name,
+    gameMode,
+    maxPlayers: parseInt(maxPlayers, 10),
+    hostId: Number(userId),
+  });
+  router.push(`/lobby/${newLobby.id}`);
     } catch (error) {
-      if (error instanceof Error) {
-        alert(`Error creating lobby:\n${error.message}`);
-      }
+      if (error instanceof Error) alert(`Failed to create lobby:\n${error.message}`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="card-container">
-      <Card title="Create Lobby" className="dashboard-container">
-        <Form layout="vertical" onFinish={handleSubmit}> {/* Form is sent to server via handleSubmit */}
-          <Form.Item label="Lobby Name" name="name" rules={[{ required: true }]}>
-            <Input placeholder="Enter lobby name" />
-          </Form.Item>
-          <Form.Item label="Game Mode" name="gameMode" rules={[{ required: true }]}>
-            <Select placeholder="Select game mode">
-              <Select.Option value="CLASSIC">Classic</Select.Option>
-              <Select.Option value="CHAOS">Chaos</Select.Option>
-            </Select>
-          </Form.Item>
-          <Form.Item label="Player Count" name="maxPlayers" rules={[{ required: true }]}>
-            <Select placeholder="Select player count">
-              <Select.Option value="2">2</Select.Option>
-              <Select.Option value="4">4</Select.Option>
-            </Select>
-          </Form.Item>
-          <Button type="primary" htmlType="submit" loading={loading}>
-            Create
-          </Button>
-          <Button onClick={() => router.push("/")} style={{ marginLeft: 8 }}>
-            Cancel
-          </Button>
-        </Form>
-      </Card>
+    <div className="lobby-create-wrap">
+      <NavBar />
+      <div className="lobby-create-center">
+        <div className="g-card lobby-create-card">
+          <h2 className="lobby-create-title">Create Lobby</h2>
+          <div className="g-field">
+            <label className="g-label"><span className="required">*</span> Lobby Name</label>
+            <input className="g-input" placeholder="Enter lobby name" value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="g-field">
+            <label className="g-label"><span className="required">*</span> Game Mode</label>
+            <select className="g-select" value={gameMode} onChange={(e) => setGameMode(e.target.value)}>
+              <option value="" disabled>Select game mode</option>
+              <option value="CLASSIC">Classic</option>
+              <option value="CHAOS">Chaos</option>
+            </select>
+          </div>
+          <div className="g-field">
+            <label className="g-label"><span className="required">*</span> Player Count</label>
+            <select className="g-select" value={maxPlayers} onChange={(e) => setMaxPlayers(e.target.value)}>
+              <option value="" disabled>Select player count</option>
+              <option value="2">2</option>
+              <option value="4">4</option>
+            </select>
+          </div>
+          <div className="g-field">
+            <label className="g-label"><span className="required">*</span> Map</label>
+            <select className="g-select" value={map} onChange={(e) => setMap(e.target.value)}>
+              <option value="forest">Magic Forest</option>
+              <option value="castle">Dark Castle</option>
+            </select>
+          </div>
+          <div className="lobby-form-actions">
+            <button className="btn-gold" onClick={handleSubmit} disabled={loading}>
+              {loading ? "Creating..." : "Create"}
+            </button>
+            <button className="btn-outline" onClick={() => router.push("/lobbies")}>Cancel</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

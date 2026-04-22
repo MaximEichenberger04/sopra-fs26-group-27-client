@@ -1,104 +1,107 @@
-// this code is part of S2 to display a list of all registered users
-// clicking on a user in this list will display /app/users/[id]/page.tsx
-"use client"; // For components that need React hooks and browser APIs, SSR (server side rendering) has to be disabled. Read more here: https://nextjs.org/docs/pages/building-your-application/rendering/server-side-rendering
+"use client";
+
 import "./users.css";
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { User } from "@/types/user";
-import { Button, Card, Table } from "antd";
-import type { TableProps } from "antd"; // antd component library allows imports of types
-// Optionally, you can import a CSS module or file for additional styling:
-// import "@/styles/views/Dashboard.scss";
-
-// Columns for the antd table of User objects
-const columns: TableProps<User>["columns"] = [
-  {
-    title: "Username",
-    dataIndex: "username",
-    key: "username",
-  },
-  {
-    title: "Display Name",
-    dataIndex: "displayName",
-    key: "displayName",
-  },
-  {
-    title: "Status",
-    dataIndex: "status",
-    key: "status",
-  },
-];
+import { Avatar } from "antd";
+import { UserOutlined } from "@ant-design/icons";
+import NavBar from "@/components/NavBar";
+import { getCosmeticById } from "@/types/cosmetics";
 
 const Dashboard: React.FC = () => {
   const router = useRouter();
   const apiService = useApi();
-  const [users, setUsers] = useState<User[] | null>(null);
-  // useLocalStorage hook example use
-  // The hook returns an object with the value and two functions
-  // Simply choose what you need from the hook:
-  const {
-    value: token,
-    clear: clearToken,
-  } = useLocalStorage<string>("token", "");
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
 
-  const handleLogout = (): void => {
-    // Clear token using the returned function 'clear' from the hook
-    clearToken();
-    router.push("/login");
-  };
+  const { value: token, clear: clearToken } = useLocalStorage<string>("token", "");
+  const { value: userId, clear: clearUserId } = useLocalStorage<string>("userId", "");
 
   useEffect(() => {
     if (!token) {
       router.push("/login");
       return;
     }
-    const fetchUsers = async () => {
+
+    const fetchUser = async () => {
       try {
-        // apiService.get<User[]> returns the parsed JSON object directly,
-        // thus we can simply assign it to our users variable.
-        const users: User[] = await apiService.get<User[]>("/users");
-        setUsers(users);
-        console.log("Fetched users:", users);
-      } catch (error) {
-        if (error instanceof Error) {
-          alert(`Something went wrong while fetching users:\n${error.message}`);
-        } else {
-          console.error("An unknown error occurred while fetching users.");
+        if (userId) {
+          const user = await apiService.get<User>(`/users/${userId}`);
+          setCurrentUser(user);
         }
+      } catch (error) {
+        if (error instanceof Error) console.error("Failed to fetch user:", error.message);
       }
     };
+    fetchUser();
+  }, [apiService, token, userId, router]);
 
-    fetchUsers();
-  }, [apiService, token, router]); // dependency apiService does not re-trigger the useEffect on every render because the hook uses memoization (check useApi.tsx in the hooks).
-  // if the dependency array is left empty, the useEffect will trigger exactly once
-  // if the dependency array is left away, the useEffect will run on every state change. Since we do a state change to users in the useEffect, this results in an infinite loop.
-  // read more here: https://react.dev/reference/react/useEffect#specifying-reactive-dependencies
+  const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
+
+  if (!currentUser) return null;
 
   return (
-    <div className="auth-page">
-      <div className="users-card">
-        <Table<User>
-          title={() => <span className="users-table-title">Players</span>}
-          columns={columns}
-          dataSource={users ?? []}
-          rowKey="id"
-          loading={!users}
-          onRow={(row) => ({
-            onClick: () => router.push(`/users/${row.id}`),
-            style: { cursor: "pointer" },
-          })}
-          className="users-table"
-          pagination={{ pageSize: 8, size: "small" }}
-        />
-        <Button onClick={handleLogout} className="auth-btn-secondary" style={{ marginTop: 16 }}>
-          Logout
-        </Button>
+    <div className="dash-page">
+      <NavBar />
+      <div className="dash-content">
+        {/* Left Column */}
+        <div className="dash-col-left">
+          <div className="g-card dash-play-card">
+            <p className="dash-play-label">Ready to play?</p>
+            <button className="btn-gold dash-find-btn" onClick={() => router.push("/lobbies")}>
+              ► Find Game
+            </button>
+            <div className="dash-divider" />
+            <button className="btn-outline" onClick={() => router.push("/lobby")}>
+              + Create Lobby
+            </button>
+          </div>
+
+          <div className="g-card dash-matches-card">
+            <h3 className="g-section-title">Recent Matches</h3>
+            <p className="dash-muted-text">No games played yet.</p>
+          </div>
+        </div>
+
+        {/* Right Column */}
+        <div className="dash-col-right">
+          <div className="g-card dash-profile-card">
+            <div className="dash-profile-header">
+              <div className={`avatar-ring-wrap ${borderItem ? borderItem.cssClass : ""}`}>
+                <Avatar
+                  size={48}
+                  src={currentUser.avatarURL ?? undefined}
+                  icon={!currentUser.avatarURL && <UserOutlined />}
+                  className="nav-avatar"
+                />
+              </div>
+              <div className="dash-profile-info">
+                <span className="dash-profile-name">{currentUser.displayName}</span>
+                <span className="dash-profile-level">Level {currentUser.level ?? 0}</span>
+              </div>
+            </div>
+            <div className="dash-xp-section">
+              <div className="dash-xp-bar-bg">
+                <div className="dash-xp-bar-fill" style={{ width: `${Math.min(((currentUser.xp ?? 0) % 1000) / 10, 100)}%` }} />
+              </div>
+              <span className="dash-xp-text">{currentUser.xp ?? 0} XP</span>
+            </div>
+            <div className="dash-stats-grid">
+              <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.score ?? 0}</span><span className="dash-stat-label">Score</span></div>
+              <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.level ?? 0}</span><span className="dash-stat-label">Level</span></div>
+              <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.xp ?? 0}</span><span className="dash-stat-label">XP</span></div>
+            </div>
+          </div>
+
+          <button className="g-card dash-leaderboard-btn">
+            🏆 Leaderboard
+          </button>
+        </div>
       </div>
     </div>
   );
-
 };
 
 export default Dashboard;

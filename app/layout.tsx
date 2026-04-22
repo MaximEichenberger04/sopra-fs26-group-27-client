@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Student XX-XXX-XXX",
+  title: "Quoridor Chaos Arena",
   description: "sopra-fs26-template-client",
 };
 

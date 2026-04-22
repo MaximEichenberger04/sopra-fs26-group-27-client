@@ -23,12 +23,15 @@ const Regisration: React.FC = () => {
   // Simply choose what you need from the hook:
   const {
     // value: token, // is commented out because we do not need the token value
-    set: setToken, // we need this method to set the value of the token to the one we receive from the POST request to the backend server API
+    set: setToken,
+    // we need this method to set the value of the user ID to the one we receive from the POST request to the backend server API
     // clear: clearToken, // is commented out because we do not need to clear the token when logging in
   } = useLocalStorage<string>("token", ""); // note that the key we are selecting is "token" and the default value we are setting is an empty string
   // if you want to pick a different token, i.e "usertoken", the line above would look as follows: } = useLocalStorage<string>("usertoken", "");
 
-  const { set: setUserId } = useLocalStorage<string>("userId", ""); // we need this method to set the value of the userId to the one we receive from the POST request to the backend server API
+  const {
+    set: setUserId,
+  } = useLocalStorage<number>("userId", -1);
 
   const handleRegistration = async (values: FormFieldProps) => {
     try {
@@ -36,17 +39,12 @@ const Regisration: React.FC = () => {
       const response = await apiService.post<User>("/users", values);
 
       // Use the useLocalStorage hook that returned a setter function (setToken in line 41) to store the token if available
-      if (response.token) {
+      if (response.token && response.id) {
         setToken(response.token);
+        setUserId(Number(response.id));
       }
+      router.push(`/users`);
 
-      // Use the useLocalStorage hook that returned a setter function (setUserId in line 48) to store the userId if available
-      if (response.id) {
-        setUserId(response.id);
-      }
-
-      // Navigate to /users (dashboard)
-      router.push("/users");
     } catch (error) {
       if (error instanceof Error) {
         alert(`Something went wrong during the login:\n${error.message}`);
@@ -130,7 +128,7 @@ const Regisration: React.FC = () => {
 
           <Form.Item>
             <Button type="default" onClick={() => router.push("/login")} className="auth-btn-secondary">
-              Back to Login
+              Login
             </Button>
           </Form.Item>
         </Form>

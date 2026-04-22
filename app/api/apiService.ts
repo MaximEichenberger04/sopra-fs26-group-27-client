@@ -3,12 +3,21 @@ import { ApplicationError } from "@/types/error";
 
 export class ApiService {
   private baseURL: string;
-  constructor() {
+
+  constructor(token?: string) {
     this.baseURL = getApiDomain();
   }
- 
+
   private getHeaders(): HeadersInit {
-    const token = localStorage.getItem("token");
+    const raw = localStorage.getItem("token");
+    let token: string | null = null;
+    if (raw) {
+      try {
+        token = JSON.parse(raw);
+      } catch {
+        // If parsing fails, token remains null
+      }
+    }
     return {
       "Content-Type": "application/json",
       ...(token ? { Authorization: token } : {}),
@@ -34,6 +43,8 @@ export class ApiService {
         const errorInfo = await res.json();
         if (errorInfo?.message) {
           errorDetail = errorInfo.message;
+        } else if (errorInfo?.detail) {
+          errorDetail = errorInfo.detail;
         } else {
           errorDetail = JSON.stringify(errorInfo);
         }
@@ -121,6 +132,25 @@ export class ApiService {
     return this.processResponse<T>(
       res,
       "An error occurred while deleting the data.\n",
+    );
+  }
+
+  /**
+   * PATCH request.
+   * @param endpoint - The API endpoint (e.g. "/users/123").
+   * @param data - The payload to patch.
+   * @returns JSON data of type T.
+   */
+  public async patch<T>(endpoint: string, data: unknown): Promise<T> {
+    const url = `${this.baseURL}${endpoint}`;
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: this.getHeaders(),
+      body: JSON.stringify(data),
+    });
+    return this.processResponse<T>(
+      res,
+      "An error occurred while patching the data.\n",
     );
   }
 }

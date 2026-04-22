@@ -1,0 +1,433 @@
+/* ═══════════════════════════════════════════════
+   LANDING PAGE
+   ═══════════════════════════════════════════════ */
+
+.landing {
+    width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+/* ── Floating particles ── */
+.landing-particles {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+}
+
+.particle {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(200, 168, 50, .15);
+    animation: float linear infinite;
+}
+
+.particle-0 {
+    width: 4px;
+    height: 4px;
+    left: 10%;
+    animation-duration: 18s;
+    animation-delay: 0s;
+}
+
+.particle-1 {
+    width: 3px;
+    height: 3px;
+    left: 25%;
+    animation-duration: 22s;
+    animation-delay: -3s;
+}
+
+.particle-2 {
+    width: 5px;
+    height: 5px;
+    left: 40%;
+    animation-duration: 16s;
+    animation-delay: -7s;
+}
+
+.particle-3 {
+    width: 3px;
+    height: 3px;
+    left: 55%;
+    animation-duration: 20s;
+    animation-delay: -2s;
+}
+
+.particle-4 {
+    width: 4px;
+    height: 4px;
+    left: 70%;
+    animation-duration: 24s;
+    animation-delay: -5s;
+}
+
+.particle-5 {
+    width: 6px;
+    height: 6px;
+    left: 85%;
+    animation-duration: 19s;
+    animation-delay: -8s;
+}
+
+.particle-6 {
+    width: 3px;
+    height: 3px;
+    left: 15%;
+    animation-duration: 21s;
+    animation-delay: -11s;
+}
+
+.particle-7 {
+    width: 4px;
+    height: 4px;
+    left: 35%;
+    animation-duration: 17s;
+    animation-delay: -4s;
+}
+
+.particle-8 {
+    width: 5px;
+    height: 5px;
+    left: 60%;
+    animation-duration: 23s;
+    animation-delay: -9s;
+}
+
+.particle-9 {
+    width: 3px;
+    height: 3px;
+    left: 78%;
+    animation-duration: 15s;
+    animation-delay: -1s;
+}
+
+.particle-10 {
+    width: 4px;
+    height: 4px;
+    left: 48%;
+    animation-duration: 26s;
+    animation-delay: -6s;
+}
+
+.particle-11 {
+    width: 3px;
+    height: 3px;
+    left: 92%;
+    animation-duration: 20s;
+    animation-delay: -10s;
+}
+
+@keyframes float {
+    0% {
+        transform: translateY(100vh) scale(0);
+        opacity: 0;
+    }
+
+    10% {
+        opacity: 1;
+    }
+
+    90% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translateY(-10vh) scale(1);
+        opacity: 0;
+    }
+}
+
+/* ── Center content ── */
+.landing-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 1;
+    padding: 40px 20px;
+}
+
+/* ── Logo ── */
+.landing-logo-wrap {
+    margin-bottom: 8px;
+    animation: fadeInDown 1s ease-out;
+}
+
+.landing-logo {
+    width: 460px;
+    max-width: 85vw;
+    height: auto !important;
+    filter: drop-shadow(0 4px 24px rgba(200, 168, 50, .2));
+}
+
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── Tagline ── */
+.landing-tagline {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 20px;
+    font-style: italic;
+    color: var(--muted);
+    letter-spacing: .1em;
+    margin-bottom: 16px;
+    animation: fadeIn 1.2s ease-out 0.3s both;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* ═══════════════════════════════════════════════
+   MINI GAME BOARD (3D perspective)
+   ═══════════════════════════════════════════════ */
+
+.landing-board-showcase {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 72px;
+    animation: fadeIn 1.4s ease-out 0.5s both;
+}
+
+.board-3d-wrap {
+    perspective: 600px;
+    margin-bottom: 10px;
+}
+
+.mini-board {
+    display: grid;
+    grid-template-columns: repeat(5, 40px);
+    grid-template-rows: repeat(5, 40px);
+    gap: 4px;
+    position: relative;
+    transform: rotateX(35deg) rotateZ(-10deg);
+    transform-style: preserve-3d;
+    padding: 12px;
+    background: rgba(28, 23, 20, .9);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, .4),
+        0 0 60px rgba(200, 168, 50, .06);
+}
+
+.mini-cell {
+    width: 40px;
+    height: 40px;
+    background: rgba(200, 168, 50, .05);
+    border: 1px solid rgba(58, 47, 34, .4);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+}
+
+/* ── Pawns ── */
+.mini-pawn {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    position: relative;
+    z-index: 2;
+    animation: pawnPulse 3s ease-in-out infinite;
+}
+
+.pawn-gold {
+    background: radial-gradient(circle at 35% 35%, #e8d06a, #c8a832, #8a7420);
+    box-shadow: 0 0 8px rgba(200, 168, 50, .5);
+    animation-delay: 0s;
+}
+
+.pawn-crimson {
+    background: radial-gradient(circle at 35% 35%, #e06060, #c04040, #802020);
+    box-shadow: 0 0 8px rgba(192, 64, 64, .4);
+    animation-delay: 0.8s;
+}
+
+.pawn-emerald {
+    background: radial-gradient(circle at 35% 35%, #6ab85a, #4a8a3c, #2a5a20);
+    box-shadow: 0 0 8px rgba(74, 138, 60, .4);
+    animation-delay: 1.6s;
+}
+
+.pawn-purple {
+    background: radial-gradient(circle at 35% 35%, #9a8aca, #6a5a9a, #3a2a6a);
+    box-shadow: 0 0 8px rgba(106, 90, 154, .4);
+    animation-delay: 2.4s;
+}
+
+@keyframes pawnPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15);
+    }
+}
+
+/* ── Walls ── */
+.mini-wall {
+    position: absolute;
+    z-index: 3;
+    border-radius: 2px;
+}
+
+.wall-h {
+    height: 5px;
+    background: linear-gradient(90deg, #8a7420, #c8a832, #8a7420);
+    box-shadow: 0 0 6px rgba(200, 168, 50, .3);
+}
+
+.wall-v {
+    width: 5px;
+    background: linear-gradient(180deg, #8a7420, #c8a832, #8a7420);
+    box-shadow: 0 0 6px rgba(200, 168, 50, .3);
+}
+
+.board-caption {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 13px;
+    font-style: italic;
+    color: rgba(122, 110, 85, .5);
+    margin-top: 4px;
+}
+
+/* ── Feature pills ── */
+.landing-features {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 36px;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: fadeIn 1.6s ease-out 0.7s both;
+}
+
+.feature-pill {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 16px;
+    background: rgba(200, 168, 50, .04);
+}
+
+/* ── Buttons ── */
+.landing-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 300px;
+    max-width: 80vw;
+    animation: fadeIn 1.8s ease-out 0.9s both;
+}
+
+.landing-btn {
+    width: 100%;
+    padding: 14px 28px !important;
+    font-size: 14px !important;
+}
+
+/* ═══════════════════════════════════════════════
+   FOOTER
+   ═══════════════════════════════════════════════ */
+
+.landing-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 16px 28px;
+    z-index: 1;
+}
+
+.landing-footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.footer-group {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--gold);
+}
+
+.footer-divider {
+    color: rgba(58, 47, 34, .5);
+    font-size: 12px;
+}
+
+.footer-names {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: .04em;
+}
+
+.footer-uni {
+    font-family: 'Crimson Text', Georgia, serif;
+    font-size: 12px;
+    color: rgba(122, 110, 85, .4);
+    font-style: italic;
+}
+
+/* ── Responsive ── */
+@media (max-width: 500px) {
+    .mini-board {
+        grid-template-columns: repeat(5, 32px);
+        grid-template-rows: repeat(5, 32px);
+    }
+
+    .mini-cell {
+        width: 32px;
+        height: 32px;
+    }
+
+    .mini-pawn {
+        width: 14px;
+        height: 14px;
+    }
+
+    .landing-features {
+        gap: 6px;
+    }
+
+    .feature-pill {
+        font-size: 9px;
+        padding: 5px 12px;
+    }
+}

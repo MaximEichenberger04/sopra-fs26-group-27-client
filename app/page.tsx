@@ -1,108 +1,92 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { Button } from "antd";
-import { BookOutlined, CodeOutlined, GlobalOutlined } from "@ant-design/icons";
-import styles from "@/styles/page.module.css";
-import Image from "next/image";
 
+import "./landing.css";
+import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 export default function Home() {
   const router = useRouter();
 
   return (
-    <>
-      <div className="Title">
-        <h1>SoPra Group 27</h1>
+    <div className="landing">
+      {/* Floating particles */}
+      <div className="landing-particles">
+        {Array.from({ length: 12 }).map((_, i) => (
+          <div key={i} className={`particle particle-${i}`} />
+        ))}
       </div>
 
-      <div className={styles.page}>
-        <main className={styles.main}>
+      {/* Main content */}
+      <div className="landing-center">
+        {/* Logo */}
+        <div className="landing-logo-wrap">
           <Image
             src="/quoridor.png"
-            alt="Quoridor"
-            width={612}
-            height={408}
+            alt="Quoridor Chaos Arena"
+            width={500}
+            height={333}
+            className="landing-logo"
             priority
           />
+        </div>
 
-          <h2>Group 27 Members:</h2>
-          <ol>
-            <li>Maxim</li>
-            <li>Flint</li>
-            <li>Timon</li>
-            <li>Jonas</li>
-            <li>Eldar</li>
-          </ol>
 
-          <div className={styles.ctas}>
-            <Button
-              type="primary"
-              color="red"
-              variant="solid"
-              onClick={() =>
-                globalThis.open(
-                  "https://vercel.com/new",
-                  "_blank",
-                  "noopener,noreferrer"
-                )
-              }
-            >
-              Deploy now
-            </Button>
-
-            <Button
-              type="default"
-              variant="solid"
-              onClick={() =>
-                globalThis.open(
-                  "https://nextjs.org/docs",
-                  "_blank",
-                  "noopener,noreferrer"
-                )
-              }
-            >
-              Read our docs
-            </Button>
-
-            <Button
-              type="primary"
-              variant="solid"
-              onClick={() => router.push("/login")}
-            >
-              Go to login
-            </Button>
+        {/* Mini game board showcase */}
+        <div className="landing-board-showcase">
+          <div className="board-3d-wrap">
+            <div className="mini-board">
+              {Array.from({ length: 25 }).map((_, i) => {
+                const hasPawn =
+                  i === 2 ? "pawn-gold" :
+                    i === 22 ? "pawn-crimson" :
+                      i === 10 ? "pawn-emerald" :
+                        i === 14 ? "pawn-purple" : null;
+                return (
+                  <div key={i} className="mini-cell">
+                    {hasPawn && <div className={`mini-pawn ${hasPawn}`} />}
+                  </div>
+                );
+              })}
+              {/* Walls */}
+              <div className="mini-wall wall-h" style={{ top: "38%", left: "20%", width: "36%" }} />
+              <div className="mini-wall wall-v" style={{ top: "18%", left: "38%", height: "36%" }} />
+              <div className="mini-wall wall-h" style={{ top: "78%", left: "44%", width: "36%" }} />
+              <div className="mini-wall wall-v" style={{ top: "56%", left: "78%", height: "30%" }} />
+            </div>
           </div>
-        </main>
+        </div>
 
-        <footer className={styles.footer}>
-          <Button
-            type="link"
-            icon={<BookOutlined />}
-            href="https://nextjs.org/learn"
-            target="_blank"
-          >
-            Learn
-          </Button>
+        {/* Feature pills */}
+        <div className="landing-features">
+          <span className="feature-pill">2–4 Players</span>
+          <span className="feature-pill">Classic &amp; Chaos Modes</span>
+          <span className="feature-pill">Real-time Multiplayer</span>
+        </div>
 
-          <Button
-            type="link"
-            icon={<CodeOutlined />}
-            href="https://vercel.com/templates?framework=next.js"
-            target="_blank"
-          >
-            Examples
-          </Button>
-
-          <Button
-            type="link"
-            icon={<GlobalOutlined />}
-            href="https://nextjs.org"
-            target="_blank"
-          >
-            Go to nextjs.org →
-          </Button>
-        </footer>
+        {/* Buttons */}
+        <div className="landing-buttons">
+          <button className="btn-gold landing-btn" onClick={() => router.push("/login")}>
+            Login
+          </button>
+          <button className="btn-outline landing-btn" onClick={() => router.push("/register")}>
+            Create Account
+          </button>
+          <button className="btn-outline landing-btn" onClick={() => router.push("/instructions")}>
+            → How to play
+          </button>
+        </div>
       </div>
-    </>
+
+      {/* Footer */}
+      <footer className="landing-footer">
+        <div className="landing-footer-inner">
+          <span className="footer-group">Group 27</span>
+          <span className="footer-divider">—</span>
+          <span className="footer-names">Maxim · Flint · Timon · Jonas · Eldar</span>
+          <span className="footer-divider">—</span>
+          <span className="footer-uni">UZH SoPra FS26</span>
+        </div>
+      </footer>
+    </div>
   );
 }
