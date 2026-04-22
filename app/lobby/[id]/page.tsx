@@ -40,7 +40,7 @@ const LobbyPage: React.FC = () => {
       const response = await apiService.get<Lobby>(`/lobbies/${lobbyId}`);
 
       if (response.lobbyStatus === "INGAME") {
-        router.push(`/games/${lobbyId}`);
+        router.push(`/games/${response.gameId}`);
         return;
       }
 
@@ -112,8 +112,8 @@ const LobbyPage: React.FC = () => {
   const handleStart = async () => {
     setStarting(true);
     try {
-      await apiService.post(`/lobbies/${lobbyId}/start`, {});
-      await fetchLobby();
+      const game = await apiService.post<{ id: string }>(`/lobbies/${lobbyId}/start`, {});
+      router.push(`/games/${game.id}`);
     } catch (error) {
       if (error instanceof Error) {
         alert(`Failed to start:\n${error.message}`);
