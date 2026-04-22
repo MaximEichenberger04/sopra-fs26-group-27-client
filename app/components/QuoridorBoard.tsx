@@ -5,7 +5,10 @@ const CELL = 56;
 const WALL = 12;
 const GAP = 0;
 
-function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped }: any) {
+function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped }: {
+  value: CellValue; boardRow: number; boardCol: number; isValidMove: boolean;
+  onMove: (mr: number, mc: number) => void; flipped: boolean;
+}) {
   return (
     <div
       onClick={() => isValidMove && onMove(boardRow * 2, boardCol * 2)}
@@ -37,7 +40,13 @@ function getWallSlots(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTI
   return [[mr, mc], [mr + 1, mc], [mr + 2, mc]];
 }
 
-function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHoverEnd, isHighlighted }: any) {
+function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHoverEnd, isHighlighted }: {
+  orientation: "HORIZONTAL" | "VERTICAL"; value: CellValue; mr: number; mc: number;
+  isMyTurn: boolean; isHighlighted: boolean;
+  onWall: (mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") => void;
+  onHover: (mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") => void;
+  onHoverEnd: () => void;
+}) {
   const active = value === 3;
   const isH = orientation === "HORIZONTAL";
   return (
@@ -55,7 +64,7 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHov
   );
 }
 
-function Pillar({ value, isHighlighted }: any) {
+function Pillar({ value, isHighlighted }: { value: CellValue; isHighlighted: boolean }) {
   return (
     <div
       className={`pillar ${value === 3 ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
