@@ -46,3 +46,12 @@ export interface GameState {
   gameStatus: GameDTO["gameStatus"];
   mapTheme: string | null;
 }
+
+export interface ChatMessageGetDTO {
+  id: number;
+  gameId: number;
+  userId: number;
+  username: string; 
+  text: string;
+  timestamp: number; // Unix milliseconds
+}
