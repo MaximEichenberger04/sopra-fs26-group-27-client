@@ -1,6 +1,6 @@
 "use client";
 
-import "../lobbies/lobbies.css";
+import "@/styles/gameBoard.css";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useApi } from "@/hooks/useApi";
 import { ChatMessageGetDTO } from "@/types/game";
@@ -67,36 +67,30 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
   };
 
   return (
-    <div
-      className="lobby-chat-section"
-      style={{ flex: 1, display: "flex", flexDirection: "column", margin: 0 }}
-    >
-      <h3 className="g-section-title">Chat</h3>
+    <div className="vertical-beam" style={{ flex: 1, width: "100%", minHeight: 0 }}>
 
-      <div
-        className="lobby-chat-messages"
-        style={{ flex: 1, overflowY: "auto", maxHeight: "calc(100vh - 200px)", minHeight: 80 }}
-      >
+      <div className="beam-section">
+        <h4>CHAT</h4>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 80, marginBottom: 12 }}>
         {messages.length === 0 ? (
-          <p className="lobby-chat-empty">No messages yet...</p>
+          <p style={{ color: "var(--q-text-muted)", fontSize: 12, margin: 0 }}>No messages yet...</p>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
               style={{
                 padding: "5px 0",
-                fontFamily: "'Crimson Text', serif",
-                fontSize: 14,
-                color: "var(--text)",
-                borderBottom: "1px solid rgba(58, 47, 34, .2)",
+                fontSize: 13,
+                color: "var(--q-text)",
+                borderBottom: "1px solid var(--q-beam-border)",
               }}
             >
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: msg.userId === userId ? "var(--gold)" : "var(--text)",
-                }}
-              >
+              <span style={{
+                fontWeight: 700,
+                color: msg.userId === userId ? "var(--q-title)" : "var(--q-text)",
+              }}>
                 {msg.userId === userId ? "You" : msg.username}:
               </span>{" "}
               {msg.text}
@@ -106,9 +100,9 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
         <div ref={bottomRef} />
       </div>
 
-      <div className="lobby-chat-input-row" style={{ marginTop: 12 }}>
+      <div className="horizontal-beam" style={{ padding: 0 }}>
         <input
-          className="g-input lobby-chat-input"
+          className="chat-input"
           placeholder="Type a message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -116,7 +110,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
           disabled={sending}
         />
         <button
-          className="btn-outline"
+          className="chat-btn send-btn"
           onClick={handleSend}
           disabled={sending || !input.trim()}
         >

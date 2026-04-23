@@ -112,50 +112,7 @@ export default function QuoridorBoard({
   return (
     <div className="game-layout">
 
-      {/* LEFT COLUMN: Board + Chat */}
-      <div className="left-column">
-
-        {/* The 2.5D Game Board */}
-        <div className="board-3d-wrapper">
-          <div className="board-surface" style={{
-            display: "inline-grid",
-            gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
-            gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
-            gap: GAP,
-            transform: mySymbol === 2 ? "rotate(180deg)" : "none",
-          }}>
-            {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
-              Array.from({ length: MATRIX_SIZE }, (_, mc) => {
-                const value: CellValue = (matrix[mr]?.[mc] ?? 0) as CellValue;
-                const evenRow = mr % 2 === 0;
-                const evenCol = mc % 2 === 0;
-
-                if (evenRow && evenCol) {
-                  const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
-                  return <PawnCell key={`${mr}-${mc}`} value={value} boardRow={mr / 2} boardCol={mc / 2} isValidMove={isValidMove} onMove={onMove} flipped={flipped} />;
-                }
-                if (!evenRow && evenCol) {
-                  return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
-                }
-                if (evenRow && !evenCol) {
-                  return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
-                }
-                return <Pillar key={`${mr}-${mc}`} value={value} isHighlighted={isWallHighlighted(mr, mc)} />;
-              })
-            )}
-          </div>
-        </div>
-
-        {/* Bottom: Chat (disabled) */}
-        <div className="horizontal-beam chat-beam disabled-beam">
-          <input disabled placeholder="Chat disabled in this mode..." className="chat-input" />
-          <button disabled className="chat-btn">GIF</button>
-          <button disabled className="chat-btn send-btn">Send</button>
-        </div>
-
-      </div>
-
-      {/* RIGHT COLUMN: Players + Forfeit */}
+      {/* LEFT COLUMN: Players + Forfeit */}
       <div className="right-column">
         <div className="vertical-beam">
 
@@ -195,6 +152,39 @@ export default function QuoridorBoard({
           <button onClick={onForfeit} className="forfeit-btn">
             FORFEIT
           </button>
+        </div>
+      </div>
+
+      {/* RIGHT COLUMN: Board */}
+      <div className="left-column">
+        <div className="board-3d-wrapper">
+          <div className="board-surface" style={{
+            display: "inline-grid",
+            gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
+            gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
+            gap: GAP,
+            transform: mySymbol === 2 ? "rotate(180deg)" : "none",
+          }}>
+            {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
+              Array.from({ length: MATRIX_SIZE }, (_, mc) => {
+                const value: CellValue = (matrix[mr]?.[mc] ?? 0) as CellValue;
+                const evenRow = mr % 2 === 0;
+                const evenCol = mc % 2 === 0;
+
+                if (evenRow && evenCol) {
+                  const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
+                  return <PawnCell key={`${mr}-${mc}`} value={value} boardRow={mr / 2} boardCol={mc / 2} isValidMove={isValidMove} onMove={onMove} flipped={flipped} />;
+                }
+                if (!evenRow && evenCol) {
+                  return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+                }
+                if (evenRow && !evenCol) {
+                  return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+                }
+                return <Pillar key={`${mr}-${mc}`} value={value} isHighlighted={isWallHighlighted(mr, mc)} />;
+              })
+            )}
+          </div>
         </div>
       </div>
 
