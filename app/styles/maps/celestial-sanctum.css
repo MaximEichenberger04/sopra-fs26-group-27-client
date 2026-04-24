@@ -1,13 +1,5 @@
 .theme-celestial-sanctum {
-    /* Main Background: Detailed heavenly sky with swirling clouds simulated via stacked gradients */
-    --q-main-bg: linear-gradient(to bottom, #89cff0 0%, #a2d7ff 30%, #ccebff 70%, #f0f7fa 100%),
-        radial-gradient(ellipse at center, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0.05) 60%, transparent 100%),
-        radial-gradient(circle at top left, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%, transparent 100%),
-        radial-gradient(circle at top right, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 70%, transparent 100%);
-    --q-main-bg-repeat: no-repeat, no-repeat, no-repeat, no-repeat;
-    --q-main-bg-position: center, 20% 10%, top left, top right;
-    --q-main-bg-size: cover, 150% 150%, 80% 80%, 80% 80%;
-    /* Add multiple pseudo-elements to the main-wrapper to further stack gradients for cloud depth and stylized elements (pillars/arches) not directly possible in main background */
+    --q-main-bg: url('/maps/sanctum.png') center/cover no-repeat;
 
     --q-beam-bg: rgba(255, 255, 255, 0.85);
     --q-beam-border: rgba(200, 210, 220, 0.5);
