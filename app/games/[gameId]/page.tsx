@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard from "@/components/QuoridorBoard";
 import GameChat from "@/components/GameChat";
@@ -83,6 +83,14 @@ export default function GamePage() {
   const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const [boardHeight, setBoardHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (boardWrapRef.current) {
+      setBoardHeight(boardWrapRef.current.offsetHeight);
+    }
+  }, [mounted]);
   const router = useRouter();
 
   const api = useApi(token);
@@ -286,23 +294,25 @@ export default function GamePage() {
         </p>
       )}
 
-      <div style={{ display: "flex", flexDirection: "row", alignItems: "stretch" }}>
-        {mounted && (
-          <QuoridorBoard
-            remainingWalls={myRemainingWalls}
-            totalWalls={game.wallsPerPlayer}
-            mySymbol={mySymbol}
-            matrix={game.matrix}
-            isMyTurn={isMyTurn}
-            validMoves={validMoves}
-            onMove={handleMove}
-            onWall={handleWall}
-            onForfeit={handleForfeit}
-            players={players}
-          />
-        )}
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start" }}>
+        <div ref={boardWrapRef}>
+          {mounted && (
+            <QuoridorBoard
+              remainingWalls={myRemainingWalls}
+              totalWalls={game.wallsPerPlayer}
+              mySymbol={mySymbol}
+              matrix={game.matrix}
+              isMyTurn={isMyTurn}
+              validMoves={validMoves}
+              onMove={handleMove}
+              onWall={handleWall}
+              onForfeit={handleForfeit}
+              players={players}
+            />
+          )}
+        </div>
 
-        <div style={{ marginLeft: 30, flexShrink: 0, display: "flex", flexDirection: "column" }}>
+        <div style={{ marginLeft: 30, flexShrink: 0, display: "flex", flexDirection: "column", height: boardHeight || undefined, overflow: "hidden", borderRadius: 12 }}>
           <GameChat
             gameId={gameId}
             userId={userId}

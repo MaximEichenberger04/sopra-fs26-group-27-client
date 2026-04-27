@@ -19,6 +19,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch chat history
   const fetchChat = useCallback(async () => {
@@ -53,8 +54,8 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
     } catch {
       // non-critical
     } finally {
-        // Re-enable send button whether request succeeded or failed
         setSending(false);
+        setTimeout(() => inputRef.current?.focus(), 0);
     }
   };
 
@@ -73,7 +74,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
         <h4>CHAT</h4>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 80, marginBottom: 12 }}>
+      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, marginBottom: 12 }}>
         {messages.length === 0 ? (
           <p style={{ color: "var(--q-text-muted)", fontSize: 12, margin: 0 }}>No messages yet...</p>
         ) : (
@@ -105,6 +106,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
           className="chat-input"
           placeholder="Type a message..."
           value={input}
+          ref={inputRef}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           disabled={sending}
