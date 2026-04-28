@@ -430,10 +430,22 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  padding: 3px;
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: visible;
+}
+
+.cosmetic-preview-ring::before {
+  content: '';
+  position: absolute;
+  inset: -22%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 2;
 }
 
 .cosmetic-preview-inner {

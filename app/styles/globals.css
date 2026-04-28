@@ -545,43 +545,87 @@ a {
    ═══════════════════════════════════════════════ */
 
 .avatar-ring-wrap {
-  border-radius: 50%;
-  padding: 3px;
+  position: relative;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
 }
 
-.avatar-ring-sm {
-  padding: 2px;
+/* When a ring image is equipped, the wrapper grows to show the frame */
+.avatar-ring-wrap[class*="ring-"] {
+  padding: 0;
 }
 
-.ring-crimson {
-  background: linear-gradient(135deg, #c04040, #e06060, #c04040);
+/* Ring image overlay — shared base */
+.avatar-ring-wrap::before {
+  content: '';
+  display: none;
+  position: absolute;
+  inset: -18%;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  pointer-events: none;
+  z-index: 2;
 }
 
-.ring-emerald {
-  background: linear-gradient(135deg, #4a8a3c, #6ab85a, #4a8a3c);
+/* Show the ring image when a ring class is present */
+.avatar-ring-wrap[class*="ring-"]::before {
+  display: block;
 }
 
-.ring-royal {
-  background: linear-gradient(135deg, #6a5a9a, #9a8aca, #6a5a9a);
+.avatar-ring-sm::before {
+  inset: -20%;
 }
 
-.ring-fire {
-  background: linear-gradient(135deg, #e06020, #f0a030, #e06020);
+/* Ring image classes */
+.ring-wood::before {
+  background-image: url('/cosmetics/borderrings/wood.png');
 }
 
-.ring-ice {
-  background: linear-gradient(135deg, #4a90d0, #a0d0f0, #4a90d0);
+.ring-builder::before {
+  background-image: url('/cosmetics/borderrings/builder.png');
 }
 
-.ring-rainbow {
-  background: linear-gradient(135deg, #c04040, #e0a030, #4a8a3c, #4a90d0, #6a5a9a);
+.ring-slime::before {
+  background-image: url('/cosmetics/borderrings/slime.png');
 }
 
-.ring-shadow {
-  background: #1a1a2a;
-  box-shadow: 0 0 8px rgba(100, 80, 200, .3);
+.ring-emerald::before {
+  background-image: url('/cosmetics/borderrings/emerald.png');
+}
+
+.ring-ice::before {
+  background-image: url('/cosmetics/borderrings/ice.png');
+}
+
+.ring-knight::before {
+  background-image: url('/cosmetics/borderrings/knight.png');
+}
+
+.ring-fire::before {
+  background-image: url('/cosmetics/borderrings/fire.png');
+}
+
+.ring-shadow::before {
+  background-image: url('/cosmetics/borderrings/shadow.png');
+}
+
+.ring-royal::before {
+  background-image: url('/cosmetics/borderrings/royal.png');
+}
+
+.ring-diamond::before {
+  background-image: url('/cosmetics/borderrings/diamond.png');
+}
+
+.ring-wizard::before {
+  background-image: url('/cosmetics/borderrings/wizard.png');
+}
+
+.ring-rainbow::before {
+  background-image: url('/cosmetics/borderrings/rainbow.png');
 }
 
 .pskin-lava {
