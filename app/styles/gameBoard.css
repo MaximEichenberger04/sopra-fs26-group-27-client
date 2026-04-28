@@ -354,12 +354,7 @@
 
 /* 3. Celestial Sanctum — White marble with grey veining, gold accents */
 .theme-celestial-sanctum {
-    --q-main-bg:
-        radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.9) 0%, transparent 40%),
-        radial-gradient(ellipse at 75% 30%, rgba(255, 255, 255, 0.6) 0%, transparent 35%),
-        radial-gradient(ellipse at 40% 70%, rgba(255, 255, 255, 0.7) 0%, transparent 45%),
-        radial-gradient(ellipse at 80% 80%, rgba(200, 220, 255, 0.3) 0%, transparent 40%),
-        linear-gradient(180deg, #60b0e0 0%, #80c8f0 20%, #a8daf8 40%, #d0ebfc 60%, #e8f4ff 80%, #f0f6fa 100%);
+    --q-main-bg: url('/maps/sanctum.png') center/cover no-repeat;
     --q-title: #8a7a50;
     --q-beam-bg: rgba(248, 246, 240, 0.92);
     --q-beam-border: rgba(200, 180, 130, 0.35);
