@@ -1,32 +1,30 @@
 import { useState, useEffect } from "react";
-import { CellValue, MATRIX_SIZE } from "@/types/game";
+import { CellValue, MATRIX_SIZE, WALL_VALUE } from "@/types/game";
 
-const CELL = 56;
-const WALL = 12;
-const GAP = 0;
+const BASE_CELL = 56;
+const BASE_WALL = 12;
+const MIN_CELL = 36;
+const MAX_CELL = 56;
 
-function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped }: {
+function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped, cellSize }: {
   value: CellValue; boardRow: number; boardCol: number; isValidMove: boolean;
-  onMove: (mr: number, mc: number) => void; flipped: boolean;
+  onMove: (mr: number, mc: number) => void; flipped: boolean; cellSize: number;
 }) {
   return (
     <div
       onClick={() => isValidMove && onMove(boardRow * 2, boardCol * 2)}
       className={`pawn-cell ${isValidMove ? "valid-move" : ""}`}
       style={{
-        width: CELL, height: CELL,
+        width: cellSize, height: cellSize,
         cursor: isValidMove ? "pointer" : "default",
         transform: flipped ? "rotate(180deg)" : "none",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >
-      {(value === 1 || value === 2) && (
+      {(value >= 1 && value <= 4) && (
         <div
           className={`pawn pawn-${value}`}
-          style={{
-            width: CELL * 0.58,
-            height: CELL * 0.58,
-          }}
+          style={{ width: cellSize * 0.58, height: cellSize * 0.58 }}
         >
           <div className="pawn-highlight" />
         </div>
@@ -40,14 +38,14 @@ function getWallSlots(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTI
   return [[mr, mc], [mr + 1, mc], [mr + 2, mc]];
 }
 
-function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHoverEnd, isHighlighted }: {
+function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHoverEnd, isHighlighted, cellSize, wallSize }: {
   orientation: "HORIZONTAL" | "VERTICAL"; value: CellValue; mr: number; mc: number;
   isMyTurn: boolean; isHighlighted: boolean;
   onWall: (mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") => void;
   onHover: (mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") => void;
-  onHoverEnd: () => void;
+  onHoverEnd: () => void; cellSize: number; wallSize: number;
 }) {
-  const active = value === 3;
+  const active = value === WALL_VALUE;
   const isH = orientation === "HORIZONTAL";
   return (
     <div
@@ -56,33 +54,33 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, onWall, onHover, onHov
       onMouseLeave={() => onHoverEnd()}
       className={`wall-slot ${active ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
       style={{
-        width: isH ? CELL : WALL,
-        height: isH ? WALL : CELL,
+        width: isH ? cellSize : wallSize,
+        height: isH ? wallSize : cellSize,
         cursor: isMyTurn && !active ? "pointer" : "default",
       }}
     />
   );
 }
 
-function Pillar({ value, isHighlighted }: { value: CellValue; isHighlighted: boolean }) {
+function Pillar({ value, isHighlighted, wallSize }: { value: CellValue; isHighlighted: boolean; wallSize: number }) {
   return (
     <div
-      className={`pillar ${value === 3 ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
-      style={{ width: WALL, height: WALL }}
+      className={`pillar ${value === WALL_VALUE ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
+      style={{ width: wallSize, height: wallSize }}
     />
   );
 }
 
-interface PlayerInfo {
+export interface PlayerInfo {
   id: number;
   username: string;
   walls: number;
+  symbol: 1 | 2 | 3 | 4;
+  hasLeft: boolean;
 }
 
 interface QuoridorBoardProps {
-  mySymbol: 1 | 2;
-  remainingWalls: number;
-  totalWalls: number;
+  mySymbol: 1 | 2 | 3 | 4;
   matrix: CellValue[][];
   isMyTurn: boolean;
   validMoves: Array<[number, number]>;
@@ -93,15 +91,40 @@ interface QuoridorBoardProps {
 }
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, remainingWalls, totalWalls, onForfeit, mySymbol, players,
+  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit, mySymbol, players,
 }: QuoridorBoardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const flipped = mounted && mySymbol === 2;
+  const boardRotation: Record<1 | 2 | 3 | 4, string> = {
+    1: "rotate(0deg)",
+    2: "rotate(180deg)",
+    3: "rotate(90deg)",
+    4: "rotate(-90deg)",
+  };
+
+  const flipped = mounted && (mySymbol === 2 || mySymbol === 3 || mySymbol === 4);
   const [hoveredWall, setHoveredWall] = useState<Array<[number, number]>>([]);
+  const [sizes, setSizes] = useState({ cell: BASE_CELL, wall: BASE_WALL });
+
+  useEffect(() => {
+    function updateSizes() {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const available = Math.min(vw * 0.52, vh * 0.72);
+      const wallRatio = BASE_WALL / BASE_CELL;
+      const rawCell = Math.floor(available / (9 + 8 * wallRatio));
+      const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, rawCell));
+      const wall = Math.max(8, Math.round(cell * wallRatio));
+      setSizes({ cell, wall });
+    }
+    updateSizes();
+    window.addEventListener("resize", updateSizes);
+    return () => window.removeEventListener("resize", updateSizes);
+  }, []);
 
   function handleHover(mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") {
+    if (!isMyTurn) return;
     setHoveredWall(getWallSlots(mr, mc, orientation));
   }
   function handleHoverEnd() { setHoveredWall([]); }
@@ -112,21 +135,23 @@ export default function QuoridorBoard({
   return (
     <div className="game-layout">
 
-      {/* LEFT COLUMN: Players + Forfeit */}
+      {/* LEFT: Players + Forfeit */}
       <div className="right-column">
         <div className="vertical-beam">
-
-          {/* Players */}
           <div className="beam-section">
             <h4>PLAYERS</h4>
             {players && players.length > 0 ? (
-              players.map((p, i) => (
+              players.map((p) => (
                 <div key={p.id} className="player-row">
                   <div className="player-badge">
-                    <div className={`pawn-icon pawn-${i + 1}-icon`} />
-                    <span className="player-name">{p.username}</span>
+                    <div className={`pawn-icon pawn-${p.symbol}-icon`} />
+                    <span className={`player-name ${p.hasLeft ? "player-name-left" : ""}`}>{p.username}</span>
                   </div>
-                  <span className="player-walls">Walls: {p.walls}</span>
+                  {p.hasLeft ? (
+                    <span className="player-left-note">has left the game</span>
+                  ) : (
+                    <span className="player-walls">Walls: {p.walls}</span>
+                  )}
                 </div>
               ))
             ) : (
@@ -149,21 +174,19 @@ export default function QuoridorBoard({
 
           <div className="beam-spacer" />
 
-          <button onClick={onForfeit} className="forfeit-btn">
-            FORFEIT
-          </button>
+          <button onClick={onForfeit} className="forfeit-btn">FORFEIT</button>
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Board */}
+      {/* RIGHT: Board + Chat */}
       <div className="left-column">
         <div className="board-3d-wrapper">
           <div className="board-surface" style={{
             display: "inline-grid",
-            gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
-            gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
-            gap: GAP,
-            transform: mySymbol === 2 ? "rotate(180deg)" : "none",
+            gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${sizes.cell}px` : `${sizes.wall}px`).join(" "),
+            gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${sizes.cell}px` : `${sizes.wall}px`).join(" "),
+            gap: 0,
+            transform: mounted ? boardRotation[mySymbol] : "rotate(0deg)",
           }}>
             {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
               Array.from({ length: MATRIX_SIZE }, (_, mc) => {
@@ -173,18 +196,24 @@ export default function QuoridorBoard({
 
                 if (evenRow && evenCol) {
                   const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
-                  return <PawnCell key={`${mr}-${mc}`} value={value} boardRow={mr / 2} boardCol={mc / 2} isValidMove={isValidMove} onMove={onMove} flipped={flipped} />;
+                  return <PawnCell key={`${mr}-${mc}`} value={value} boardRow={mr / 2} boardCol={mc / 2} isValidMove={isValidMove} onMove={onMove} flipped={flipped} cellSize={sizes.cell} />;
                 }
                 if (!evenRow && evenCol) {
-                  return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+                  return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} cellSize={sizes.cell} wallSize={sizes.wall} />;
                 }
                 if (evenRow && !evenCol) {
-                  return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
+                  return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} cellSize={sizes.cell} wallSize={sizes.wall} />;
                 }
-                return <Pillar key={`${mr}-${mc}`} value={value} isHighlighted={isWallHighlighted(mr, mc)} />;
+                return <Pillar key={`${mr}-${mc}`} value={value} isHighlighted={isWallHighlighted(mr, mc)} wallSize={sizes.wall} />;
               })
             )}
           </div>
+        </div>
+
+        <div className="horizontal-beam chat-beam disabled-beam">
+          <input disabled placeholder="Chat disabled in this mode..." className="chat-input" />
+          <button disabled className="chat-btn">GIF</button>
+          <button disabled className="chat-btn send-btn">Send</button>
         </div>
       </div>
 
