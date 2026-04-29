@@ -82,7 +82,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
     if (!gifQuery.trim()) return;
     try {
       const results = await api.get<GifSearchResultDTO[]>(
-        `/gifs/search?q=${encodeURIComponent(gifQuery.trim())}&per_page=20`
+        `/gifs/search?q=${encodeURIComponent(gifQuery.trim())}&per_page=50`
       );
       setGifResults(results);
     } catch {
@@ -120,14 +120,14 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
 
       <div style={{ flex: 1, overflowY: "auto", minHeight: 0, marginBottom: 12 }}>
         {messages.length === 0 ? (
-          <p style={{ color: "var(--q-text-muted)", fontSize: 12, margin: 0 }}>No messages yet...</p>
+          <p style={{ color: "var(--q-text-muted)", fontSize: 14, margin: 0 }}>No messages yet...</p>
         ) : (
           messages.map((msg) => (
             <div
               key={msg.id}
               style={{
                 padding: "5px 0",
-                fontSize: 13,
+                fontSize: 15,
                 color: "var(--q-text)",
                 borderBottom: "1px solid var(--q-beam-border)",
               }}
@@ -156,7 +156,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
 
       {gifPickerOpen && (
         <div style={{
-          height: 210,
+          height: "50%",
           display: "flex",
           flexDirection: "column",
           gap: 6,
@@ -176,7 +176,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
             flex: 1,
             overflowY: "auto",
             display: "grid",
-            gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
             gap: 4,
             alignContent: "start",
           }}>
