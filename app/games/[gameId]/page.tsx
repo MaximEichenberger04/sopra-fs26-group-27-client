@@ -312,7 +312,7 @@ export default function GamePage() {
           )}
         </div>
 
-        <div style={{ marginLeft: 30, flexShrink: 0, display: "flex", flexDirection: "column", height: boardHeight || undefined, overflow: "hidden", borderRadius: 12 }}>
+        <div style={{ marginLeft: 30, flexShrink: 0, width: 380, display: "flex", flexDirection: "column", height: boardHeight || undefined, overflow: "hidden", borderRadius: 12 }}>
           <GameChat
             gameId={gameId}
             userId={userId}
