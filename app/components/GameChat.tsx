@@ -211,7 +211,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
           Send
         </button>
         <button
-          className="chat-btn"
+          className="chat-btn send-btn"
           onClick={toggleGifPicker}
           disabled={sending}
           style={{ flexShrink: 0 }}
