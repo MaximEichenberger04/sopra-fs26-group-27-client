@@ -209,12 +209,6 @@ export default function QuoridorBoard({
             )}
           </div>
         </div>
-
-        <div className="horizontal-beam chat-beam disabled-beam">
-          <input disabled placeholder="Chat disabled in this mode..." className="chat-input" />
-          <button disabled className="chat-btn">GIF</button>
-          <button disabled className="chat-btn send-btn">Send</button>
-        </div>
       </div>
 
     </div>

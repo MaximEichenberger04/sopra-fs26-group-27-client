@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard, { PlayerInfo } from "@/components/QuoridorBoard";
+import GameChat from "@/components/GameChat";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { GameDTO, GameState, CellValue, MATRIX_SIZE, WALL_VALUE } from "@/types/game";
 import { User } from "@/types/user";
@@ -85,6 +86,16 @@ export default function GamePage() {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
   const [forfeitedPlayerIds, setForfeitedPlayerIds] = useState<number[]>([]);
+
+  const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const [boardHeight, setBoardHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (boardWrapRef.current) {
+      setBoardHeight(boardWrapRef.current.offsetHeight);
+    }
+  }, [mounted]);
 
   const wsRef = useRef<WebSocket | null>(null);
   const playerCountRef = useRef(0);
@@ -197,6 +208,11 @@ export default function GamePage() {
 
           if (String(msg.gameId) !== String(gameId)) return;
 
+          if (msg.type === "CHAT") {
+            setChatRefreshTrigger(n => n + 1);
+            return;
+          }
+
           if (msg.type === "PLAYER_DISCONNECTED") {
             if (Number(msg.userId) !== userId) {
               setBanner(`A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30}s for reconnection.`);
@@ -244,6 +260,9 @@ export default function GamePage() {
       ws?.close();
     };
   }, [gameId, fetchGame, userId, router]);
+
+  const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
+  const username = players.find(p => p.id === userId)?.username ?? "";
 
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const myPlayerIndex = game.playerIds.findIndex((id) => id === userId);
