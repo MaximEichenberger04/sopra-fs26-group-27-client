@@ -50,6 +50,7 @@ export interface ChatMessageGetDTO {
   gameId: number;
   userId: number;
   username: string;
-  text: string;
-  timestamp: number;
+  text: string | null;
+  gifUrl: string | null;
+  timestamp: number; // Unix milliseconds
 }

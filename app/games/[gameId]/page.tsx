@@ -304,18 +304,34 @@ export default function GamePage() {
         </p>
       )}
 
-      {mounted && (
-        <QuoridorBoard
-          matrix={game.matrix}
-          isMyTurn={isMyTurn}
-          mySymbol={mySymbol}
-          validMoves={validMoves}
-          onMove={handleMove}
-          onWall={handleWall}
-          onForfeit={handleForfeit}
-          players={players}
-        />
-      )}
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start" }}>
+        <div ref={boardWrapRef}>
+          {mounted && (
+            <QuoridorBoard
+              remainingWalls={myRemainingWalls}
+              totalWalls={game.wallsPerPlayer}
+              mySymbol={mySymbol}
+              matrix={game.matrix}
+              isMyTurn={isMyTurn}
+              validMoves={validMoves}
+              onMove={handleMove}
+              onWall={handleWall}
+              onForfeit={handleForfeit}
+              players={players}
+            />
+          )}
+        </div>
+
+        <div style={{ marginLeft: 30, flexShrink: 0, width: 380, display: "flex", flexDirection: "column", height: boardHeight || undefined, overflow: "hidden", borderRadius: 12 }}>
+          <GameChat
+            gameId={gameId}
+            userId={userId}
+            username={username}
+            token={token}
+            refreshTrigger={chatRefreshTrigger}
+          />
+        </div>
+      </div>
 
       {lastSync && (
         <p style={{ color: "var(--q-text-muted, #4a4438)", fontSize: 11, margin: 0 }}>
