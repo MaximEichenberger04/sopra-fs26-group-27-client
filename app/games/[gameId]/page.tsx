@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard, { PlayerInfo } from "@/components/QuoridorBoard";
 import GameChat from "@/components/GameChat";
@@ -91,10 +91,13 @@ export default function GamePage() {
   const boardWrapRef = useRef<HTMLDivElement>(null);
   const [boardHeight, setBoardHeight] = useState(0);
 
-  useLayoutEffect(() => {
-    if (boardWrapRef.current) {
-      setBoardHeight(boardWrapRef.current.offsetHeight);
-    }
+  useEffect(() => {
+    if (!boardWrapRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      setBoardHeight(entries[0].contentRect.height);
+    });
+    observer.observe(boardWrapRef.current);
+    return () => observer.disconnect();
   }, [mounted]);
 
   const wsRef = useRef<WebSocket | null>(null);
@@ -261,7 +264,6 @@ export default function GamePage() {
     };
   }, [gameId, fetchGame, userId, router]);
 
-  const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
   const username = players.find(p => p.id === userId)?.username ?? "";
 
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
@@ -327,8 +329,6 @@ export default function GamePage() {
         <div ref={boardWrapRef}>
           {mounted && (
             <QuoridorBoard
-              remainingWalls={myRemainingWalls}
-              totalWalls={game.wallsPerPlayer}
               mySymbol={mySymbol}
               matrix={game.matrix}
               isMyTurn={isMyTurn}
