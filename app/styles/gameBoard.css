@@ -15,10 +15,8 @@
     flex-direction: column;
     align-items: center;
     gap: 40px;
-    /* Space between board and chat */
 }
 
-/* Horizontal & Vertical Beams (Solid Color) */
 .horizontal-beam,
 .vertical-beam {
     background: var(--q-beam-bg, rgba(20, 20, 25, 0.85));
@@ -51,12 +49,6 @@
     margin: 0 0 12px 0;
 }
 
-.beam-divider {
-    height: 1px;
-    background: var(--q-beam-border);
-    margin: 20px 0;
-}
-
 .beam-spacer {
     flex-grow: 1;
 }
@@ -77,23 +69,6 @@
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
 
-.walls-counter {
-    display: flex;
-    align-items: baseline;
-    gap: 4px;
-}
-
-.walls-current {
-    color: var(--q-text);
-    font-size: 32px;
-    font-weight: bold;
-}
-
-.walls-total {
-    color: var(--q-text-muted);
-    font-size: 16px;
-}
-
 .forfeit-btn {
     background: rgba(217, 107, 107, 0.1);
     border: 1px solid rgba(217, 107, 107, 0.3);
@@ -110,7 +85,7 @@
     background: rgba(217, 107, 107, 0.2);
 }
 
-/* Chat Elements */
+/* Chat */
 .disabled-beam {
     opacity: 0.5;
     pointer-events: none;
@@ -139,7 +114,7 @@
     color: #000;
 }
 
-/* --- 3D BOARD TRANSFORM --- */
+/* --- 3D BOARD --- */
 .board-3d-wrapper {
     perspective: 1200px;
     margin-top: 20px;
@@ -150,15 +125,13 @@
     padding: 12px;
     border-radius: 12px;
     transform: rotateX(25deg) scale(1.05);
-    /* The subtle bird's eye tilt! */
     transform-style: preserve-3d;
     box-shadow: none;
     border-bottom: 12px solid var(--q-board-thickness);
-    /* Fake 3D depth */
     transition: transform 0.3s ease;
 }
 
-/* TILES (Realistic Gradients) */
+/* TILES */
 .pawn-cell {
     background: var(--q-tile-bg, #2e2a22);
     border-radius: 6px;
@@ -190,7 +163,6 @@
     background: var(--q-wall-active);
     box-shadow: var(--q-wall-shadow);
     transform: translateZ(15px);
-    /* Pops up in 3D */
 }
 
 .wall-slot.highlighted,
@@ -198,33 +170,54 @@
     background: var(--q-wall-hover);
 }
 
-/* 3D PAWNS */
+/* PAWNS — colored outline border always visible */
 .pawn {
     position: relative;
     border-radius: 50%;
+    border-width: 3px;
+    border-style: solid;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5), inset 0 -3px 6px rgba(0, 0, 0, 0.3);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     will-change: transform;
 }
 
-/* Hardcoded Universal Blue and Red */
+/* Default pawn fills (used when no cosmetic skin is equipped) */
 .pawn-1 {
     background: radial-gradient(circle at 30% 30%, #6ba4ff, #2b5599);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-color: rgba(91, 141, 217, 0.9);
 }
 
 .pawn-2 {
     background: radial-gradient(circle at 30% 30%, #ff7b7b, #992b2b);
-    border: 2px solid rgba(255, 255, 255, 0.4);
+    border-color: rgba(217, 107, 107, 0.9);
 }
 
+.pawn-3 {
+    background: radial-gradient(circle at 30% 30%, #7bff9a, #2b9947);
+    border-color: rgba(107, 217, 130, 0.9);
+}
+
+.pawn-4 {
+    background: radial-gradient(circle at 30% 30%, #ffd27b, #996b2b);
+    border-color: rgba(217, 180, 107, 0.9);
+}
+
+/* Sidebar pawn icons */
 .pawn-1-icon {
     background: radial-gradient(circle at 30% 30%, #6ba4ff, #2b5599);
 }
 
 .pawn-2-icon {
     background: radial-gradient(circle at 30% 30%, #ff7b7b, #992b2b);
+}
+
+.pawn-3-icon {
+    background: radial-gradient(circle at 30% 30%, #7bff9a, #2b9947);
+}
+
+.pawn-4-icon {
+    background: radial-gradient(circle at 30% 30%, #ffd27b, #996b2b);
 }
 
 .pawn-highlight {
@@ -249,6 +242,10 @@
     color: var(--q-text);
 }
 
+.player-name-left {
+    color: #d96b6b;
+}
+
 .player-walls {
     display: block;
     font-size: 14px;
@@ -257,12 +254,48 @@
     margin-top: 2px;
 }
 
+.player-left-note {
+    display: block;
+    font-size: 12px;
+    color: #d96b6b;
+    margin-left: 26px;
+    margin-top: 2px;
+    font-style: italic;
+}
+
+/* Responsive */
+@media (max-width: 1280px) {
+    .game-layout {
+        gap: 18px;
+    }
+
+    .vertical-beam {
+        width: 190px;
+        padding: 18px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .game-layout {
+        gap: 14px;
+    }
+
+    .vertical-beam {
+        width: 170px;
+        min-height: 320px;
+        padding: 14px;
+    }
+
+    .player-name {
+        font-size: 13px;
+    }
+}
 
 /* =========================================
    THEMES (CSS-only textures)
 ========================================= */
 
-/* 1. Mystic Grove — Sandy stone with moss patches, wooden walls */
+/* 1. Mystic Grove */
 .theme-mystic-grove {
     --q-main-bg: url('/maps/forest.png') center/cover no-repeat;
     --q-title: #a0c890;
@@ -270,44 +303,26 @@
     --q-beam-border: rgba(80, 120, 60, 0.25);
     --q-text: #d0dcc8;
     --q-text-muted: #6a8a5a;
-
     --q-board-base: #2a3020;
     --q-board-thickness: #141a10;
-
     --q-tile-border: 1px solid #3a4a28;
-    --q-tile-shadow:
-        inset 0 1px 2px rgba(200, 190, 140, 0.12),
-        inset 0 -2px 4px rgba(0, 0, 0, 0.35),
-        0 3px 6px rgba(0, 0, 0, 0.4);
-
+    --q-tile-shadow: inset 0 1px 2px rgba(200, 190, 140, 0.12), inset 0 -2px 4px rgba(0, 0, 0, 0.35), 0 3px 6px rgba(0, 0, 0, 0.4);
     --q-tile-valid-shadow: inset 0 0 14px rgba(46, 204, 113, 0.7), 0 0 8px rgba(46, 204, 113, 0.3);
     --q-tile-valid-border: rgba(46, 204, 113, 0.8);
-
     --q-wall-active: linear-gradient(to bottom, #9a6830, #6a4420, #5a3818);
     --q-wall-shadow: 0 4px 8px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(180, 140, 90, 0.3);
     --q-wall-hover: rgba(120, 80, 40, 0.6);
 }
 
 .theme-mystic-grove .pawn-cell {
-    background:
-        radial-gradient(ellipse at 15% 80%, rgba(80, 120, 40, 0.45) 0%, transparent 40%),
-        radial-gradient(ellipse at 85% 20%, rgba(70, 110, 35, 0.35) 0%, transparent 35%),
-        radial-gradient(ellipse at 50% 50%, rgba(90, 130, 50, 0.15) 0%, transparent 50%),
-        radial-gradient(ellipse at 30% 15%, rgba(60, 100, 30, 0.3) 0%, transparent 30%),
-        linear-gradient(160deg,
-            #8a7a58 0%, #7a6c4e 15%, #8e7e5c 30%,
-            #7c6e50 50%, #887856 70%, #7a6c4a 85%, #8a7a58 100%);
+    background: radial-gradient(ellipse at 15% 80%, rgba(80, 120, 40, 0.45) 0%, transparent 40%), radial-gradient(ellipse at 85% 20%, rgba(70, 110, 35, 0.35) 0%, transparent 35%), radial-gradient(ellipse at 50% 50%, rgba(90, 130, 50, 0.15) 0%, transparent 50%), radial-gradient(ellipse at 30% 15%, rgba(60, 100, 30, 0.3) 0%, transparent 30%), linear-gradient(160deg, #8a7a58 0%, #7a6c4e 15%, #8e7e5c 30%, #7c6e50 50%, #887856 70%, #7a6c4a 85%, #8a7a58 100%);
 }
 
 .theme-mystic-grove .pawn-cell.valid-move {
-    background:
-        radial-gradient(circle, rgba(46, 204, 113, 0.5) 0%, rgba(46, 204, 113, 0.12) 65%, transparent 100%),
-        radial-gradient(ellipse at 15% 80%, rgba(80, 120, 40, 0.45) 0%, transparent 40%),
-        radial-gradient(ellipse at 85% 20%, rgba(70, 110, 35, 0.35) 0%, transparent 35%),
-        linear-gradient(160deg, #8a7a58 0%, #7a6c4e 50%, #8a7a58 100%);
+    background: radial-gradient(circle, rgba(46, 204, 113, 0.5) 0%, rgba(46, 204, 113, 0.12) 65%, transparent 100%), radial-gradient(ellipse at 15% 80%, rgba(80, 120, 40, 0.45) 0%, transparent 40%), radial-gradient(ellipse at 85% 20%, rgba(70, 110, 35, 0.35) 0%, transparent 35%), linear-gradient(160deg, #8a7a58 0%, #7a6c4e 50%, #8a7a58 100%);
 }
 
-/* 2. Obsidian Keep — Dark volcanic glass with subtle reflections */
+/* 2. Obsidian Keep */
 .theme-obsidian-keep {
     --q-main-bg: url('/maps/castle.png') center/cover no-repeat;
     --q-title: #c090c0;
@@ -315,42 +330,26 @@
     --q-beam-border: rgba(120, 50, 160, 0.2);
     --q-text: #d0c8d8;
     --q-text-muted: #7a6890;
-
     --q-board-base: #0c0a10;
     --q-board-thickness: #060408;
-
     --q-tile-border: 1px solid #1a1820;
-    --q-tile-shadow:
-        inset 0 1px 3px rgba(140, 120, 180, 0.08),
-        inset 0 -2px 5px rgba(0, 0, 0, 0.6),
-        0 4px 8px rgba(0, 0, 0, 0.7);
-
+    --q-tile-shadow: inset 0 1px 3px rgba(140, 120, 180, 0.08), inset 0 -2px 5px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.7);
     --q-tile-valid-shadow: inset 0 0 14px rgba(57, 255, 20, 0.5), 0 0 6px rgba(57, 255, 20, 0.2);
     --q-tile-valid-border: rgba(57, 255, 20, 0.6);
-
     --q-wall-active: linear-gradient(to bottom, #ff5a1a, #cc3800, #aa2a00);
     --q-wall-shadow: 0 0 12px rgba(255, 69, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.7);
     --q-wall-hover: rgba(255, 80, 20, 0.4);
 }
 
 .theme-obsidian-keep .pawn-cell {
-    background:
-        radial-gradient(ellipse at 20% 15%, rgba(80, 70, 100, 0.35) 0%, transparent 45%),
-        radial-gradient(ellipse at 75% 80%, rgba(60, 55, 80, 0.25) 0%, transparent 40%),
-        radial-gradient(ellipse at 60% 35%, rgba(90, 80, 110, 0.1) 0%, transparent 50%),
-        linear-gradient(145deg,
-            #1e1a28 0%, #161220 20%, #201c2a 40%,
-            #181424 60%, #1c182a 80%, #1a1624 100%);
+    background: radial-gradient(ellipse at 20% 15%, rgba(80, 70, 100, 0.35) 0%, transparent 45%), radial-gradient(ellipse at 75% 80%, rgba(60, 55, 80, 0.25) 0%, transparent 40%), radial-gradient(ellipse at 60% 35%, rgba(90, 80, 110, 0.1) 0%, transparent 50%), linear-gradient(145deg, #1e1a28 0%, #161220 20%, #201c2a 40%, #181424 60%, #1c182a 80%, #1a1624 100%);
 }
 
 .theme-obsidian-keep .pawn-cell.valid-move {
-    background:
-        radial-gradient(circle, rgba(57, 255, 20, 0.28) 0%, rgba(57, 255, 20, 0.06) 65%, transparent 100%),
-        radial-gradient(ellipse at 20% 15%, rgba(80, 70, 100, 0.35) 0%, transparent 45%),
-        linear-gradient(145deg, #1e1a28 0%, #161220 50%, #1c182a 100%);
+    background: radial-gradient(circle, rgba(57, 255, 20, 0.28) 0%, rgba(57, 255, 20, 0.06) 65%, transparent 100%), radial-gradient(ellipse at 20% 15%, rgba(80, 70, 100, 0.35) 0%, transparent 45%), linear-gradient(145deg, #1e1a28 0%, #161220 50%, #1c182a 100%);
 }
 
-/* 3. Celestial Sanctum — White marble with grey veining, gold accents */
+/* 3. Celestial Sanctum */
 .theme-celestial-sanctum {
     --q-main-bg: url('/maps/sanctum.png') center/cover no-repeat;
     --q-title: #8a7a50;
@@ -358,37 +357,21 @@
     --q-beam-border: rgba(200, 180, 130, 0.35);
     --q-text: #3a3528;
     --q-text-muted: #8a8070;
-
     --q-board-base: #ece8e0;
     --q-board-thickness: #c8c0b0;
-
     --q-tile-border: 1px solid rgba(190, 182, 165, 0.5);
-    --q-tile-shadow:
-        inset 0 1px 3px rgba(255, 255, 255, 0.9),
-        inset 0 -1px 2px rgba(160, 150, 130, 0.12),
-        0 3px 8px rgba(0, 0, 0, 0.06);
-
+    --q-tile-shadow: inset 0 1px 3px rgba(255, 255, 255, 0.9), inset 0 -1px 2px rgba(160, 150, 130, 0.12), 0 3px 8px rgba(0, 0, 0, 0.06);
     --q-tile-valid-shadow: inset 0 0 10px rgba(100, 200, 120, 0.4), 0 0 6px rgba(100, 200, 120, 0.2);
     --q-tile-valid-border: rgba(100, 200, 120, 0.7);
-
     --q-wall-active: linear-gradient(135deg, #d4b050, #c8a030, #b89028);
     --q-wall-shadow: 0 3px 6px rgba(0, 0, 0, 0.12), 0 0 8px rgba(200, 168, 50, 0.3);
     --q-wall-hover: rgba(200, 168, 50, 0.35);
 }
 
 .theme-celestial-sanctum .pawn-cell {
-    background:
-        linear-gradient(125deg, transparent 35%, rgba(180, 175, 165, 0.15) 38%, rgba(180, 175, 165, 0.08) 42%, transparent 45%),
-        linear-gradient(30deg, transparent 55%, rgba(170, 165, 155, 0.12) 58%, rgba(170, 165, 155, 0.06) 63%, transparent 66%),
-        linear-gradient(160deg, transparent 20%, rgba(190, 180, 170, 0.1) 23%, transparent 27%),
-        linear-gradient(135deg,
-            #f8f6f0 0%, #f4f0e8 20%, #f0ece2 40%,
-            #f6f2ea 60%, #f2eee4 80%, #f8f4ee 100%);
+    background: linear-gradient(125deg, transparent 35%, rgba(180, 175, 165, 0.15) 38%, rgba(180, 175, 165, 0.08) 42%, transparent 45%), linear-gradient(30deg, transparent 55%, rgba(170, 165, 155, 0.12) 58%, rgba(170, 165, 155, 0.06) 63%, transparent 66%), linear-gradient(160deg, transparent 20%, rgba(190, 180, 170, 0.1) 23%, transparent 27%), linear-gradient(135deg, #f8f6f0 0%, #f4f0e8 20%, #f0ece2 40%, #f6f2ea 60%, #f2eee4 80%, #f8f4ee 100%);
 }
 
 .theme-celestial-sanctum .pawn-cell.valid-move {
-    background:
-        radial-gradient(circle, rgba(100, 200, 120, 0.3) 0%, rgba(100, 200, 120, 0.08) 65%, transparent 100%),
-        linear-gradient(125deg, transparent 35%, rgba(180, 175, 165, 0.15) 38%, transparent 45%),
-        linear-gradient(135deg, #f8f6f0 0%, #f0ece2 50%, #f8f4ee 100%);
+    background: radial-gradient(circle, rgba(100, 200, 120, 0.3) 0%, rgba(100, 200, 120, 0.08) 65%, transparent 100%), linear-gradient(125deg, transparent 35%, rgba(180, 175, 165, 0.15) 38%, transparent 45%), linear-gradient(135deg, #f8f6f0 0%, #f0ece2 50%, #f8f4ee 100%);
 }
