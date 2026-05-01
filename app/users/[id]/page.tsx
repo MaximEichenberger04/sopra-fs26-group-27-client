@@ -9,6 +9,7 @@ import { User } from "@/types/user";
 import { COSMETICS, CosmeticItem, getOwnedCosmetics, getCosmeticById } from "@/types/cosmetics";
 import { Avatar, Button, Input, message } from "antd";
 import { UserOutlined, CameraOutlined } from "@ant-design/icons";
+import NavBar from "@/components/NavBar";
 
 const { TextArea } = Input;
 
@@ -171,6 +172,7 @@ const Profile: React.FC = () => {
       const field = item.type === "border" ? "equippedBorder" : "equippedPawnSkin";
       const response = await apiService.patch<User>(`/users/${params.id}`, { [field]: item.id });
       setUser(response);
+      window.dispatchEvent(new Event("cosmetic-changed"));
       messageApi.success(`${item.name} equipped!`);
     } catch (error) {
       messageApi.error("Failed to equip cosmetic.");
@@ -184,6 +186,7 @@ const Profile: React.FC = () => {
       const field = type === "border" ? "equippedBorder" : "equippedPawnSkin";
       const response = await apiService.patch<User>(`/users/${params.id}`, { [field]: "" });
       setUser(response);
+      window.dispatchEvent(new Event("cosmetic-changed"));
       messageApi.success("Cosmetic removed!");
     } catch (error) {
       messageApi.error("Failed to remove cosmetic.");
@@ -205,239 +208,242 @@ const Profile: React.FC = () => {
   // ═══════════════════════════════════════════════
   if (isOwner) {
     return (
-      <div className="auth-page">
-        {contextHolder}
-        <div className="profile-layout">
-          <div className="profile-card edit-mode">
-            <h1 className="edit-title">Edit Profile</h1>
+      <div>
+        <NavBar />
+        <div className="auth-page">
+          {contextHolder}
+          <div className="profile-layout">
+            <div className="profile-card edit-mode">
+              <h1 className="edit-title">Edit Profile</h1>
 
-            {/* Avatar */}
-            <div className="edit-avatar-section">
-              <div
-                className="edit-avatar-wrap"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <div className={`avatar-ring-wrap ${avatarRingClass}`}>
-                  <Avatar
-                    size={88}
-                    src={previewAvatar ?? user.avatarURL ?? undefined}
-                    icon={!user.avatarURL && !previewAvatar && <UserOutlined />}
-                    className="profile-avatar"
-                  />
+              {/* Avatar */}
+              <div className="edit-avatar-section">
+                <div
+                  className="edit-avatar-wrap"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <div className={`avatar-ring-wrap ${avatarRingClass}`}>
+                    <Avatar
+                      size={88}
+                      src={previewAvatar ?? user.avatarURL ?? undefined}
+                      icon={!user.avatarURL && !previewAvatar && <UserOutlined />}
+                      className="profile-avatar"
+                    />
+                  </div>
+                  <div className="edit-avatar-overlay">
+                    <CameraOutlined style={{ fontSize: 20 }} />
+                    <span>Change</span>
+                  </div>
                 </div>
-                <div className="edit-avatar-overlay">
-                  <CameraOutlined style={{ fontSize: 20 }} />
-                  <span>Change</span>
-                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  style={{ display: "none" }}
+                />
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleAvatarUpload}
-                style={{ display: "none" }}
-              />
+
+              {/* Username */}
+              <div className="edit-field">
+                <label className="edit-label">Username</label>
+                <Input
+                  className="edit-input"
+                  value={editUsername}
+                  onChange={(e) => setEditUsername(e.target.value)}
+                  placeholder="Enter username"
+                />
+              </div>
+
+              {/* Display Name */}
+              <div className="edit-field">
+                <label className="edit-label">Display Name</label>
+                <Input
+                  className="edit-input"
+                  value={editDisplayName}
+                  onChange={(e) => setEditDisplayName(e.target.value)}
+                  placeholder="Enter display name"
+                />
+              </div>
+
+              {/* Biography */}
+              <div className="edit-field">
+                <label className="edit-label">Biography</label>
+                <TextArea
+                  className="edit-input edit-textarea"
+                  value={editBiography}
+                  onChange={(e) => setEditBiography(e.target.value)}
+                  placeholder="Tell us about yourself..."
+                  rows={3}
+                />
+              </div>
+
+              {/* Change Password (collapsible) */}
+              <div className="edit-password-section">
+                <button
+                  className="edit-password-toggle"
+                  onClick={() => setShowPasswordChange(!showPasswordChange)}
+                  type="button"
+                >
+                  {showPasswordChange ? "▼" : "►"} Change Password
+                </button>
+
+                {showPasswordChange && (
+                  <div className="edit-password-fields">
+                    <div className="edit-field">
+                      <label className="edit-label">Current Password</label>
+                      <Input.Password
+                        className="edit-input"
+                        value={currentPassword}
+                        onChange={(e) => setCurrentPassword(e.target.value)}
+                        placeholder="Current Password"
+                      />
+                    </div>
+                    <div className="edit-field">
+                      <label className="edit-label">New Password</label>
+                      <Input.Password
+                        className="edit-input"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="New Password"
+                      />
+                      {showPasswordChange && newPassword.length > 0 && (
+                        <div className="edit-password-rules">
+                          {newPassword.length < 8 && (
+                            <p className="edit-rule-error">Must be at least 8 characters long.</p>
+                          )}
+                          {!/[A-Z]/.test(newPassword) && (
+                            <p className="edit-rule-error">Must contain at least one uppercase letter.</p>
+                          )}
+                          {!/[0-9]/.test(newPassword) && (
+                            <p className="edit-rule-error">Must contain at least one number.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="edit-field">
+                      <label className="edit-label">Confirm New Password</label>
+                      <Input.Password
+                        className="edit-input"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Confirm New Password"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="edit-actions">
+                <Button
+                  className="auth-btn-primary"
+                  onClick={handleSaveChanges}
+                  loading={isSaving}
+                >
+                  Save Changes
+                </Button>
+                <Button className="auth-btn-secondary" onClick={handleCancel}>
+                  Cancel
+                </Button>
+              </div>
             </div>
 
-            {/* Username */}
-            <div className="edit-field">
-              <label className="edit-label">Username</label>
-              <Input
-                className="edit-input"
-                value={editUsername}
-                onChange={(e) => setEditUsername(e.target.value)}
-                placeholder="Enter username"
-              />
-            </div>
+            {/* Right Cosmetics Panel */}
+            <div className="cosmetics-panel">
+              <div className="cosmetics-panel-header">
+                <h2 className="cosmetics-panel-title">My Cosmetics</h2>
+                <span className="cosmetics-coins">{user.coins ?? 0} coins</span>
+              </div>
 
-            {/* Display Name */}
-            <div className="edit-field">
-              <label className="edit-label">Display Name</label>
-              <Input
-                className="edit-input"
-                value={editDisplayName}
-                onChange={(e) => setEditDisplayName(e.target.value)}
-                placeholder="Enter display name"
-              />
-            </div>
-
-            {/* Biography */}
-            <div className="edit-field">
-              <label className="edit-label">Biography</label>
-              <TextArea
-                className="edit-input edit-textarea"
-                value={editBiography}
-                onChange={(e) => setEditBiography(e.target.value)}
-                placeholder="Tell us about yourself..."
-                rows={3}
-              />
-            </div>
-
-            {/* Change Password (collapsible) */}
-            <div className="edit-password-section">
-              <button
-                className="edit-password-toggle"
-                onClick={() => setShowPasswordChange(!showPasswordChange)}
-                type="button"
-              >
-                {showPasswordChange ? "▼" : "►"} Change Password
+              <button className="btn-outline cosmetics-shop-link" onClick={() => router.push("/shop")}>
+                Go to Shop
               </button>
 
-              {showPasswordChange && (
-                <div className="edit-password-fields">
-                  <div className="edit-field">
-                    <label className="edit-label">Current Password</label>
-                    <Input.Password
-                      className="edit-input"
-                      value={currentPassword}
-                      onChange={(e) => setCurrentPassword(e.target.value)}
-                      placeholder="Current Password"
-                    />
-                  </div>
-                  <div className="edit-field">
-                    <label className="edit-label">New Password</label>
-                    <Input.Password
-                      className="edit-input"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
-                      placeholder="New Password"
-                    />
-                    {showPasswordChange && newPassword.length > 0 && (
-                      <div className="edit-password-rules">
-                        {newPassword.length < 8 && (
-                          <p className="edit-rule-error">Must be at least 8 characters long.</p>
-                        )}
-                        {!/[A-Z]/.test(newPassword) && (
-                          <p className="edit-rule-error">Must contain at least one uppercase letter.</p>
-                        )}
-                        {!/[0-9]/.test(newPassword) && (
-                          <p className="edit-rule-error">Must contain at least one number.</p>
-                        )}
-                      </div>
+              {/* Equipped Cosmetics */}
+              <div className="cosmetics-section">
+                <h3 className="g-section-title">Equipped</h3>
+                <div className="equipped-grid">
+                  <div className="equipped-slot">
+                    <span className="equipped-slot-label">Border</span>
+                    {equippedBorderItem ? (
+                      <>
+                        <div className={`cosmetic-preview-ring ${equippedBorderItem.cssClass}`}>
+                          <div className="cosmetic-preview-inner" />
+                        </div>
+                        <span className="equipped-slot-name">{equippedBorderItem.name}</span>
+                        <button className="cosmetics-remove-btn" onClick={() => handleRemove("border")}>Remove</button>
+                      </>
+                    ) : (
+                      <span className="equipped-slot-empty">None</span>
                     )}
                   </div>
-                  <div className="edit-field">
-                    <label className="edit-label">Confirm New Password</label>
-                    <Input.Password
-                      className="edit-input"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      placeholder="Confirm New Password"
-                    />
+                  <div className="equipped-slot">
+                    <span className="equipped-slot-label">Pawn Skin</span>
+                    {equippedPawnItem ? (
+                      <>
+                        <div className={`cosmetic-preview-pawn ${equippedPawnItem.cssClass}`} />
+                        <span className="equipped-slot-name">{equippedPawnItem.name}</span>
+                        <button className="cosmetics-remove-btn" onClick={() => handleRemove("pawn")}>Remove</button>
+                      </>
+                    ) : (
+                      <span className="equipped-slot-empty">None</span>
+                    )}
                   </div>
                 </div>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            <div className="edit-actions">
-              <Button
-                className="auth-btn-primary"
-                onClick={handleSaveChanges}
-                loading={isSaving}
-              >
-                Save Changes
-              </Button>
-              <Button className="auth-btn-secondary" onClick={handleCancel}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-
-          {/* Right Cosmetics Panel */}
-          <div className="cosmetics-panel">
-            <div className="cosmetics-panel-header">
-              <h2 className="cosmetics-panel-title">My Cosmetics</h2>
-              <span className="cosmetics-coins">{user.coins ?? 0} coins</span>
-            </div>
-
-            <button className="btn-outline cosmetics-shop-link" onClick={() => router.push("/shop")}>
-              Go to Shop
-            </button>
-
-            {/* Equipped Cosmetics */}
-            <div className="cosmetics-section">
-              <h3 className="g-section-title">Equipped</h3>
-              <div className="equipped-grid">
-                <div className="equipped-slot">
-                  <span className="equipped-slot-label">Border</span>
-                  {equippedBorderItem ? (
-                    <>
-                      <div className={`cosmetic-preview-ring ${equippedBorderItem.cssClass}`}>
-                        <div className="cosmetic-preview-inner" />
-                      </div>
-                      <span className="equipped-slot-name">{equippedBorderItem.name}</span>
-                      <button className="cosmetics-remove-btn" onClick={() => handleRemove("border")}>Remove</button>
-                    </>
-                  ) : (
-                    <span className="equipped-slot-empty">None</span>
-                  )}
-                </div>
-                <div className="equipped-slot">
-                  <span className="equipped-slot-label">Pawn Skin</span>
-                  {equippedPawnItem ? (
-                    <>
-                      <div className={`cosmetic-preview-pawn ${equippedPawnItem.cssClass}`} />
-                      <span className="equipped-slot-name">{equippedPawnItem.name}</span>
-                      <button className="cosmetics-remove-btn" onClick={() => handleRemove("pawn")}>Remove</button>
-                    </>
-                  ) : (
-                    <span className="equipped-slot-empty">None</span>
-                  )}
-                </div>
               </div>
-            </div>
 
-            {/* Owned Borders */}
-            <div className="cosmetics-section">
-              <h3 className="g-section-title">Borders ({ownedBorders.length})</h3>
-              {ownedBorders.length === 0 ? (
-                <p className="cosmetics-empty">No borders owned yet.</p>
-              ) : (
-                <div className="cosmetics-grid">
-                  {ownedBorders.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`cosmetic-item ${user.equippedBorder === item.id ? "cosmetic-equipped" : ""}`}
-                    >
-                      <div className={`cosmetic-preview-ring ${item.cssClass}`}>
-                        <div className="cosmetic-preview-inner" />
+              {/* Owned Borders */}
+              <div className="cosmetics-section">
+                <h3 className="g-section-title">Borders ({ownedBorders.length})</h3>
+                {ownedBorders.length === 0 ? (
+                  <p className="cosmetics-empty">No borders owned yet.</p>
+                ) : (
+                  <div className="cosmetics-grid">
+                    {ownedBorders.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`cosmetic-item ${user.equippedBorder === item.id ? "cosmetic-equipped" : ""}`}
+                      >
+                        <div className={`cosmetic-preview-ring ${item.cssClass}`}>
+                          <div className="cosmetic-preview-inner" />
+                        </div>
+                        <span className="cosmetic-item-name">{item.name}</span>
+                        {user.equippedBorder === item.id ? (
+                          <span className="cosmetic-badge-equipped">Equipped</span>
+                        ) : (
+                          <button className="cosmetic-equip-btn" onClick={() => handleEquip(item)}>Equip</button>
+                        )}
                       </div>
-                      <span className="cosmetic-item-name">{item.name}</span>
-                      {user.equippedBorder === item.id ? (
-                        <span className="cosmetic-badge-equipped">Equipped</span>
-                      ) : (
-                        <button className="cosmetic-equip-btn" onClick={() => handleEquip(item)}>Equip</button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-            {/* Owned Pawns */}
-            <div className="cosmetics-section">
-              <h3 className="g-section-title">Pawn Skins ({ownedPawns.length})</h3>
-              {ownedPawns.length === 0 ? (
-                <p className="cosmetics-empty">No pawn skins owned yet.</p>
-              ) : (
-                <div className="cosmetics-grid">
-                  {ownedPawns.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`cosmetic-item ${user.equippedPawnSkin === item.id ? "cosmetic-equipped" : ""}`}
-                    >
-                      <div className={`cosmetic-preview-pawn ${item.cssClass}`} />
-                      <span className="cosmetic-item-name">{item.name}</span>
-                      {user.equippedPawnSkin === item.id ? (
-                        <span className="cosmetic-badge-equipped">Equipped</span>
-                      ) : (
-                        <button className="cosmetic-equip-btn" onClick={() => handleEquip(item)}>Equip</button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
+              {/* Owned Pawns */}
+              <div className="cosmetics-section">
+                <h3 className="g-section-title">Pawn Skins ({ownedPawns.length})</h3>
+                {ownedPawns.length === 0 ? (
+                  <p className="cosmetics-empty">No pawn skins owned yet.</p>
+                ) : (
+                  <div className="cosmetics-grid">
+                    {ownedPawns.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`cosmetic-item ${user.equippedPawnSkin === item.id ? "cosmetic-equipped" : ""}`}
+                      >
+                        <div className={`cosmetic-preview-pawn ${item.cssClass}`} />
+                        <span className="cosmetic-item-name">{item.name}</span>
+                        {user.equippedPawnSkin === item.id ? (
+                          <span className="cosmetic-badge-equipped">Equipped</span>
+                        ) : (
+                          <button className="cosmetic-equip-btn" onClick={() => handleEquip(item)}>Equip</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -449,62 +455,65 @@ const Profile: React.FC = () => {
   // OTHER USER VIEW — Read-only profile
   // ═══════════════════════════════════════════════
   return (
-    <div className="auth-page">
-      {contextHolder}
-      <div className="profile-card view-mode">
-        <div className="view-avatar-wrap">
-          <Avatar
-            size={96}
-            src={user.avatarURL ?? undefined}
-            icon={!user.avatarURL && <UserOutlined />}
-            className="profile-avatar"
-          />
-        </div>
-
-        <h1 className="view-display-name">{user.displayName}</h1>
-
-        <p className="view-subtitle">
-          Member since {user.creationDate} · Level {user.level ?? 0}
-        </p>
-
-        <div className="view-xp-section">
-          <div className="view-xp-bar-bg">
-            <div
-              className="view-xp-bar-fill"
-              style={{
-                width: `${Math.min(((user.xp ?? 0) % 1000) / 10, 100)}%`,
-              }}
+    <div>
+      <NavBar />
+      <div className="auth-page">
+        {contextHolder}
+        <div className="profile-card view-mode">
+          <div className="view-avatar-wrap">
+            <Avatar
+              size={96}
+              src={user.avatarURL ?? undefined}
+              icon={!user.avatarURL && <UserOutlined />}
+              className="profile-avatar"
             />
           </div>
-          <span className="view-xp-text">{user.xp ?? 0} XP</span>
+
+          <h1 className="view-display-name">{user.displayName}</h1>
+
+          <p className="view-subtitle">
+            Member since {user.creationDate} · Level {user.level ?? 0}
+          </p>
+
+          <div className="view-xp-section">
+            <div className="view-xp-bar-bg">
+              <div
+                className="view-xp-bar-fill"
+                style={{
+                  width: `${Math.min(((user.xp ?? 0) % 1000) / 10, 100)}%`,
+                }}
+              />
+            </div>
+            <span className="view-xp-text">{user.xp ?? 0} XP</span>
+          </div>
+
+          {user.biography && (
+            <p className="view-bio">&ldquo;{user.biography}&rdquo;</p>
+          )}
+
+          <div className="view-stats">
+            <div className="view-stat-box">
+              <span className="view-stat-value">{user.score ?? 0}</span>
+              <span className="view-stat-label">Score</span>
+            </div>
+            <div className="view-stat-box">
+              <span className="view-stat-value">{user.level ?? 0}</span>
+              <span className="view-stat-label">Level</span>
+            </div>
+            <div className="view-stat-box">
+              <span className="view-stat-value">{user.xp ?? 0}</span>
+              <span className="view-stat-label">XP</span>
+            </div>
+          </div>
+
+          <Button
+            className="auth-btn-secondary"
+            style={{ marginTop: 28 }}
+            onClick={() => router.back()}
+          >
+            Back
+          </Button>
         </div>
-
-        {user.biography && (
-          <p className="view-bio">&ldquo;{user.biography}&rdquo;</p>
-        )}
-
-        <div className="view-stats">
-          <div className="view-stat-box">
-            <span className="view-stat-value">{user.score ?? 0}</span>
-            <span className="view-stat-label">Score</span>
-          </div>
-          <div className="view-stat-box">
-            <span className="view-stat-value">{user.level ?? 0}</span>
-            <span className="view-stat-label">Level</span>
-          </div>
-          <div className="view-stat-box">
-            <span className="view-stat-value">{user.xp ?? 0}</span>
-            <span className="view-stat-label">XP</span>
-          </div>
-        </div>
-
-        <Button
-          className="auth-btn-secondary"
-          style={{ marginTop: 28 }}
-          onClick={() => router.back()}
-        >
-          Back
-        </Button>
       </div>
     </div>
   );

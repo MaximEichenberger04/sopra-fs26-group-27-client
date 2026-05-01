@@ -13,6 +13,18 @@ import { getApiDomain } from "@/utils/domain";
 
 import "@/styles/gameBoard.css";
 
+// Map cosmetic IDs to CSS gradient strings for pawn skins
+const PAWN_SKIN_GRADIENTS: Record<string, string> = {
+  "pawn-lava": "linear-gradient(135deg, #e04020, #f0a030, #e04020)",
+  "pawn-ocean": "linear-gradient(135deg, #2060b0, #40a0e0, #2060b0)",
+  "pawn-galaxy": "linear-gradient(135deg, #2a1a4a, #6a3a9a, #2a1a4a)",
+  "pawn-forest": "linear-gradient(135deg, #1a4a20, #3a8a30, #1a4a20)",
+  "pawn-diamond": "linear-gradient(135deg, #a0c0e0, #e0f0ff, #a0c0e0)",
+  "pawn-gold": "linear-gradient(135deg, #8a7420, #e8d06a, #8a7420)",
+  "pawn-void": "linear-gradient(135deg, #0a0a1a, #2a2a4a, #0a0a1a)",
+  "pawn-rose": "linear-gradient(135deg, #9a3060, #e070a0, #9a3060)",
+};
+
 function getWsDomain(): string {
   return getApiDomain().replace(/^https/, "wss").replace(/^http/, "ws");
 }
@@ -81,6 +93,7 @@ export default function GamePage() {
 
   const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
+  const [pawnStyles, setPawnStyles] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
@@ -144,6 +157,7 @@ export default function GamePage() {
       if (idsKey && idsKey !== fetchedIdsRef.current) {
         fetchedIdsRef.current = idsKey;
         const infos: PlayerInfo[] = [];
+        const skinStyles: Record<number, string> = {};
         for (const pid of dto.playerIds ?? []) {
           const symbol = (dto.playerIds.findIndex((id) => id === pid) + 1) as 1 | 2 | 3 | 4;
           try {
@@ -155,11 +169,15 @@ export default function GamePage() {
               symbol,
               hasLeft: forfeitedRef.current.includes(pid),
             });
+            if (u.equippedPawnSkin && PAWN_SKIN_GRADIENTS[u.equippedPawnSkin]) {
+              skinStyles[symbol] = PAWN_SKIN_GRADIENTS[u.equippedPawnSkin];
+            }
           } catch {
             infos.push({ id: pid, username: `Player ${pid}`, walls: 0, symbol, hasLeft: forfeitedRef.current.includes(pid) });
           }
         }
         setPlayers(infos);
+        setPawnStyles(skinStyles);
       } else {
         setPlayers(prev => prev.map(p => ({
           ...p,
@@ -337,6 +355,7 @@ export default function GamePage() {
               onWall={handleWall}
               onForfeit={handleForfeit}
               players={players}
+              pawnStyles={pawnStyles}
             />
           )}
         </div>
