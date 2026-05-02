@@ -95,8 +95,8 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
 
-          <button className="g-card dash-leaderboard-btn">
-            🏆 Leaderboard
+          <button className="g-card dash-leaderboard-btn" onClick={() => router.push("/leaderboard")}>
+            Leaderboard
           </button>
         </div>
       </div>
