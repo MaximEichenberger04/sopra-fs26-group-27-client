@@ -6,9 +6,18 @@ const BASE_WALL = 12;
 const MIN_CELL = 36;
 const MAX_CELL = 56;
 
-function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped, cellSize }: {
+// Player position outline colors — always visible regardless of pawn skin
+const PLAYER_OUTLINE_COLORS: Record<number, string> = {
+  1: "rgba(91, 141, 217, 0.9)",   // blue
+  2: "rgba(217, 107, 107, 0.9)",  // red
+  3: "rgba(107, 217, 130, 0.9)",  // green
+  4: "rgba(217, 180, 107, 0.9)",  // yellow
+};
+
+function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped, cellSize, pawnStyles }: {
   value: CellValue; boardRow: number; boardCol: number; isValidMove: boolean;
   onMove: (mr: number, mc: number) => void; flipped: boolean; cellSize: number;
+  pawnStyles?: Record<number, string>;
 }) {
   return (
     <div
@@ -24,7 +33,12 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped, cel
       {(value >= 1 && value <= 4) && (
         <div
           className={`pawn pawn-${value}`}
-          style={{ width: cellSize * 0.58, height: cellSize * 0.58 }}
+          style={{
+            width: cellSize * 0.58,
+            height: cellSize * 0.58,
+            ...(pawnStyles?.[value] ? { background: pawnStyles[value] } : {}),
+            borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
+          }}
         >
           <div className="pawn-highlight" />
         </div>
@@ -88,10 +102,11 @@ interface QuoridorBoardProps {
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
   onForfeit: () => void;
   players?: PlayerInfo[];
+  pawnStyles?: Record<number, string>;
 }
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit, mySymbol, players,
+  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit, mySymbol, players, pawnStyles,
 }: QuoridorBoardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -144,7 +159,10 @@ export default function QuoridorBoard({
               players.map((p) => (
                 <div key={p.id} className="player-row">
                   <div className="player-badge">
-                    <div className={`pawn-icon pawn-${p.symbol}-icon`} />
+                    <div
+                      className={`pawn-icon pawn-${p.symbol}-icon`}
+                      style={pawnStyles?.[p.symbol] ? { background: pawnStyles[p.symbol] } : {}}
+                    />
                     <span className={`player-name ${p.hasLeft ? "player-name-left" : ""}`}>{p.username}</span>
                   </div>
                   {p.hasLeft ? (
@@ -196,7 +214,7 @@ export default function QuoridorBoard({
 
                 if (evenRow && evenCol) {
                   const isValidMove = validMoves.some(([vr, vc]) => vr === mr && vc === mc);
-                  return <PawnCell key={`${mr}-${mc}`} value={value} boardRow={mr / 2} boardCol={mc / 2} isValidMove={isValidMove} onMove={onMove} flipped={flipped} cellSize={sizes.cell} />;
+                  return <PawnCell key={`${mr}-${mc}`} value={value} boardRow={mr / 2} boardCol={mc / 2} isValidMove={isValidMove} onMove={onMove} flipped={flipped} cellSize={sizes.cell} pawnStyles={pawnStyles} />;
                 }
                 if (!evenRow && evenCol) {
                   return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value} mr={mr} mc={mc} isMyTurn={isMyTurn} isHighlighted={isWallHighlighted(mr, mc)} onWall={onWall} onHover={handleHover} onHoverEnd={handleHoverEnd} cellSize={sizes.cell} wallSize={sizes.wall} />;
