@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { CellValue, MATRIX_SIZE } from "@/types/game";
 
 const CELL = 56;
@@ -90,10 +90,11 @@ interface QuoridorBoardProps {
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
   onForfeit: () => void;
   players?: PlayerInfo[];
+  abilityPanel?: React.ReactNode;
 }
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, remainingWalls, totalWalls, onForfeit, mySymbol, players,
+  matrix, isMyTurn, validMoves, onMove, onWall, remainingWalls, totalWalls, onForfeit, mySymbol, players, abilityPanel,
 }: QuoridorBoardProps) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
@@ -191,6 +192,15 @@ export default function QuoridorBoard({
           </div>
 
           <div className="beam-spacer" />
+
+          {abilityPanel && (
+            <>
+              <div className="beam-divider" />
+              {abilityPanel}
+            </>
+          )}
+
+          <div className="beam-divider" />
 
           <button onClick={onForfeit} className="forfeit-btn">
             FORFEIT
