@@ -26,6 +26,12 @@ export type AbilityType =
   | "PLUS_TWO_WALLS"
   | "TWO_MOVES";
 
+export interface PoisonZoneDTO {
+  topLeftRow: number;
+  topLeftCol: number;
+  roundsRemaining: number;
+}
+
 export interface GameDTO {
   id: number;
   lobbyId: number;
@@ -46,6 +52,7 @@ export interface GameDTO {
   canDrawCard: boolean;
   turnCounter: number;
   frozenPlayerIds: number[] | null;
+  poisonZones: PoisonZoneDTO[] | null;
 }
 
 // What the board component works with (derived)
@@ -64,4 +71,6 @@ export interface GameState {
   myInventory: AbilityType[];
   canDrawCard: boolean;
   turnCounter: number;
+  poisonZones: PoisonZoneDTO[];
+  frozenPlayerIds: number[];
 }

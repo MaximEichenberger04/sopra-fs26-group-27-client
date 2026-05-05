@@ -44,94 +44,160 @@ const CARD_DESC: Record<AbilityType, string> = {
 // ─── Animation CSS ────────────────────────────────────────────────────────────
 
 const ANIM_CSS = `
-  @keyframes cd-backdrop { from { opacity:0 } to { opacity:1 } }
-  @keyframes cd-scene {
-    from { transform: translateY(50px) scale(0.8); opacity:0; }
-    to   { transform: translateY(0)    scale(1);   opacity:1; }
+  @keyframes cd-backdrop-in  { from { opacity:0 } to { opacity:1 } }
+  @keyframes cd-backdrop-out { from { opacity:1 } to { opacity:0 } }
+
+  @keyframes cd-card-enter {
+    from { transform: translateY(80px) scale(0.6); opacity: 0; }
+    to   { transform: translateY(0)    scale(1);   opacity: 1; }
   }
-  @keyframes cd-hint {
-    from { opacity:0; transform:translateY(8px); }
-    to   { opacity:1; transform:translateY(0); }
+
+  @keyframes cd-label-in {
+    from { opacity:0; transform: translateY(-10px); }
+    to   { opacity:1; transform: translateY(0); }
   }
+
+  @keyframes cd-hint-in {
+    from { opacity:0; transform: translateY(8px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
   @keyframes card-shine {
-    0%   { transform: translateX(-120%) rotate(25deg); opacity:0; }
-    10%  { opacity:1; }
-    100% { transform: translateX(320%)  rotate(25deg); opacity:0; }
+    0%   { transform: translateX(-120%) rotate(25deg); opacity: 0; }
+    15%  { opacity: 1; }
+    100% { transform: translateX(320%)  rotate(25deg); opacity: 0; }
+  }
+
+  /* Fly-to-inventory: shrinks and slides up-right into the sidebar */
+  @keyframes cd-fly-to-inv {
+    0%   { transform: translate(0,    0)    scale(1);    opacity: 1; }
+    100% { transform: translate(var(--fly-x), var(--fly-y)) scale(0.18); opacity: 0; }
   }
 `;
 
-// ─── Card draw animation ──────────────────────────────────────────────────────
-// Phase timeline:
-//   0ms     → "dealing"  : card enters screen face-down (cardback)
-//   600ms   → "flipping" : 3D flip begins, reveals card front
-//   1200ms  → "shining"  : shine sweep plays across front
-//   3000ms  → done, onDone() called
+// ─── Animation phases ─────────────────────────────────────────────────────────
+// idle       → nothing shown
+// entering   → card rises from below, face-down (cardback)
+// flipping   → 3D flip to face-up (front image)
+// shining    → shine sweep across revealed face
+// revealed   → card sits big in center, "added to inventory" hint shown
+// flying     → card shrinks + flies to inventory slot
+// done       → hidden, onDone() called → card lands in inventory
 
-function CardDrawAnimation({ cardType, onDone }: {
+type AnimPhase = "idle" | "entering" | "flipping" | "shining" | "revealed" | "flying";
+
+// ─── Card draw animation ──────────────────────────────────────────────────────
+
+function CardDrawAnimation({
+  cardType,
+  onDone,
+  inventorySlotRef,
+}: {
   cardType: AbilityType | null;
   onDone: () => void;
+  inventorySlotRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const [phase, setPhase] = useState<"idle"|"dealing"|"flipping"|"shining">("idle");
+  const [phase, setPhase] = useState<AnimPhase>("idle");
+  const [flyVars, setFlyVars] = useState({ x: "0px", y: "0px" });
+  const cardRef = useRef<HTMLDivElement>(null);
   const onDoneRef = useRef(onDone);
   useEffect(() => { onDoneRef.current = onDone; }, [onDone]);
 
   useEffect(() => {
-    if (!cardType) { setPhase("idle"); return; }
-    // Reset to idle first so re-triggering the same card works
-    setPhase("idle");
-    const t0 = setTimeout(() => setPhase("dealing"),  20);
-    const t1 = setTimeout(() => setPhase("flipping"), 620);
-    const t2 = setTimeout(() => setPhase("shining"),  1250);
-    const t3 = setTimeout(() => { onDoneRef.current(); }, 3000);
-    return () => { clearTimeout(t0); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    if (!cardType) return;
+
+    setPhase("entering");
+    const t1 = setTimeout(() => setPhase("flipping"),  670);
+    const t2 = setTimeout(() => setPhase("shining"),   1320);
+    const t3 = setTimeout(() => setPhase("revealed"),  1780);
+    const t4 = setTimeout(() => {
+      if (cardRef.current && inventorySlotRef.current) {
+        const cardRect = cardRef.current.getBoundingClientRect();
+        const slotRect = inventorySlotRef.current.getBoundingClientRect();
+        const dx = (slotRect.left + slotRect.width  / 2) - (cardRect.left + cardRect.width  / 2);
+        const dy = (slotRect.top  + slotRect.height / 2) - (cardRect.top  + cardRect.height / 2);
+        setFlyVars({ x: `${dx}px`, y: `${dy}px` });
+      }
+      setPhase("flying");
+    }, 2550);
+    const t5 = setTimeout(() => {
+      setPhase("idle");
+      onDoneRef.current();
+    }, 3150);
+
+    return () => { [t1,t2,t3,t4,t5].forEach(clearTimeout); };
   }, [cardType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === "idle" || !cardType) return null;
 
-  const flipped = phase === "flipping" || phase === "shining";
+  const flipped  = phase === "flipping" || phase === "shining" || phase === "revealed" || phase === "flying";
+  const isFlying = phase === "flying";
 
   return (
     <>
       <style>{ANIM_CSS}</style>
 
-      {/* Backdrop */}
+      {/* Backdrop — fades out during fly phase */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none",
-        background: "radial-gradient(ellipse at center, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.55) 100%)",
-        animation: "cd-backdrop 0.35s ease forwards",
+        background: "radial-gradient(ellipse at center, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 100%)",
+        animation: isFlying
+          ? "cd-backdrop-out 0.5s ease forwards"
+          : "cd-backdrop-in 0.4s ease forwards",
       }} />
 
-      {/* Scene */}
+      {/* Centered scene */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none",
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        gap: 24,
-        animation: "cd-scene 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards",
+        display: "flex", flexDirection: "column",
+        alignItems: "center", justifyContent: "center",
+        gap: 20,
       }}>
-        {/* Label */}
-        <p style={{
-          fontFamily: "'Cinzel','Georgia',serif",
-          fontSize: 14, fontWeight: 700, margin: 0,
-          letterSpacing: "0.32em", textTransform: "uppercase",
-          color: "#d4af37",
-          textShadow: "0 0 28px rgba(212,175,55,0.75), 0 0 56px rgba(212,175,55,0.35)",
-        }}>
-          Card Drawn!
-        </p>
-
-        {/* 3-D flip card */}
-        <div style={{ perspective: 1000 }}>
-          <div style={{
-            width: 210, height: 294,
-            position: "relative",
-            transformStyle: "preserve-3d",
-            transition: "transform 0.65s cubic-bezier(0.4,0.2,0.2,1)",
-            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-            filter: phase === "shining"
-              ? "drop-shadow(0 0 24px rgba(212,175,55,0.85)) drop-shadow(0 0 48px rgba(212,175,55,0.4))"
-              : "drop-shadow(0 16px 32px rgba(0,0,0,0.85))",
+        {/* "Card Drawn!" label — hidden while flying */}
+        {!isFlying && (
+          <p style={{
+            fontFamily: "'Cinzel','Georgia',serif",
+            fontSize: 14, fontWeight: 700, margin: 0,
+            letterSpacing: "0.32em", textTransform: "uppercase",
+            color: "#d4af37",
+            textShadow: "0 0 28px rgba(212,175,55,0.75), 0 0 56px rgba(212,175,55,0.35)",
+            animation: "cd-label-in 0.4s ease 0.1s both",
+            opacity: isFlying ? 0 : 1,
+            transition: "opacity 0.2s",
           }}>
-            {/* Back face */}
+            Card Drawn!
+          </p>
+        )}
+
+        {/* The card */}
+        <div style={{ perspective: 1000 }}>
+          <div
+            ref={cardRef}
+            style={{
+              width: 210, height: 294,
+              position: "relative",
+              transformStyle: "preserve-3d",
+              // Flip transition
+              transition: isFlying
+                ? "none"
+                : "transform 0.65s cubic-bezier(0.4,0.2,0.2,1), filter 0.4s ease",
+              transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+              filter: phase === "shining" || phase === "revealed"
+                ? "drop-shadow(0 0 24px rgba(212,175,55,0.85)) drop-shadow(0 0 48px rgba(212,175,55,0.4))"
+                : "drop-shadow(0 16px 32px rgba(0,0,0,0.85))",
+              // Fly animation overrides everything
+              ...(isFlying ? {
+                animation: "cd-fly-to-inv 0.55s cubic-bezier(0.4,0,0.6,1) forwards",
+                ["--fly-x" as string]: flyVars.x,
+                ["--fly-y" as string]: flyVars.y,
+              } : {
+                animation: phase === "entering"
+                  ? "cd-card-enter 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards"
+                  : "none",
+              }),
+            }}
+          >
+            {/* Card back */}
             <div style={{
               position: "absolute", inset: 0, borderRadius: 14,
               backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
@@ -141,7 +207,7 @@ function CardDrawAnimation({ cardType, onDone }: {
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             </div>
 
-            {/* Front face */}
+            {/* Card front */}
             <div style={{
               position: "absolute", inset: 0, borderRadius: 14,
               backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
@@ -150,7 +216,6 @@ function CardDrawAnimation({ cardType, onDone }: {
             }}>
               <img src={CARD_IMAGE[cardType]} alt={CARD_NAME[cardType]}
                 style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-              {/* Shine sweep */}
               {phase === "shining" && (
                 <div style={{
                   position: "absolute", inset: 0, pointerEvents: "none",
@@ -163,12 +228,12 @@ function CardDrawAnimation({ cardType, onDone }: {
         </div>
 
         {/* Hint */}
-        {flipped && (
+        {(phase === "revealed") && (
           <p style={{
             fontFamily: "'Cinzel','Georgia',serif",
             fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase",
-            color: "rgba(212,175,55,0.65)", margin: 0,
-            animation: "cd-hint 0.4s ease 0.2s both",
+            color: "rgba(212,175,55,0.7)", margin: 0,
+            animation: "cd-hint-in 0.35s ease both",
           }}>
             Added to your inventory
           </p>
@@ -178,16 +243,20 @@ function CardDrawAnimation({ cardType, onDone }: {
   );
 }
 
-// ─── Ability inventory (goes inside the right-column sidebar) ─────────────────
+// ─── Ability inventory (lives in the right sidebar) ───────────────────────────
 
-function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn }: {
+interface AbilityInventoryProps {
   inventory: AbilityType[];
   selectedCard: AbilityType | null;
   onSelectCard: (card: AbilityType | null) => void;
   isMyTurn: boolean;
-}) {
+  // ref to the "landing zone" the fly animation targets (last card slot or the section div)
+  landingRef: React.RefObject<HTMLDivElement | null>;
+}
+
+function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn, landingRef }: AbilityInventoryProps) {
   return (
-    <div className="beam-section" style={{ marginTop: 0 }}>
+    <div className="beam-section" style={{ marginTop: 0 }} ref={landingRef}>
       <h4>ABILITY CARDS</h4>
 
       {inventory.length === 0 ? (
@@ -206,10 +275,11 @@ function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn }: {
                 style={{
                   width: 52, height: 73,
                   padding: 0, border: "none", borderRadius: 6,
-                  overflow: "hidden", cursor: isMyTurn ? "pointer" : "default",
+                  overflow: "hidden",
+                  cursor: isMyTurn ? "pointer" : "default",
                   opacity: isMyTurn ? 1 : 0.55,
                   transform: isSelected ? "translateY(-6px) scale(1.1)" : "none",
-                  transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s, outline 0.1s",
+                  transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s",
                   boxShadow: isSelected
                     ? "0 8px 20px rgba(0,0,0,0.6), 0 0 14px rgba(212,175,55,0.5)"
                     : "0 3px 8px rgba(0,0,0,0.5)",
@@ -293,6 +363,7 @@ const EMPTY_GAME_STATE: GameState = {
   gameStatus: "WAITING_FOR_USER", wallsPerPlayer: 0,
   remainingWalls: {}, mapTheme: null,
   chaosMode: false, myInventory: [], canDrawCard: false, turnCounter: 0,
+  poisonZones: [], frozenPlayerIds: [],
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -302,29 +373,44 @@ export default function GamePage() {
   const { value: token } = useLocalStorage<string>("token", "");
   const { value: userId } = useLocalStorage<number>("userId", -1);
 
-  const [game, setGame]       = useState<GameState>(EMPTY_GAME_STATE);
-  const [players, setPlayers] = useState<PlayerInfo[]>([]);
-  const [error, setError]     = useState<string | null>(null);
-  const [banner, setBanner]   = useState<string | null>(null);
+  const [game, setGame]         = useState<GameState>(EMPTY_GAME_STATE);
+  const [players, setPlayers]   = useState<PlayerInfo[]>([]);
+  const [error, setError]       = useState<string | null>(null);
+  const [banner, setBanner]     = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
-  const [mounted, setMounted] = useState(false);
+  const [mounted, setMounted]   = useState(false);
 
-  // Card state
+  // Card animation: which card is currently animating
   const [drawAnimCard, setDrawAnimCard] = useState<AbilityType | null>(null);
-  const [selectedCard, setSelectedCard] = useState<AbilityType | null>(null);
-  // Track which turnCounters we've already drawn for
+  // Incrementing key forces CardDrawAnimation to fully remount each draw
+  const [drawKey, setDrawKey] = useState(0);
+  // Inventory shows the real list AFTER animation completes
+  const [shownInventory, setShownInventory] = useState<AbilityType[]>([]);
+  const [selectedCard, setSelectedCard]     = useState<AbilityType | null>(null);
+
+  // Ref to the inventory section — the fly animation targets this
+  const inventoryLandingRef = useRef<HTMLDivElement | null>(null);
+
   const drawnTurnsRef = useRef<Set<number>>(new Set());
   const drawingRef    = useRef(false);
+  const pendingInvRef = useRef<AbilityType[]>([]);
 
-  const wsRef   = useRef<WebSocket | null>(null);
-  const router  = useRouter();
-  const api     = useApi(token);
-  const apiRef  = useRef(api);
+  const wsRef  = useRef<WebSocket | null>(null);
+  const router = useRouter();
+  const api    = useApi(token);
+  const apiRef = useRef(api);
   useEffect(() => { apiRef.current = api; }, [api]);
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { setMounted(true); }, []);
   const fetchedPlayerIdsRef = useRef<string>("");
+
+  // Sync shownInventory from game state when no animation is playing
+  useEffect(() => {
+    if (!drawAnimCard) {
+      setShownInventory(game.myInventory);
+    }
+  }, [game.myInventory, drawAnimCard]);
 
   const fetchGame = useCallback(async () => {
     if (!tokenRef.current) return;
@@ -345,43 +431,12 @@ export default function GamePage() {
         myInventory:       dto.myInventory ?? [],
         canDrawCard:       dto.canDrawCard ?? false,
         turnCounter:       dto.turnCounter ?? 0,
+        poisonZones:       dto.poisonZones ?? [],
+        frozenPlayerIds:   (dto.frozenPlayerIds ?? []) as number[],
       });
       setLastSync(new Date());
 
-      // ── Auto-draw when server says canDrawCard ─────────────────────────────
-      if (
-        dto.chaosMode &&
-        dto.canDrawCard &&
-        !drawingRef.current &&
-        !drawnTurnsRef.current.has(dto.turnCounter)
-      ) {
-        drawnTurnsRef.current.add(dto.turnCounter);
-        drawingRef.current = true;
-        try {
-          const drawn = await apiRef.current.post<GameDTO>(`/games/${gameId}/ability/draw`, {});
-          const oldInv = dto.myInventory ?? [];
-          const newInv = drawn.myInventory ?? [];
-
-          // Diff to find the newly drawn card
-          let newCard: AbilityType | null = null;
-          const scratch = [...oldInv];
-          for (const c of newInv) {
-            const idx = scratch.indexOf(c);
-            if (idx === -1) { newCard = c; break; }
-            scratch.splice(idx, 1);
-          }
-          if (!newCard && newInv.length > oldInv.length) newCard = newInv[newInv.length - 1];
-
-          // Update inventory in state
-          setGame(prev => ({ ...prev, myInventory: newInv, canDrawCard: false }));
-          // Trigger animation — set to null first to force re-trigger if same card type
-          setDrawAnimCard(null);
-          setTimeout(() => { if (newCard) setDrawAnimCard(newCard); }, 50);
-        } catch { /* server rejected draw */ }
-        finally { drawingRef.current = false; }
-      }
-
-      // ── Fetch player names ─────────────────────────────────────────────────
+      // ── Player names ───────────────────────────────────────────────────────
       const idsKey = (dto.playerIds ?? []).join(",");
       if (idsKey && idsKey !== fetchedPlayerIdsRef.current) {
         fetchedPlayerIdsRef.current = idsKey;
@@ -401,6 +456,60 @@ export default function GamePage() {
       setError(null);
     } catch { setError("Could not reach server."); }
   }, [gameId, token, api]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── Dedicated draw effect ──────────────────────────────────────────────────
+  // Watches canDrawCard on game state. Completely separate from fetchGame so
+  // the animation plays without any re-render or state update racing against it.
+  useEffect(() => {
+    if (
+      !game.chaosMode ||
+      !game.canDrawCard ||
+      drawingRef.current ||
+      drawnTurnsRef.current.has(game.turnCounter)
+    ) return;
+
+    drawnTurnsRef.current.add(game.turnCounter);
+    drawingRef.current = true;
+
+    // Snapshot the inventory BEFORE the draw so we can diff it
+    const oldInv = game.myInventory;
+
+    apiRef.current.post<GameDTO>(`/games/${gameId}/ability/draw`, {})
+      .then(drawn => {
+        const newInv = drawn.myInventory ?? [];
+
+        // Find what was added
+        let newCard: AbilityType | null = null;
+        const scratch = [...oldInv];
+        for (const c of newInv) {
+          const idx = scratch.indexOf(c);
+          if (idx === -1) { newCard = c; break; }
+          scratch.splice(idx, 1);
+        }
+        if (!newCard && newInv.length > oldInv.length) newCard = newInv[newInv.length - 1];
+
+        // Store the new inventory for after the animation, suppress canDrawCard
+        pendingInvRef.current = newInv;
+        setGame(prev => ({ ...prev, canDrawCard: false }));
+
+        // Trigger animation — bump key to force full remount
+        if (newCard) {
+          setDrawKey(k => k + 1);
+          setDrawAnimCard(newCard);
+        }
+      })
+      .catch(() => { /* server rejected — nothing to show */ })
+      .finally(() => { drawingRef.current = false; });
+
+  }, [game.canDrawCard, game.turnCounter]); // eslint-disable-line react-hooks/exhaustive-deps
+  function handleAnimDone() {
+    setDrawAnimCard(null);
+    if (pendingInvRef.current.length > 0) {
+      setShownInventory(pendingInvRef.current);
+      setGame(prev => ({ ...prev, myInventory: pendingInvRef.current }));
+      pendingInvRef.current = [];
+    }
+  }
 
   // ── WebSocket ──────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -454,9 +563,9 @@ export default function GamePage() {
     };
   }, [gameId, fetchGame, userId]);
 
-  const isMyTurn        = userId !== -1 && game.currentTurnUserId === userId;
-  const mySymbol        = (game.player1Id === userId ? 1 : 2) as 1 | 2;
-  const validMoves      = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
+  const isMyTurn         = userId !== -1 && game.currentTurnUserId === userId;
+  const mySymbol         = (game.player1Id === userId ? 1 : 2) as 1 | 2;
+  const validMoves       = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
   const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
 
   async function handleMove(matrixRow: number, matrixCol: number) {
@@ -480,15 +589,44 @@ export default function GamePage() {
     catch { setError("Could not forfeit."); }
   }
 
-  // No-target cards fire immediately; targeted cards get selected for board interaction
+  // ESC cancels ability targeting
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setSelectedCard(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  async function handleAbilityTarget(boardRow: number, boardCol: number, targetUserId?: number) {
+    if (!selectedCard || !isMyTurn) return;
+    try {
+      const body: Record<string, unknown> = { abilityType: selectedCard };
+      if (selectedCard === "FREEZE" && targetUserId != null) {
+        body.targetUserId = targetUserId;
+      } else {
+        body.targetRow = boardRow;
+        body.targetCol = boardCol;
+      }
+      await apiRef.current.post(`/games/${gameId}/ability`, body);
+      setSelectedCard(null);
+      fetchGame();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Could not use ability.");
+    }
+  }
+
   async function handleUseCard(cardType: AbilityType) {
     if (!isMyTurn) return;
+    // No-target cards fire immediately
     if (["PLUS_TWO_WALLS", "TWO_MOVES"].includes(cardType)) {
       try {
         await apiRef.current.post(`/games/${gameId}/ability`, { abilityType: cardType });
-        setSelectedCard(null); fetchGame();
+        setSelectedCard(null);
+        fetchGame();
       } catch (e: unknown) { setError(e instanceof Error ? e.message : "Could not use ability."); }
     } else {
+      // Targeted cards enter targeting mode on the board
       setSelectedCard(prev => prev === cardType ? null : cardType);
     }
   }
@@ -497,8 +635,7 @@ export default function GamePage() {
     <main
       className={`theme-${game.mapTheme}`}
       style={{
-        minHeight: "100vh",
-        background: "var(--q-main-bg)",
+        minHeight: "100vh", background: "var(--q-main-bg)",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         gap: 20, fontFamily: "system-ui,sans-serif",
@@ -529,12 +666,17 @@ export default function GamePage() {
           onWall={handleWall}
           onForfeit={handleForfeit}
           players={players}
+          selectedAbilityCard={selectedCard}
+          onAbilityTarget={handleAbilityTarget}
+          poisonZones={game.poisonZones}
+          frozenPlayerIds={game.frozenPlayerIds}
           abilityPanel={game.chaosMode ? (
             <AbilityInventory
-              inventory={game.myInventory}
+              inventory={shownInventory}
               selectedCard={selectedCard}
               onSelectCard={(card) => card ? handleUseCard(card) : setSelectedCard(null)}
               isMyTurn={isMyTurn}
+              landingRef={inventoryLandingRef}
             />
           ) : undefined}
         />
@@ -546,10 +688,12 @@ export default function GamePage() {
         </p>
       )}
 
-      {/* Fullscreen card draw animation */}
+      {/* Full-screen card draw animation with fly-to-inventory */}
       <CardDrawAnimation
+        key={drawKey}
         cardType={drawAnimCard}
-        onDone={() => setDrawAnimCard(null)}
+        onDone={handleAnimDone}
+        inventorySlotRef={inventoryLandingRef}
       />
     </main>
   );
