@@ -152,9 +152,7 @@
     transform: rotateX(25deg) scale(1.05);
     /* The subtle bird's eye tilt! */
     transform-style: preserve-3d;
-    box-shadow:
-        0 30px 40px rgba(0, 0, 0, 0.6),
-        inset 0 2px 10px rgba(255, 255, 255, 0.1);
+    box-shadow: none;
     border-bottom: 12px solid var(--q-board-thickness);
     /* Fake 3D depth */
     transition: transform 0.3s ease;
@@ -247,13 +245,13 @@
 }
 
 .player-name {
-    font-size: 14px;
+    font-size: 16px;
     color: var(--q-text);
 }
 
 .player-walls {
     display: block;
-    font-size: 12px;
+    font-size: 14px;
     color: var(--q-text-muted);
     margin-left: 26px;
     margin-top: 2px;
@@ -354,12 +352,7 @@
 
 /* 3. Celestial Sanctum — White marble with grey veining, gold accents */
 .theme-celestial-sanctum {
-    --q-main-bg:
-        radial-gradient(ellipse at 25% 15%, rgba(255, 255, 255, 0.9) 0%, transparent 40%),
-        radial-gradient(ellipse at 75% 30%, rgba(255, 255, 255, 0.6) 0%, transparent 35%),
-        radial-gradient(ellipse at 40% 70%, rgba(255, 255, 255, 0.7) 0%, transparent 45%),
-        radial-gradient(ellipse at 80% 80%, rgba(200, 220, 255, 0.3) 0%, transparent 40%),
-        linear-gradient(180deg, #60b0e0 0%, #80c8f0 20%, #a8daf8 40%, #d0ebfc 60%, #e8f4ff 80%, #f0f6fa 100%);
+    --q-main-bg: url('/maps/sanctum.png') center/cover no-repeat;
     --q-title: #8a7a50;
     --q-beam-bg: rgba(248, 246, 240, 0.92);
     --q-beam-border: rgba(200, 180, 130, 0.35);

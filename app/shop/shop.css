@@ -100,10 +100,22 @@
     width: 48px;
     height: 48px;
     border-radius: 50%;
-    padding: 3px;
     display: flex;
     align-items: center;
     justify-content: center;
+    position: relative;
+    overflow: visible;
+}
+
+.shop-preview-ring::before {
+    content: '';
+    position: absolute;
+    inset: -22%;
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    pointer-events: none;
+    z-index: 2;
 }
 
 .shop-preview-inner {
@@ -173,66 +185,4 @@
     color: var(--gold);
 }
 
-/* Reuse cosmetic preview classes from profile.css */
-.ring-crimson {
-    background: linear-gradient(135deg, #c04040, #e06060, #c04040);
-}
-
-.ring-emerald {
-    background: linear-gradient(135deg, #4a8a3c, #6ab85a, #4a8a3c);
-}
-
-.ring-royal {
-    background: linear-gradient(135deg, #6a5a9a, #9a8aca, #6a5a9a);
-}
-
-.ring-fire {
-    background: linear-gradient(135deg, #e06020, #f0a030, #e06020);
-}
-
-.ring-ice {
-    background: linear-gradient(135deg, #4a90d0, #a0d0f0, #4a90d0);
-}
-
-.ring-rainbow {
-    background: linear-gradient(135deg, #c04040, #e0a030, #4a8a3c, #4a90d0, #6a5a9a);
-}
-
-.ring-shadow {
-    background: #1a1a2a;
-    box-shadow: 0 0 8px rgba(100, 80, 200, .3);
-}
-
-.pskin-lava {
-    background: linear-gradient(135deg, #e04020, #f0a030, #e04020);
-}
-
-.pskin-ocean {
-    background: linear-gradient(135deg, #2060b0, #40a0e0, #2060b0);
-}
-
-.pskin-galaxy {
-    background: linear-gradient(135deg, #2a1a4a, #6a3a9a, #2a1a4a);
-    box-shadow: inset 0 0 4px rgba(180, 140, 255, .3);
-}
-
-.pskin-forest {
-    background: linear-gradient(135deg, #1a4a20, #3a8a30, #1a4a20);
-}
-
-.pskin-diamond {
-    background: linear-gradient(135deg, #a0c0e0, #e0f0ff, #a0c0e0);
-}
-
-.pskin-gold {
-    background: linear-gradient(135deg, #8a7420, #e8d06a, #8a7420);
-}
-
-.pskin-void {
-    background: linear-gradient(135deg, #0a0a1a, #2a2a4a, #0a0a1a);
-    box-shadow: inset 0 0 4px rgba(100, 60, 200, .4);
-}
-
-.pskin-rose {
-    background: linear-gradient(135deg, #9a3060, #e070a0, #9a3060);
-}
+/* Ring and pawn skin styles are defined in globals.css */

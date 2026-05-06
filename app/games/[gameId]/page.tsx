@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useLayoutEffect, useState, useCallback, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard from "@/components/QuoridorBoard";
+import GameChat from "@/components/GameChat";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { GameDTO, GameState, CellValue, MATRIX_SIZE } from "@/types/game";
 import { User } from "@/types/user";
@@ -79,8 +80,17 @@ export default function GamePage() {
   const [banner, setBanner] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
 
   const wsRef = useRef<WebSocket | null>(null);
+  const boardWrapRef = useRef<HTMLDivElement>(null);
+  const [boardHeight, setBoardHeight] = useState(0);
+
+  useLayoutEffect(() => {
+    if (boardWrapRef.current) {
+      setBoardHeight(boardWrapRef.current.offsetHeight);
+    }
+  }, [mounted]);
   const router = useRouter();
 
   const api = useApi(token);
@@ -183,6 +193,11 @@ export default function GamePage() {
 
           if (String(msg.gameId) !== String(gameId)) return;
 
+          if (msg.type === "CHAT") {
+            setChatRefreshTrigger(n => n + 1);
+            return;
+          }
+
           if (msg.type === "PLAYER_DISCONNECTED") {
             if (Number(msg.userId) !== userId) {
               setBanner(`A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30} seconds for reconnection.`);
@@ -222,6 +237,8 @@ export default function GamePage() {
       ws?.close();
     };
   }, [gameId, fetchGame, userId]);
+
+  const username = players.find(p => p.id === userId)?.username ?? "";
 
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const mySymbol: CellValue = game.player1Id === userId ? 1 : 2;
@@ -277,20 +294,34 @@ export default function GamePage() {
         </p>
       )}
 
-      {mounted && (
-        <QuoridorBoard
-          remainingWalls={myRemainingWalls}
-          totalWalls={game.wallsPerPlayer}
-          mySymbol={mySymbol}
-          matrix={game.matrix}
-          isMyTurn={isMyTurn}
-          validMoves={validMoves}
-          onMove={handleMove}
-          onWall={handleWall}
-          onForfeit={handleForfeit}
-          players={players}
-        />
-      )}
+      <div style={{ display: "flex", flexDirection: "row", alignItems: "flex-start" }}>
+        <div ref={boardWrapRef}>
+          {mounted && (
+            <QuoridorBoard
+              remainingWalls={myRemainingWalls}
+              totalWalls={game.wallsPerPlayer}
+              mySymbol={mySymbol}
+              matrix={game.matrix}
+              isMyTurn={isMyTurn}
+              validMoves={validMoves}
+              onMove={handleMove}
+              onWall={handleWall}
+              onForfeit={handleForfeit}
+              players={players}
+            />
+          )}
+        </div>
+
+        <div style={{ marginLeft: 30, flexShrink: 0, width: 380, display: "flex", flexDirection: "column", height: boardHeight || undefined, overflow: "hidden", borderRadius: 12 }}>
+          <GameChat
+            gameId={gameId}
+            userId={userId}
+            username={username}
+            token={token}
+            refreshTrigger={chatRefreshTrigger}
+          />
+        </div>
+      </div>
 
       {lastSync && (
         <p style={{ color: "var(--q-text-muted, #4a4438)", fontSize: 11, margin: 0 }}>
