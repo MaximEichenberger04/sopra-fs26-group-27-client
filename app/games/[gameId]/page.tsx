@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard from "@/components/QuoridorBoard";
+import GameChat from "@/components/GameChat";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { GameDTO, GameState, CellValue, MATRIX_SIZE, AbilityType } from "@/types/game";
 import { User } from "@/types/user";
@@ -380,6 +381,8 @@ export default function GamePage() {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted]   = useState(false);
 
+  const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
+
   // Card animation: which card is currently animating
   const [drawAnimCard, setDrawAnimCard] = useState<AbilityType | null>(null);
   // Incrementing key forces CardDrawAnimation to fully remount each draw
@@ -387,6 +390,8 @@ export default function GamePage() {
   // Inventory shows the real list AFTER animation completes
   const [shownInventory, setShownInventory] = useState<AbilityType[]>([]);
   const [selectedCard, setSelectedCard]     = useState<AbilityType | null>(null);
+
+
 
   // Ref to the inventory section — the fly animation targets this
   const inventoryLandingRef = useRef<HTMLDivElement | null>(null);
@@ -534,6 +539,10 @@ export default function GamePage() {
             userId?: string | number; gracePeriodSeconds?: number;
           };
           if (String(msg.gameId) !== String(gameId)) return;
+          if (msg.type === "CHAT") {
+            setChatRefreshTrigger(n => n + 1);
+            return;
+          }
           if (msg.type === "PLAYER_DISCONNECTED") {
             if (Number(msg.userId) !== userId)
               setBanner(`A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30} seconds for reconnection.`);
@@ -563,6 +572,8 @@ export default function GamePage() {
     };
   }, [gameId, fetchGame, userId]);
 
+  const username = players.find(p => p.id === userId)?.username ?? "";
+
   const isMyTurn         = userId !== -1 && game.currentTurnUserId === userId;
   const mySymbol         = (game.player1Id === userId ? 1 : 2) as 1 | 2;
   const validMoves       = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
@@ -574,11 +585,9 @@ export default function GamePage() {
     catch { setError("Invalid move."); }
   }
 
-  async function handleWall(matrixRow: number, matrixCol: number, orientation: "HORIZONTAL" | "VERTICAL") {
+  async function handleWall(centerRow: number, centerCol: number, orientation: "HORIZONTAL" | "VERTICAL") {
     if (!isMyTurn) return;
     try {
-      const centerRow = orientation === "HORIZONTAL" ? matrixRow : matrixRow + 1;
-      const centerCol = orientation === "HORIZONTAL" ? matrixCol + 1 : matrixCol;
       await apiRef.current.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
       setSelectedCard(null); fetchGame();
     } catch { setError("Invalid wall placement."); }
@@ -589,7 +598,12 @@ export default function GamePage() {
     catch { setError("Could not forfeit."); }
   }
 
-  // ESC cancels ability targeting
+  // Auto-dismiss errors after 3 seconds
+  useEffect(() => {
+    if (!error) return;
+    const t = setTimeout(() => setError(null), 3000);
+    return () => clearTimeout(t);
+  }, [error]);
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setSelectedCard(null);
@@ -642,11 +656,64 @@ export default function GamePage() {
         transition: "background 0.3s ease",
       }}
     >
-      <h1 style={{ color: "var(--q-title,#c8a44a)", fontSize: 18, fontWeight: 500, margin: 0, letterSpacing: "0.08em" }}>
-        QUORIDOR
-      </h1>
+      {/* Logo — centered above the board column */}
+      <div style={{
+        width: 624,
+        maxWidth: "100%",
+        display: "flex",
+        justifyContent: "center",
+        margin: "0 auto",
+      }}>
+        <img
+          src="/quoridor.png"
+          alt="Quoridor"
+          style={{ height: 180, objectFit: "contain", userSelect: "none" }}
+        />
+      </div>
 
-      {error  && <p style={{ color: "#d96b6b", fontSize: 13 }}>{error}</p>}
+      {/* Error toast — slides in, auto-dismisses after 3s */}
+      {error && (
+        <div style={{
+          position: "fixed",
+          top: 24,
+          left: "50%",
+          transform: "translateX(-50%)",
+          zIndex: 99999,
+          background: "var(--q-beam-bg, rgba(20,20,25,0.95))",
+          backdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: 10,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+          padding: "12px 24px",
+          display: "flex", alignItems: "center", gap: 12,
+          animation: "toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
+          minWidth: 260, maxWidth: 480,
+        }}>
+          <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
+          <span style={{
+            color: "#fff",
+            fontFamily: "Georgia, serif",
+            fontSize: 13,
+            lineHeight: 1.4,
+          }}>{error}</span>
+          <button
+            onClick={() => setError(null)}
+            style={{
+              marginLeft: "auto", background: "none", border: "none",
+              color: "rgba(255,255,255,0.5)", cursor: "pointer",
+              fontSize: 16, padding: "0 2px", flexShrink: 0,
+            }}
+          >✕</button>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes toast-in {
+          from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
+
       {banner && <p style={{ color: "var(--q-title,#c8a44a)", fontSize: 13 }}>{banner}</p>}
       {game.gameStatus === "ENDED" && (
         <p style={{ color: "var(--q-title,#c8a44a)", fontSize: 15 }}>
@@ -654,33 +721,59 @@ export default function GamePage() {
         </p>
       )}
 
-      {mounted && (
-        <QuoridorBoard
-          remainingWalls={myRemainingWalls}
-          totalWalls={game.wallsPerPlayer}
-          mySymbol={mySymbol}
-          matrix={game.matrix}
-          isMyTurn={isMyTurn}
-          validMoves={validMoves}
-          onMove={handleMove}
-          onWall={handleWall}
-          onForfeit={handleForfeit}
-          players={players}
-          selectedAbilityCard={selectedCard}
-          onAbilityTarget={handleAbilityTarget}
-          poisonZones={game.poisonZones}
-          frozenPlayerIds={game.frozenPlayerIds}
-          abilityPanel={game.chaosMode ? (
-            <AbilityInventory
-              inventory={shownInventory}
-              selectedCard={selectedCard}
-              onSelectCard={(card) => card ? handleUseCard(card) : setSelectedCard(null)}
-              isMyTurn={isMyTurn}
-              landingRef={inventoryLandingRef}
-            />
-          ) : undefined}
-        />
-      )}
+      {/* Board + Chat in one game-layout via slots */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+        {mounted && (
+          <QuoridorBoard
+            remainingWalls={myRemainingWalls}
+            totalWalls={game.wallsPerPlayer}
+            mySymbol={mySymbol}
+            matrix={game.matrix}
+            isMyTurn={isMyTurn}
+            validMoves={validMoves}
+            onMove={handleMove}
+            onWall={handleWall}
+            onForfeit={handleForfeit}
+            players={players}
+            selectedAbilityCard={selectedCard}
+            onAbilityTarget={handleAbilityTarget}
+            poisonZones={game.poisonZones}
+            frozenPlayerIds={game.frozenPlayerIds}
+              isFrozen={game.frozenPlayerIds.includes(userId)}
+            chatSlot={
+              <GameChat
+                gameId={gameId}
+                userId={userId}
+                username={username}
+                token={token}
+                refreshTrigger={chatRefreshTrigger}
+              />
+            }
+          />
+        )}
+
+        {/* Inventory below the centered board, aligned under the board column */}
+        {mounted && game.chaosMode && (
+          <div style={{ paddingTop: 16, width: 624, maxWidth: "100%", margin: "0 auto" }}>
+            <div style={{
+              background: "var(--q-beam-bg, rgba(20,20,25,0.85))",
+              backdropFilter: "blur(10px)",
+              border: "1px solid var(--q-beam-border, rgba(255,255,255,0.1))",
+              borderRadius: 12,
+              boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+              padding: "16px 24px",
+            }}>
+              <AbilityInventory
+                inventory={shownInventory}
+                selectedCard={selectedCard}
+                onSelectCard={(card) => card ? handleUseCard(card) : setSelectedCard(null)}
+                isMyTurn={isMyTurn}
+                landingRef={inventoryLandingRef}
+              />
+            </div>
+          </div>
+        )}
+      </div>
 
       {lastSync && (
         <p style={{ color: "var(--q-text-muted,#4a4438)", fontSize: 11, margin: 0 }}>
@@ -688,7 +781,7 @@ export default function GamePage() {
         </p>
       )}
 
-      {/* Full-screen card draw animation with fly-to-inventory */}
+      {/* Full-screen card draw animation */}
       <CardDrawAnimation
         key={drawKey}
         cardType={drawAnimCard}

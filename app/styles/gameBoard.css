@@ -2,20 +2,50 @@
 
 /* --- LAYOUT BEAMS --- */
 .game-layout {
-    display: flex;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 380px 624px 380px;
+    justify-content: center;
     align-items: flex-end;
     gap: 30px;
-    max-width: 1000px;
     margin: 0 auto;
 }
 
 .left-column {
+    grid-column: 2;
+    width: 624px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 40px;
+    justify-self: center;
     /* Space between board and chat */
+}
+
+.board-3d-wrapper {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.right-column {
+    width: 260px;
+    justify-self: end;
+}
+
+.chat-column {
+    width: 380px;
+    justify-self: start;
+}
+
+.right-column {
+    grid-column: 1;
+}
+
+.chat-column {
+    grid-column: 3;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
 }
 
 /* Horizontal & Vertical Beams (Solid Color) */

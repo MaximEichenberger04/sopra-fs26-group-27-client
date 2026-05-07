@@ -74,3 +74,11 @@ export interface GameState {
   poisonZones: PoisonZoneDTO[];
   frozenPlayerIds: number[];
 }
+
+export interface ChatMessageGetDTO {
+  id: number;
+  userId: number;
+  username: string;
+  text: string;
+  timestamp: string; // ISO format
+}
