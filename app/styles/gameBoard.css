@@ -40,7 +40,7 @@
     justify-self: start;
     display: flex;
     flex-direction: column;
-    align-self: stretch;
+    align-self: flex-end;
     overflow: hidden;
 }
 
