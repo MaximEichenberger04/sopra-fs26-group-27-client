@@ -58,6 +58,7 @@ const ShopPage: React.FC = () => {
             const field = item.type === "border" ? "equippedBorder" : "equippedPawnSkin";
             const response = await apiService.patch<User>(`/users/${userId}`, { [field]: item.id });
             setUser(response);
+            window.dispatchEvent(new Event("cosmetic-changed"));
             messageApi.success(`${item.name} equipped!`);
         } catch (error) {
             if (error instanceof Error) messageApi.error(error.message);

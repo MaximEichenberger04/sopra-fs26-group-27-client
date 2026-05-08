@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
@@ -30,27 +30,34 @@ const NavBar: React.FC = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    useEffect(() => {
+    const fetchCurrentUser = useCallback(async () => {
         if (!token || !userId) return;
-        const fetchUser = async () => {
-            try {
-                const user = await apiService.get<User>(`/users/${userId}`);
-                setCurrentUser(user);
-            } catch {
-                // silently fail
-            }
-        };
-        fetchUser();
+        try {
+            const user = await apiService.get<User>(`/users/${userId}`);
+            setCurrentUser(user);
+        } catch {
+            // silently fail
+        }
     }, [apiService, token, userId]);
 
-    const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
+    useEffect(() => {
+        fetchCurrentUser();
+    }, [fetchCurrentUser]);
 
+    // Re-fetch when cosmetics change (equip/remove from shop or profile)
+    useEffect(() => {
+        const handler = () => fetchCurrentUser();
+        window.addEventListener("cosmetic-changed", handler);
+        return () => window.removeEventListener("cosmetic-changed", handler);
+    }, [fetchCurrentUser]);
+
+    const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
 
     async function handleLogout() {
         try {
             await apiService.put("/logout", {});
         } catch {
-
+            // silently fail
         } finally {
             clearToken();
             router.push("/login");

@@ -1,8 +1,8 @@
-export type CellValue = 0 | 1 | 2 | 3;
+export type CellValue = 0 | 1 | 2 | 3 | 4 | 9;
+export const WALL_VALUE: CellValue = 9;
 export const BOARD_CELLS = 9;
 export const MATRIX_SIZE = BOARD_CELLS * 2 - 1; // 17
 
-// What the backend actually returns
 export interface PawnDTO {
   id: number;
   userId: number;
@@ -16,6 +16,20 @@ export interface WallDTO {
   row: number;
   col: number;
   orientation: "HORIZONTAL" | "VERTICAL";
+}
+
+export type AbilityType =
+  | "FIREBALL"
+  | "EARTHQUAKE"
+  | "FREEZE"
+  | "POISON"
+  | "PLUS_TWO_WALLS"
+  | "TWO_MOVES";
+
+export interface PoisonZoneDTO {
+  topLeftRow: number;
+  topLeftCol: number;
+  roundsRemaining: number;
 }
 
 export interface GameDTO {
@@ -32,19 +46,31 @@ export interface GameDTO {
   walls: WallDTO[];
   remainingWalls: Record<string, number>;
   mapTheme: string | null;
+  // Chaos mode
+  chaosMode: boolean;
+  myInventory: AbilityType[] | null;
+  canDrawCard: boolean;
+  turnCounter: number;
+  frozenPlayerIds: number[] | null;
+  poisonZones: PoisonZoneDTO[] | null;
 }
 
-// What the board component works with (derived)
 export interface GameState {
   remainingWalls: Record<string, number>;
   wallsPerPlayer: number;
   matrix: CellValue[][];
   currentTurnUserId: number;
-  player1Id: number;
-  player2Id: number;
+  playerIds: number[];
   winnerId: number | null;
   gameStatus: GameDTO["gameStatus"];
   mapTheme: string | null;
+  // Chaos mode
+  chaosMode: boolean;
+  myInventory: AbilityType[];
+  canDrawCard: boolean;
+  turnCounter: number;
+  poisonZones: PoisonZoneDTO[];
+  frozenPlayerIds: number[];
 }
 
 export interface ChatMessageGetDTO {

@@ -17,6 +17,15 @@ export interface User {
   equippedPawnSkin: string | null;
 }
 
+export interface LeaderboardUser {
+  id: string | null;
+  username: string | null;
+  displayName: string | null;
+  score: number | null;
+  level: number | null;
+}
+
+
 export interface Achievement {
   id: string;
   name: string;
