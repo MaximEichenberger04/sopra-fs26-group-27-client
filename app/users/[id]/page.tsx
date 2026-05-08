@@ -468,6 +468,24 @@ const Profile: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Achievements */}
+            <div className="cosmetics-section">
+              <h3 className="g-section-title">Achievements ({achievements.length})</h3>
+              {achievements.length === 0 ? (
+                <p className="cosmetics-empty">No achievements unlocked yet.</p>
+              ) : (
+                <div className="achievement-list">
+                  {achievements.map((a) => (
+                    <div key={a.id} className="achievement-item">
+                      <span className="achievement-name">{a.name}</span>
+                      <span className="achievement-desc">{a.description}</span>
+                      <span className="achievement-reward">+{a.coinReward} coins</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -566,6 +584,23 @@ const Profile: React.FC = () => {
           {user.biography && (
             <p className="view-bio">&ldquo;{user.biography}&rdquo;</p>
           )}
+
+          <div className="view-achievements">
+            <p className="view-achievements-title">Achievements ({achievements.length})</p>
+            {achievements.length === 0 ? (
+              <p className="cosmetics-empty" style={{ textAlign: "center" }}>No achievements unlocked yet.</p>
+            ) : (
+              <div className="achievement-list">
+                {achievements.map((a) => (
+                  <div key={a.id} className="achievement-item">
+                    <span className="achievement-name">{a.name}</span>
+                    <span className="achievement-desc">{a.description}</span>
+                    <span className="achievement-reward">+{a.coinReward} coins</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <Button className="auth-btn-secondary view-back-btn" onClick={() => router.back()}>
             ← Back
