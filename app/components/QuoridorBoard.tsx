@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { CellValue, MATRIX_SIZE, WALL_VALUE, AbilityType, PoisonZoneDTO } from "@/types/game";
-import { getValidWallSet, slotToCenter } from "@/utils/ValidwallPlacements";
+import { getValidWallSet, slotToCenter } from "@/utils/validWallPlacements";
 
 const BASE_CELL = 56;
 const BASE_WALL = 12;
