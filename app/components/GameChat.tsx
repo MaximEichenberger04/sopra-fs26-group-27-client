@@ -1,7 +1,7 @@
 "use client";
 
 import "@/styles/gameBoard.css";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, type KeyboardEvent } from "react";
 import { useApi } from "@/hooks/useApi";
 import { ChatMessageGetDTO } from "@/types/game";
 import { GifSearchResultDTO } from "@/types/gif";
@@ -48,6 +48,18 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
     if (gifPickerOpen) gifInputRef.current?.focus();
   }, [gifPickerOpen]);
 
+  const handleSearchGifs = async () => {
+    if (!gifQuery.trim()) return;
+    try {
+      const results = await api.get<GifSearchResultDTO[]>(
+        `/gifs/search?q=${encodeURIComponent(gifQuery.trim())}&per_page=50`
+      );
+      setGifResults(results);
+    } catch {
+      // non-critical
+    }
+  };
+
   useEffect(() => {
     if (!gifQuery.trim()) { setGifResults([]); return; }
     const timer = setTimeout(handleSearchGifs, 400);
@@ -71,22 +83,10 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
-    }
-  };
-
-  const handleSearchGifs = async () => {
-    if (!gifQuery.trim()) return;
-    try {
-      const results = await api.get<GifSearchResultDTO[]>(
-        `/gifs/search?q=${encodeURIComponent(gifQuery.trim())}&per_page=50`
-      );
-      setGifResults(results);
-    } catch {
-      // non-critical
     }
   };
 

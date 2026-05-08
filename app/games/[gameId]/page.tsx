@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback, type RefObject } from "react";
 import { useParams, useRouter } from "next/navigation";
 import QuoridorBoard, { PlayerInfo } from "@/components/QuoridorBoard";
 import GameChat from "@/components/GameChat";
@@ -90,7 +90,7 @@ type AnimPhase = "idle" | "entering" | "flipping" | "shining" | "revealed" | "fl
 function CardDrawAnimation({ cardType, onDone, inventorySlotRef }: {
   cardType: AbilityType | null;
   onDone: () => void;
-  inventorySlotRef: React.RefObject<HTMLDivElement | null>;
+  inventorySlotRef: RefObject<HTMLDivElement | null>;
 }) {
   const [phase, setPhase] = useState<AnimPhase>("idle");
   const [flyVars, setFlyVars] = useState({ x: "0px", y: "0px" });
@@ -188,7 +188,7 @@ interface AbilityInventoryProps {
   selectedCard: AbilityType | null;
   onSelectCard: (card: AbilityType | null) => void;
   isMyTurn: boolean;
-  landingRef: React.RefObject<HTMLDivElement | null>;
+  landingRef: RefObject<HTMLDivElement | null>;
 }
 
 function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn, landingRef }: AbilityInventoryProps) {
