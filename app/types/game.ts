@@ -18,6 +18,20 @@ export interface WallDTO {
   orientation: "HORIZONTAL" | "VERTICAL";
 }
 
+export type AbilityType =
+  | "FIREBALL"
+  | "EARTHQUAKE"
+  | "FREEZE"
+  | "POISON"
+  | "PLUS_TWO_WALLS"
+  | "TWO_MOVES";
+
+export interface PoisonZoneDTO {
+  topLeftRow: number;
+  topLeftCol: number;
+  roundsRemaining: number;
+}
+
 export interface GameDTO {
   id: number;
   lobbyId: number;
@@ -32,6 +46,13 @@ export interface GameDTO {
   walls: WallDTO[];
   remainingWalls: Record<string, number>;
   mapTheme: string | null;
+  // Chaos mode
+  chaosMode: boolean;
+  myInventory: AbilityType[] | null;
+  canDrawCard: boolean;
+  turnCounter: number;
+  frozenPlayerIds: number[] | null;
+  poisonZones: PoisonZoneDTO[] | null;
 }
 
 export interface GameState {
@@ -43,6 +64,13 @@ export interface GameState {
   winnerId: number | null;
   gameStatus: GameDTO["gameStatus"];
   mapTheme: string | null;
+  // Chaos mode
+  chaosMode: boolean;
+  myInventory: AbilityType[];
+  canDrawCard: boolean;
+  turnCounter: number;
+  poisonZones: PoisonZoneDTO[];
+  frozenPlayerIds: number[];
 }
 
 export interface ChatMessageGetDTO {
