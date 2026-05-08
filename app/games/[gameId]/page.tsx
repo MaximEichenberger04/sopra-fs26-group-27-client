@@ -598,7 +598,7 @@ export default function GamePage() {
     >
       {/* Logo */}
       <img src="/quoridor.png" alt="Quoridor"
-        style={{ height: 90, objectFit: "contain", userSelect: "none" as const }} />
+        style={{ height: 200, objectFit: "contain", userSelect: "none" as const }} />
 
       {/* Error toast */}
       {error && (
