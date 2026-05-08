@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import { User } from "@/types/user";
+import { User, Achievement } from "@/types/user";
 import { COSMETICS, CosmeticItem, getOwnedCosmetics, getCosmeticById } from "@/types/cosmetics";
 import { Avatar, Button, Input, message } from "antd";
 import { UserOutlined, CameraOutlined } from "@ant-design/icons";
@@ -13,11 +13,61 @@ import NavBar from "@/components/NavBar";
 
 const { TextArea } = Input;
 
+// ─── Match history types ──────────────────────────────────────────────
+interface MatchRecord {
+  id: number;
+  gameId: number;
+  opponentUsernames: string;
+  gameMode: string;
+  won: boolean;
+  playedAt: string;
+  opponentAvatarURL?: string | null;
+  opponentBorder?: string | null; // equippedBorder id of opponent
+}
+
+interface UserStatistics {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  winLossRatio: number;
+  mostPlayedGameMode: string | null;
+}
+
+// ─── Coin SVG icon ────────────────────────────────────────────────────
+const CoinIcon: React.FC<{ size?: number }> = ({ size = 16 }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    style={{ display: "inline-block", verticalAlign: "middle" }}
+  >
+    <circle cx="12" cy="12" r="10" fill="#c8a832" opacity="0.18" />
+    <circle cx="12" cy="12" r="10" stroke="#c8a832" strokeWidth="1.5" />
+    <text
+      x="12"
+      y="16.5"
+      textAnchor="middle"
+      fontSize="14"
+      fontWeight="700"
+      fill="#c8a832"
+      fontFamily="serif"
+    >
+      $
+    </text>
+  </svg>
+);
+
 const Profile: React.FC = () => {
   const router = useRouter();
   const params = useParams();
   const apiService = useApi();
   const [user, setUser] = useState<User | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const [matchHistory, setMatchHistory] = useState<MatchRecord[]>([]);
+  const [statistics, setStatistics] = useState<UserStatistics | null>(null);
+  const [matchHistoryError, setMatchHistoryError] = useState<string | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
 
   const { value: token } = useLocalStorage<string>("token", "");
@@ -52,11 +102,12 @@ const Profile: React.FC = () => {
 
     const fetchUser = async () => {
       try {
-        const fetchedUser = await apiService.get<User>(
-          `/users/${params.id}`
-        );
+        const [fetchedUser, fetchedAchievements] = await Promise.all([
+          apiService.get<User>(`/users/${params.id}`),
+          apiService.get<Achievement[]>(`/users/${params.id}/achievements`),
+        ]);
         setUser(fetchedUser);
-        // Populate edit fields
+        setAchievements(fetchedAchievements);
         setEditUsername(fetchedUser.username ?? "");
         setEditDisplayName(fetchedUser.displayName ?? "");
         setEditBiography(fetchedUser.biography ?? "");
@@ -67,8 +118,32 @@ const Profile: React.FC = () => {
       }
     };
 
+    const fetchMatchHistory = async () => {
+      try {
+        // Adjust this endpoint to match your actual backend route
+        const history = await apiService.get<MatchRecord[]>(`/users/${params.id}/match-history`);
+        setMatchHistory(history);
+        setMatchHistoryError(null);
+      } catch (error) {
+        // Match history is non-critical — fail silently
+        setMatchHistory([]);
+        setMatchHistoryError(error instanceof Error ? error.message : "Could not load match history.");
+      }
+    };
+
+    const fetchStatistics = async () => {
+      try {
+        const fetchedStatistics = await apiService.get<UserStatistics>(`/users/${params.id}/statistics`);
+        setStatistics(fetchedStatistics);
+      } catch {
+        setStatistics(null);
+      }
+    };
+
     fetchUser();
-  }, [apiService, params.id, token, router]);
+    fetchStatistics();
+    fetchMatchHistory();
+  }, [apiService, params.id, token, router, isOwner]);
 
   /** Save all changes at once */
   const handleSaveChanges = async () => {
@@ -81,7 +156,6 @@ const Profile: React.FC = () => {
       return;
     }
 
-    // Build payload with only changed fields
     const payload: Record<string, string> = {};
 
     if (editUsername.trim() !== (user?.username ?? "")) {
@@ -97,7 +171,6 @@ const Profile: React.FC = () => {
       payload.avatarURL = previewAvatar;
     }
 
-    // Password validation
     if (showPasswordChange && (currentPassword || newPassword || confirmPassword)) {
       if (!currentPassword.trim()) {
         messageApi.error("Please enter your current password.");
@@ -122,10 +195,7 @@ const Profile: React.FC = () => {
 
     setIsSaving(true);
     try {
-      await apiService.patch<User>(
-        `/users/${params.id}`,
-        payload
-      );
+      await apiService.patch<User>(`/users/${params.id}`, payload);
       messageApi.success("Profile updated!");
       setTimeout(() => {
         router.push("/users");
@@ -139,16 +209,13 @@ const Profile: React.FC = () => {
     }
   };
 
-  /** Cancel — go back to dashboard */
   const handleCancel = () => {
     router.push("/users");
   };
 
-  /** Handle avatar file selection */
   const handleAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
     if (!file.type.startsWith("image/")) {
       messageApi.error("Please select an image file.");
       return;
@@ -157,7 +224,6 @@ const Profile: React.FC = () => {
       messageApi.error("Image must be smaller than 5 MB.");
       return;
     }
-
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreviewAvatar(reader.result as string);
@@ -166,7 +232,6 @@ const Profile: React.FC = () => {
     event.target.value = "";
   };
 
-  /** Equip a cosmetic item */
   const handleEquip = async (item: CosmeticItem) => {
     try {
       const field = item.type === "border" ? "equippedBorder" : "equippedPawnSkin";
@@ -174,13 +239,11 @@ const Profile: React.FC = () => {
       setUser(response);
       window.dispatchEvent(new Event("cosmetic-changed"));
       messageApi.success(`${item.name} equipped!`);
-    } catch (error) {
+    } catch {
       messageApi.error("Failed to equip cosmetic.");
-
     }
   };
 
-  /** Remove a cosmetic item */
   const handleRemove = async (type: "border" | "pawn") => {
     try {
       const field = type === "border" ? "equippedBorder" : "equippedPawnSkin";
@@ -188,9 +251,21 @@ const Profile: React.FC = () => {
       setUser(response);
       window.dispatchEvent(new Event("cosmetic-changed"));
       messageApi.success("Cosmetic removed!");
-    } catch (error) {
+    } catch {
       messageApi.error("Failed to remove cosmetic.");
     }
+  };
+
+  const formatMatchDate = (playedAt?: string) => {
+    if (!playedAt) return "";
+    const date = new Date(playedAt);
+    if (Number.isNaN(date.getTime())) return playedAt;
+    return date.toLocaleDateString();
+  };
+
+  const getPlayerCount = (opponentUsernames?: string | null) => {
+    if (!opponentUsernames?.trim()) return 2;
+    return opponentUsernames.split(",").filter((name) => name.trim()).length + 1;
   };
 
   if (!user) return null;
@@ -200,11 +275,25 @@ const Profile: React.FC = () => {
   const ownedPawns = COSMETICS.filter((c) => c.type === "pawn" && owned.includes(c.id));
   const equippedBorderItem = user.equippedBorder ? getCosmeticById(user.equippedBorder) : null;
   const equippedPawnItem = user.equippedPawnSkin ? getCosmeticById(user.equippedPawnSkin) : null;
-
   const avatarRingClass = equippedBorderItem ? equippedBorderItem.cssClass : "";
 
+  // ── XP / Level helpers ──────────────────────────────────────────────
+  const currentXp = user.xp ?? 0;
+  const xpPerLevel = 1000;
+  const xpIntoLevel = currentXp % xpPerLevel;
+  const xpPercent = Math.min((xpIntoLevel / xpPerLevel) * 100, 100);
+
+  // ── Win / Loss from match history ───────────────────────────────────
+  const wins = statistics?.wins ?? matchHistory.filter((m) => m.won).length;
+  const losses = statistics?.losses ?? matchHistory.filter((m) => !m.won).length;
+  const ownWins = statistics?.wins ?? 0;
+  const ownLosses = statistics?.losses ?? 0;
+  const ownTotalGames = statistics?.totalGames ?? 0;
+  const ownWinRate = Math.round((statistics?.winLossRatio ?? 0) * 100);
+  const ownMostPlayedMode = statistics?.mostPlayedGameMode ?? "None";
+
   // ═══════════════════════════════════════════════
-  // OWNER VIEW — Edit Profile form
+  // OWNER VIEW
   // ═══════════════════════════════════════════════
   if (isOwner) {
     return (
@@ -351,6 +440,32 @@ const Profile: React.FC = () => {
 
             {/* Right Cosmetics Panel */}
             <div className="cosmetics-panel">
+              <div className="owner-statistics-panel">
+                <h2 className="cosmetics-panel-title">My Statistics</h2>
+                <div className="owner-statistics-grid">
+                  <div className="owner-stat-box">
+                    <span className="owner-stat-value">{ownTotalGames}</span>
+                    <span className="owner-stat-label">Games</span>
+                  </div>
+                  <div className="owner-stat-box">
+                    <span className="owner-stat-value owner-stat-wins">{ownWins}</span>
+                    <span className="owner-stat-label">Wins</span>
+                  </div>
+                  <div className="owner-stat-box">
+                    <span className="owner-stat-value owner-stat-losses">{ownLosses}</span>
+                    <span className="owner-stat-label">Losses</span>
+                  </div>
+                  <div className="owner-stat-box">
+                    <span className="owner-stat-value">{ownWinRate}%</span>
+                    <span className="owner-stat-label">Win Rate</span>
+                  </div>
+                </div>
+                <div className="owner-stat-mode">
+                  <span className="owner-stat-label">Most Played</span>
+                  <span className="owner-stat-mode-value">{ownMostPlayedMode}</span>
+                </div>
+              </div>
+
               <div className="cosmetics-panel-header">
                 <h2 className="cosmetics-panel-title">My Cosmetics</h2>
                 <span className="cosmetics-coins">{user.coins ?? 0} coins</span>
@@ -420,25 +535,35 @@ const Profile: React.FC = () => {
                 )}
               </div>
 
-              {/* Owned Pawns */}
               <div className="cosmetics-section">
                 <h3 className="g-section-title">Pawn Skins ({ownedPawns.length})</h3>
-                {ownedPawns.length === 0 ? (
-                  <p className="cosmetics-empty">No pawn skins owned yet.</p>
-                ) : (
+                {ownedPawns.length === 0 ? <p className="cosmetics-empty">No pawn skins owned yet.</p> : (
                   <div className="cosmetics-grid">
                     {ownedPawns.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`cosmetic-item ${user.equippedPawnSkin === item.id ? "cosmetic-equipped" : ""}`}
-                      >
+                      <div key={item.id} className={`cosmetic-item ${user.equippedPawnSkin === item.id ? "cosmetic-equipped" : ""}`}>
                         <div className={`cosmetic-preview-pawn ${item.cssClass}`} />
                         <span className="cosmetic-item-name">{item.name}</span>
-                        {user.equippedPawnSkin === item.id ? (
-                          <span className="cosmetic-badge-equipped">Equipped</span>
-                        ) : (
-                          <button className="cosmetic-equip-btn" onClick={() => handleEquip(item)}>Equip</button>
-                        )}
+                        {user.equippedPawnSkin === item.id
+                          ? <span className="cosmetic-badge-equipped">Equipped</span>
+                          : <button className="cosmetic-equip-btn" onClick={() => handleEquip(item)}>Equip</button>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Achievements */}
+              <div className="cosmetics-section">
+                <h3 className="g-section-title">Achievements ({achievements.length})</h3>
+                {achievements.length === 0 ? (
+                  <p className="cosmetics-empty">No achievements unlocked yet.</p>
+                ) : (
+                  <div className="achievement-list">
+                    {achievements.map((a) => (
+                      <div key={a.id} className="achievement-item">
+                        <span className="achievement-name">{a.name}</span>
+                        <span className="achievement-desc">{a.description}</span>
+                        <span className="achievement-reward">+{a.coinReward} coins</span>
                       </div>
                     ))}
                   </div>
@@ -452,58 +577,188 @@ const Profile: React.FC = () => {
   }
 
   // ═══════════════════════════════════════════════
-  // OTHER USER VIEW — Read-only profile
+  // OTHER USER VIEW — Rich read-only profile
   // ═══════════════════════════════════════════════
   return (
     <div>
       <NavBar />
       <div className="auth-page">
         {contextHolder}
-        <div className="profile-card view-mode">
-          <div className="view-avatar-wrap">
-            <Avatar
-              size={96}
-              src={user.avatarURL ?? undefined}
-              icon={!user.avatarURL && <UserOutlined />}
-              className="profile-avatar"
-            />
+        <div className="view-profile-layout">
+
+          {/* ── LEFT: Profile Card ── */}
+          <div className="profile-card view-mode">
+
+            {/* Avatar with border ring */}
+            <div className="view-avatar-wrap">
+              <div className={`avatar-ring-wrap ${avatarRingClass}`}>
+                <Avatar
+                  size={96}
+                  src={user.avatarURL ?? undefined}
+                  icon={!user.avatarURL && <UserOutlined />}
+                  className="profile-avatar"
+                />
+              </div>
+            </div>
+
+            {/* Name */}
+            <h1 className="view-display-name">{user.displayName}</h1>
+            <p className="view-username">@{user.username}</p>
+
+            <p className="view-subtitle">
+              Member since {user.creationDate} · Level {user.level ?? 0}
+            </p>
+
+            {/* XP Progress Bar */}
+            <div className="view-xp-section">
+              <div className="view-xp-label-row">
+                <span className="view-xp-level-tag">LVL {user.level ?? 0}</span>
+                <span className="view-xp-counter">{xpIntoLevel} / {xpPerLevel} XP</span>
+              </div>
+              <div className="view-xp-bar-bg">
+                <div className="view-xp-bar-fill" style={{ width: `${xpPercent}%` }} />
+              </div>
+            </div>
+
+            {/* Stats: Score · Level · W/L */}
+            <div className="view-stats">
+              <div className="view-stat-box">
+                <span className="view-stat-value">{user.score ?? 0}</span>
+                <span className="view-stat-label">Score</span>
+              </div>
+              <div className="view-stat-box">
+                <span className="view-stat-value">{user.level ?? 0}</span>
+                <span className="view-stat-label">Level</span>
+              </div>
+              <div className="view-stat-box view-stat-wl">
+                <div className="view-wl-row">
+                  <span className="view-stat-value view-stat-wins">{wins}</span>
+                  <span className="view-wl-slash">/</span>
+                  <span className="view-stat-value view-stat-losses">{losses}</span>
+                </div>
+                <span className="view-stat-label">W / L</span>
+              </div>
+            </div>
+
+            {/* Equipped Pawn + Coins */}
+            <div className="view-cosmetics-row">
+              {/* Equipped Pawn */}
+              <div className="view-cosmetic-chip">
+                <span className="view-cosmetic-chip-label">Pawn</span>
+                {equippedPawnItem ? (
+                  <div className="view-pawn-preview-wrap">
+                    <div className={`cosmetic-preview-pawn view-pawn-lg ${equippedPawnItem.cssClass}`} />
+                    <span className="view-cosmetic-chip-name">{equippedPawnItem.name}</span>
+                  </div>
+                ) : (
+                  <span className="view-cosmetic-chip-empty">Default</span>
+                )}
+              </div>
+
+              {/* Divider */}
+              <div className="view-cosmetics-divider" />
+
+              {/* Coins */}
+              <div className="view-cosmetic-chip">
+                <span className="view-cosmetic-chip-label">Coins</span>
+                <div className="view-coins-row">
+                  <CoinIcon size={18} />
+                  <span className="view-coins-value">{user.coins ?? 0}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Biography */}
+            {user.biography && (
+              <p className="view-bio">&ldquo;{user.biography}&rdquo;</p>
+            )}
+
+            <div className="view-achievements">
+              <p className="view-achievements-title">Achievements ({achievements.length})</p>
+              {achievements.length === 0 ? (
+                <p className="cosmetics-empty" style={{ textAlign: "center" }}>No achievements unlocked yet.</p>
+              ) : (
+                <div className="achievement-list">
+                  {achievements.map((a) => (
+                    <div key={a.id} className="achievement-item">
+                      <span className="achievement-name">{a.name}</span>
+                      <span className="achievement-desc">{a.description}</span>
+                      <span className="achievement-reward">+{a.coinReward} coins</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Button className="auth-btn-secondary view-back-btn" onClick={() => router.back()}>
+              ← Back
+            </Button>
           </div>
 
-          <h1 className="view-display-name">{user.displayName}</h1>
+          {/* ── RIGHT: Match History ── */}
+          <div className="view-match-history-panel">
+            <h2 className="view-match-history-title">Match History</h2>
 
-          <p className="view-subtitle">
-            Member since {user.creationDate} · Level {user.level ?? 0}
-          </p>
+            {matchHistoryError ? (
+              <div className="view-match-empty">
+                <p>{matchHistoryError}</p>
+              </div>
+            ) : matchHistory.length === 0 ? (
+              <div className="view-match-empty">
+                <p>No matches played yet.</p>
+              </div>
+            ) : (
+              <div className="view-match-list">
+                {matchHistory.map((match) => {
+                  const opponentBorderItem = match.opponentBorder
+                    ? getCosmeticById(match.opponentBorder)
+                    : null;
+                  const opponentRingClass = opponentBorderItem ? opponentBorderItem.cssClass : "";
+                  const isWin = match.won;
+                  const gameMode = match.gameMode?.toUpperCase() ?? "CLASSIC";
+                  const playerCount = getPlayerCount(match.opponentUsernames);
 
-          <div className="view-xp-section">
-            <div className="view-xp-bar-bg">
-              <div
-                className="view-xp-bar-fill"
-                style={{
-                  width: `${Math.min(((user.xp ?? 0) % 1000) / 10, 100)}%`,
-                }}
-              />
-            </div>
-            <span className="view-xp-text">{user.xp ?? 0} XP</span>
-          </div>
+                  return (
+                    <div key={match.id} className={`view-match-row ${isWin ? "match-win" : "match-loss"}`}>
+                      {/* Result badge */}
+                      <div className={`view-match-badge ${isWin ? "badge-win" : "badge-loss"}`}>
+                        {isWin ? "W" : "L"}
+                      </div>
 
-          {user.biography && (
-            <p className="view-bio">&ldquo;{user.biography}&rdquo;</p>
-          )}
+                      {/* Opponent avatar */}
+                      <div className={`avatar-ring-wrap avatar-ring-sm ${opponentRingClass}`}>
+                        <Avatar
+                          size={36}
+                          src={match.opponentAvatarURL ?? undefined}
+                          icon={!match.opponentAvatarURL && <UserOutlined />}
+                          className="profile-avatar"
+                        />
+                      </div>
 
-          <div className="view-stats">
-            <div className="view-stat-box">
-              <span className="view-stat-value">{user.score ?? 0}</span>
-              <span className="view-stat-label">Score</span>
-            </div>
-            <div className="view-stat-box">
-              <span className="view-stat-value">{user.level ?? 0}</span>
-              <span className="view-stat-label">Level</span>
-            </div>
-            <div className="view-stat-box">
-              <span className="view-stat-value">{user.xp ?? 0}</span>
-              <span className="view-stat-label">XP</span>
-            </div>
+                      {/* Opponent name */}
+                      <div className="view-match-opponent">
+                        <span className="view-match-opponent-name">
+                          {match.opponentUsernames || "Unknown"}
+                        </span>
+                      </div>
+
+                      {/* Game info */}
+                      <div className="view-match-meta">
+                        <span className={`view-match-mode ${gameMode === "CHAOS" ? "mode-chaos" : "mode-classic"}`}>
+                          {gameMode === "CHAOS" ? "⚡ Chaos" : "♟ Classic"}
+                        </span>
+                        <span className="view-match-players">
+                          {playerCount} Player-Mode
+                        </span>
+                      </div>
+
+                      {/* Date */}
+                      <span className="view-match-date">{formatMatchDate(match.playedAt)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           <Button
