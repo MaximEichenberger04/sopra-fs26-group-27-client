@@ -824,5 +824,62 @@
   flex-shrink: 0;
 }
 
+/* ═══════════════════════════════════════════════
+   ACHIEVEMENTS
+   ═══════════════════════════════════════════════ */
+
+.achievement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.achievement-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  background: rgba(200, 168, 50, .04);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+
+.achievement-name {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.achievement-desc {
+  font-family: 'Crimson Text', serif;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.achievement-reward {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  color: var(--muted);
+}
+
+.view-achievements {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.view-achievements-title {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 10px;
+  text-align: left;
+}
+
 /* Toast */
 .ant-message .ant-message-notice-content { color: #000 !important; }
