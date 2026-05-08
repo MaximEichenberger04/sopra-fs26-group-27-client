@@ -15,13 +15,21 @@ const { TextArea } = Input;
 // ─── Match history types ──────────────────────────────────────────────
 interface MatchRecord {
   id: number;
-  result: "WIN" | "LOSS";
-  gameMode: "CLASSIC" | "CHAOS";
-  playerCount: 2 | 4;
-  date: string;           // ISO or display string
+  gameId: number;
+  opponentUsernames: string;
+  gameMode: string;
+  won: boolean;
+  playedAt: string;
   opponentAvatarURL?: string | null;
-  opponentDisplayName?: string | null;
   opponentBorder?: string | null; // equippedBorder id of opponent
+}
+
+interface UserStatistics {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  winLossRatio: number;
+  mostPlayedGameMode: string | null;
 }
 
 // ─── Coin SVG icon ────────────────────────────────────────────────────
@@ -56,6 +64,8 @@ const Profile: React.FC = () => {
   const apiService = useApi();
   const [user, setUser] = useState<User | null>(null);
   const [matchHistory, setMatchHistory] = useState<MatchRecord[]>([]);
+  const [statistics, setStatistics] = useState<UserStatistics | null>(null);
+  const [matchHistoryError, setMatchHistoryError] = useState<string | null>(null);
   const [messageApi, contextHolder] = message.useMessage();
 
   const { value: token } = useLocalStorage<string>("token", "");
@@ -105,16 +115,28 @@ const Profile: React.FC = () => {
     const fetchMatchHistory = async () => {
       try {
         // Adjust this endpoint to match your actual backend route
-        const history = await apiService.get<MatchRecord[]>(`/users/${params.id}/matches`);
+        const history = await apiService.get<MatchRecord[]>(`/users/${params.id}/match-history`);
         setMatchHistory(history);
-      } catch {
+        setMatchHistoryError(null);
+      } catch (error) {
         // Match history is non-critical — fail silently
         setMatchHistory([]);
+        setMatchHistoryError(error instanceof Error ? error.message : "Could not load match history.");
+      }
+    };
+
+    const fetchStatistics = async () => {
+      try {
+        const fetchedStatistics = await apiService.get<UserStatistics>(`/users/${params.id}/statistics`);
+        setStatistics(fetchedStatistics);
+      } catch {
+        setStatistics(null);
       }
     };
 
     fetchUser();
-    if (!isOwner) fetchMatchHistory();
+    fetchStatistics();
+    fetchMatchHistory();
   }, [apiService, params.id, token, router, isOwner]);
 
   /** Save all changes at once */
@@ -226,6 +248,18 @@ const Profile: React.FC = () => {
     }
   };
 
+  const formatMatchDate = (playedAt?: string) => {
+    if (!playedAt) return "";
+    const date = new Date(playedAt);
+    if (Number.isNaN(date.getTime())) return playedAt;
+    return date.toLocaleDateString();
+  };
+
+  const getPlayerCount = (opponentUsernames?: string | null) => {
+    if (!opponentUsernames?.trim()) return 2;
+    return opponentUsernames.split(",").filter((name) => name.trim()).length + 1;
+  };
+
   if (!user) return null;
 
   const owned = getOwnedCosmetics(user.ownedCosmetics);
@@ -242,8 +276,13 @@ const Profile: React.FC = () => {
   const xpPercent = Math.min((xpIntoLevel / xpPerLevel) * 100, 100);
 
   // ── Win / Loss from match history ───────────────────────────────────
-  const wins = matchHistory.filter((m) => m.result === "WIN").length;
-  const losses = matchHistory.filter((m) => m.result === "LOSS").length;
+  const wins = statistics?.wins ?? matchHistory.filter((m) => m.won).length;
+  const losses = statistics?.losses ?? matchHistory.filter((m) => !m.won).length;
+  const ownWins = statistics?.wins ?? 0;
+  const ownLosses = statistics?.losses ?? 0;
+  const ownTotalGames = statistics?.totalGames ?? 0;
+  const ownWinRate = Math.round((statistics?.winLossRatio ?? 0) * 100);
+  const ownMostPlayedMode = statistics?.mostPlayedGameMode ?? "None";
 
   // ═══════════════════════════════════════════════
   // OWNER VIEW
@@ -332,6 +371,32 @@ const Profile: React.FC = () => {
 
           {/* Right Cosmetics Panel */}
           <div className="cosmetics-panel">
+            <div className="owner-statistics-panel">
+              <h2 className="cosmetics-panel-title">My Statistics</h2>
+              <div className="owner-statistics-grid">
+                <div className="owner-stat-box">
+                  <span className="owner-stat-value">{ownTotalGames}</span>
+                  <span className="owner-stat-label">Games</span>
+                </div>
+                <div className="owner-stat-box">
+                  <span className="owner-stat-value owner-stat-wins">{ownWins}</span>
+                  <span className="owner-stat-label">Wins</span>
+                </div>
+                <div className="owner-stat-box">
+                  <span className="owner-stat-value owner-stat-losses">{ownLosses}</span>
+                  <span className="owner-stat-label">Losses</span>
+                </div>
+                <div className="owner-stat-box">
+                  <span className="owner-stat-value">{ownWinRate}%</span>
+                  <span className="owner-stat-label">Win Rate</span>
+                </div>
+              </div>
+              <div className="owner-stat-mode">
+                <span className="owner-stat-label">Most Played</span>
+                <span className="owner-stat-mode-value">{ownMostPlayedMode}</span>
+              </div>
+            </div>
+
             <div className="cosmetics-panel-header">
               <h2 className="cosmetics-panel-title">My Cosmetics</h2>
               <span className="cosmetics-coins">{user.coins ?? 0} coins</span>
@@ -506,7 +571,11 @@ const Profile: React.FC = () => {
         <div className="view-match-history-panel">
           <h2 className="view-match-history-title">Match History</h2>
 
-          {matchHistory.length === 0 ? (
+          {matchHistoryError ? (
+            <div className="view-match-empty">
+              <p>{matchHistoryError}</p>
+            </div>
+          ) : matchHistory.length === 0 ? (
             <div className="view-match-empty">
               <p>No matches played yet.</p>
             </div>
@@ -517,7 +586,9 @@ const Profile: React.FC = () => {
                   ? getCosmeticById(match.opponentBorder)
                   : null;
                 const opponentRingClass = opponentBorderItem ? opponentBorderItem.cssClass : "";
-                const isWin = match.result === "WIN";
+                const isWin = match.won;
+                const gameMode = match.gameMode?.toUpperCase() ?? "CLASSIC";
+                const playerCount = getPlayerCount(match.opponentUsernames);
 
                 return (
                   <div key={match.id} className={`view-match-row ${isWin ? "match-win" : "match-loss"}`}>
@@ -539,22 +610,22 @@ const Profile: React.FC = () => {
                     {/* Opponent name */}
                     <div className="view-match-opponent">
                       <span className="view-match-opponent-name">
-                        {match.opponentDisplayName ?? "Unknown"}
+                        {match.opponentUsernames || "Unknown"}
                       </span>
                     </div>
 
                     {/* Game info */}
                     <div className="view-match-meta">
-                      <span className={`view-match-mode ${match.gameMode === "CHAOS" ? "mode-chaos" : "mode-classic"}`}>
-                        {match.gameMode === "CHAOS" ? "⚡ Chaos" : "♟ Classic"}
+                      <span className={`view-match-mode ${gameMode === "CHAOS" ? "mode-chaos" : "mode-classic"}`}>
+                        {gameMode === "CHAOS" ? "⚡ Chaos" : "♟ Classic"}
                       </span>
                       <span className="view-match-players">
-                        {match.playerCount}P
+                        {playerCount} Player-Mode
                       </span>
                     </div>
 
                     {/* Date */}
-                    <span className="view-match-date">{match.date}</span>
+                    <span className="view-match-date">{formatMatchDate(match.playedAt)}</span>
                   </div>
                 );
               })}
