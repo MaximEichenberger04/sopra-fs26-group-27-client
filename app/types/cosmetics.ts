@@ -44,5 +44,5 @@ export function getOwnedCosmetics(ownedStr: string | null): string[] {
 /** Get the ring image path for a border cosmetic */
 export function getRingImagePath(cosmeticId: string): string | null {
     const name = cosmeticId.replace("border-", "");
-    return `/cosmetics/${name}.png`;
+    return `/cosmetics/borderrings/${name}.png`;
 }
