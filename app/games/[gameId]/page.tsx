@@ -2,16 +2,29 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import QuoridorBoard from "@/components/QuoridorBoard";
+import QuoridorBoard, { PlayerInfo } from "@/components/QuoridorBoard";
 import GameChat from "@/components/GameChat";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import { GameDTO, GameState, CellValue, MATRIX_SIZE, AbilityType } from "@/types/game";
+import { GameDTO, GameState, CellValue, MATRIX_SIZE, WALL_VALUE, AbilityType } from "@/types/game";
 import { User } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import { getValidMoves } from "@/utils/validMoves";
 import { getApiDomain } from "@/utils/domain";
 
 import "@/styles/gameBoard.css";
+
+// ─── Pawn skin gradients ──────────────────────────────────────────────────────
+
+const PAWN_SKIN_GRADIENTS: Record<string, string> = {
+  "pawn-lava":    "linear-gradient(135deg, #e04020, #f0a030, #e04020)",
+  "pawn-ocean":   "linear-gradient(135deg, #2060b0, #40a0e0, #2060b0)",
+  "pawn-galaxy":  "linear-gradient(135deg, #2a1a4a, #6a3a9a, #2a1a4a)",
+  "pawn-forest":  "linear-gradient(135deg, #1a4a20, #3a8a30, #1a4a20)",
+  "pawn-diamond": "linear-gradient(135deg, #a0c0e0, #e0f0ff, #a0c0e0)",
+  "pawn-gold":    "linear-gradient(135deg, #8a7420, #e8d06a, #8a7420)",
+  "pawn-void":    "linear-gradient(135deg, #0a0a1a, #2a2a4a, #0a0a1a)",
+  "pawn-rose":    "linear-gradient(135deg, #9a3060, #e070a0, #9a3060)",
+};
 
 // ─── Card assets ──────────────────────────────────────────────────────────────
 
@@ -47,53 +60,34 @@ const CARD_DESC: Record<AbilityType, string> = {
 const ANIM_CSS = `
   @keyframes cd-backdrop-in  { from { opacity:0 } to { opacity:1 } }
   @keyframes cd-backdrop-out { from { opacity:1 } to { opacity:0 } }
-
   @keyframes cd-card-enter {
     from { transform: translateY(80px) scale(0.6); opacity: 0; }
     to   { transform: translateY(0)    scale(1);   opacity: 1; }
   }
-
   @keyframes cd-label-in {
     from { opacity:0; transform: translateY(-10px); }
     to   { opacity:1; transform: translateY(0); }
   }
-
   @keyframes cd-hint-in {
     from { opacity:0; transform: translateY(8px); }
     to   { opacity:1; transform: translateY(0); }
   }
-
   @keyframes card-shine {
     0%   { transform: translateX(-120%) rotate(25deg); opacity: 0; }
     15%  { opacity: 1; }
     100% { transform: translateX(320%)  rotate(25deg); opacity: 0; }
   }
-
-  /* Fly-to-inventory: shrinks and slides up-right into the sidebar */
   @keyframes cd-fly-to-inv {
-    0%   { transform: translate(0,    0)    scale(1);    opacity: 1; }
+    0%   { transform: translate(0, 0) scale(1);    opacity: 1; }
     100% { transform: translate(var(--fly-x), var(--fly-y)) scale(0.18); opacity: 0; }
   }
 `;
-
-// ─── Animation phases ─────────────────────────────────────────────────────────
-// idle       → nothing shown
-// entering   → card rises from below, face-down (cardback)
-// flipping   → 3D flip to face-up (front image)
-// shining    → shine sweep across revealed face
-// revealed   → card sits big in center, "added to inventory" hint shown
-// flying     → card shrinks + flies to inventory slot
-// done       → hidden, onDone() called → card lands in inventory
 
 type AnimPhase = "idle" | "entering" | "flipping" | "shining" | "revealed" | "flying";
 
 // ─── Card draw animation ──────────────────────────────────────────────────────
 
-function CardDrawAnimation({
-  cardType,
-  onDone,
-  inventorySlotRef,
-}: {
+function CardDrawAnimation({ cardType, onDone, inventorySlotRef }: {
   cardType: AbilityType | null;
   onDone: () => void;
   inventorySlotRef: React.RefObject<HTMLDivElement | null>;
@@ -106,136 +100,79 @@ function CardDrawAnimation({
 
   useEffect(() => {
     if (!cardType) return;
-
     setPhase("entering");
     const t1 = setTimeout(() => setPhase("flipping"),  670);
     const t2 = setTimeout(() => setPhase("shining"),   1320);
     const t3 = setTimeout(() => setPhase("revealed"),  1780);
     const t4 = setTimeout(() => {
       if (cardRef.current && inventorySlotRef.current) {
-        const cardRect = cardRef.current.getBoundingClientRect();
-        const slotRect = inventorySlotRef.current.getBoundingClientRect();
-        const dx = (slotRect.left + slotRect.width  / 2) - (cardRect.left + cardRect.width  / 2);
-        const dy = (slotRect.top  + slotRect.height / 2) - (cardRect.top  + cardRect.height / 2);
-        setFlyVars({ x: `${dx}px`, y: `${dy}px` });
+        const cr = cardRef.current.getBoundingClientRect();
+        const sr = inventorySlotRef.current.getBoundingClientRect();
+        setFlyVars({
+          x: `${(sr.left + sr.width / 2) - (cr.left + cr.width / 2)}px`,
+          y: `${(sr.top + sr.height / 2) - (cr.top + cr.height / 2)}px`,
+        });
       }
       setPhase("flying");
     }, 2550);
-    const t5 = setTimeout(() => {
-      setPhase("idle");
-      onDoneRef.current();
-    }, 3150);
-
-    return () => { [t1,t2,t3,t4,t5].forEach(clearTimeout); };
+    const t5 = setTimeout(() => { setPhase("idle"); onDoneRef.current(); }, 3150);
+    return () => { [t1, t2, t3, t4, t5].forEach(clearTimeout); };
   }, [cardType]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (phase === "idle" || !cardType) return null;
 
-  const flipped  = phase === "flipping" || phase === "shining" || phase === "revealed" || phase === "flying";
+  const flipped  = ["flipping","shining","revealed","flying"].includes(phase);
   const isFlying = phase === "flying";
 
   return (
     <>
       <style>{ANIM_CSS}</style>
-
-      {/* Backdrop — fades out during fly phase */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 9998, pointerEvents: "none",
         background: "radial-gradient(ellipse at center, rgba(0,0,0,0.88) 0%, rgba(0,0,0,0.55) 100%)",
-        animation: isFlying
-          ? "cd-backdrop-out 0.5s ease forwards"
-          : "cd-backdrop-in 0.4s ease forwards",
+        animation: isFlying ? "cd-backdrop-out 0.5s ease forwards" : "cd-backdrop-in 0.4s ease forwards",
       }} />
-
-      {/* Centered scene */}
       <div style={{
         position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none",
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        gap: 20,
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 20,
       }}>
-        {/* "Card Drawn!" label — hidden while flying */}
         {!isFlying && (
           <p style={{
-            fontFamily: "'Cinzel','Georgia',serif",
-            fontSize: 14, fontWeight: 700, margin: 0,
-            letterSpacing: "0.32em", textTransform: "uppercase",
-            color: "#d4af37",
-            textShadow: "0 0 28px rgba(212,175,55,0.75), 0 0 56px rgba(212,175,55,0.35)",
+            fontFamily: "'Cinzel','Georgia',serif", fontSize: 14, fontWeight: 700, margin: 0,
+            letterSpacing: "0.32em", textTransform: "uppercase", color: "#d4af37",
+            textShadow: "0 0 28px rgba(212,175,55,0.75)",
             animation: "cd-label-in 0.4s ease 0.1s both",
-            opacity: isFlying ? 0 : 1,
-            transition: "opacity 0.2s",
-          }}>
-            Card Drawn!
-          </p>
+          }}>Card Drawn!</p>
         )}
-
-        {/* The card */}
         <div style={{ perspective: 1000 }}>
-          <div
-            ref={cardRef}
-            style={{
-              width: 210, height: 294,
-              position: "relative",
-              transformStyle: "preserve-3d",
-              // Flip transition
-              transition: isFlying
-                ? "none"
-                : "transform 0.65s cubic-bezier(0.4,0.2,0.2,1), filter 0.4s ease",
-              transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
-              filter: phase === "shining" || phase === "revealed"
-                ? "drop-shadow(0 0 24px rgba(212,175,55,0.85)) drop-shadow(0 0 48px rgba(212,175,55,0.4))"
-                : "drop-shadow(0 16px 32px rgba(0,0,0,0.85))",
-              // Fly animation overrides everything
-              ...(isFlying ? {
-                animation: "cd-fly-to-inv 0.55s cubic-bezier(0.4,0,0.6,1) forwards",
-                ["--fly-x" as string]: flyVars.x,
-                ["--fly-y" as string]: flyVars.y,
-              } : {
-                animation: phase === "entering"
-                  ? "cd-card-enter 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards"
-                  : "none",
-              }),
-            }}
-          >
-            {/* Card back */}
-            <div style={{
-              position: "absolute", inset: 0, borderRadius: 14,
-              backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-              overflow: "hidden",
-            }}>
-              <img src="/abilities/cardback.png" alt=""
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          <div ref={cardRef} style={{
+            width: 210, height: 294, position: "relative", transformStyle: "preserve-3d",
+            transition: isFlying ? "none" : "transform 0.65s cubic-bezier(0.4,0.2,0.2,1), filter 0.4s ease",
+            transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+            filter: ["shining","revealed"].includes(phase)
+              ? "drop-shadow(0 0 24px rgba(212,175,55,0.85))"
+              : "drop-shadow(0 16px 32px rgba(0,0,0,0.85))",
+            ...(isFlying ? {
+              animation: "cd-fly-to-inv 0.55s cubic-bezier(0.4,0,0.6,1) forwards",
+              ["--fly-x" as string]: flyVars.x,
+              ["--fly-y" as string]: flyVars.y,
+            } : {
+              animation: phase === "entering" ? "cd-card-enter 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards" : "none",
+            }),
+          }}>
+            <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", overflow: "hidden" }}>
+              <img src="/abilities/cardback.png" alt="" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
             </div>
-
-            {/* Card front */}
-            <div style={{
-              position: "absolute", inset: 0, borderRadius: 14,
-              backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden",
-              transform: "rotateY(180deg)",
-              overflow: "hidden",
-            }}>
-              <img src={CARD_IMAGE[cardType]} alt={CARD_NAME[cardType]}
-                style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+            <div style={{ position: "absolute", inset: 0, borderRadius: 14, backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden", transform: "rotateY(180deg)", overflow: "hidden" }}>
+              <img src={CARD_IMAGE[cardType]} alt={CARD_NAME[cardType]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               {phase === "shining" && (
-                <div style={{
-                  position: "absolute", inset: 0, pointerEvents: "none",
-                  background: "linear-gradient(105deg, transparent 25%, rgba(255,255,255,0.6) 50%, transparent 75%)",
-                  animation: "card-shine 0.75s ease-out forwards",
-                }} />
+                <div style={{ position: "absolute", inset: 0, pointerEvents: "none", background: "linear-gradient(105deg, transparent 25%, rgba(255,255,255,0.6) 50%, transparent 75%)", animation: "card-shine 0.75s ease-out forwards" }} />
               )}
             </div>
           </div>
         </div>
-
-        {/* Hint */}
-        {(phase === "revealed") && (
-          <p style={{
-            fontFamily: "'Cinzel','Georgia',serif",
-            fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase",
-            color: "rgba(212,175,55,0.7)", margin: 0,
-            animation: "cd-hint-in 0.35s ease both",
-          }}>
+        {phase === "revealed" && (
+          <p style={{ fontFamily: "'Cinzel','Georgia',serif", fontSize: 10, letterSpacing: "0.2em", textTransform: "uppercase", color: "rgba(212,175,55,0.7)", margin: 0, animation: "cd-hint-in 0.35s ease both" }}>
             Added to your inventory
           </p>
         )}
@@ -244,14 +181,13 @@ function CardDrawAnimation({
   );
 }
 
-// ─── Ability inventory (lives in the right sidebar) ───────────────────────────
+// ─── Ability inventory ────────────────────────────────────────────────────────
 
 interface AbilityInventoryProps {
   inventory: AbilityType[];
   selectedCard: AbilityType | null;
   onSelectCard: (card: AbilityType | null) => void;
   isMyTurn: boolean;
-  // ref to the "landing zone" the fly animation targets (last card slot or the section div)
   landingRef: React.RefObject<HTMLDivElement | null>;
 }
 
@@ -259,66 +195,35 @@ function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn, lan
   return (
     <div className="beam-section" style={{ marginTop: 0 }} ref={landingRef}>
       <h4>ABILITY CARDS</h4>
-
       {inventory.length === 0 ? (
-        <p style={{ color: "var(--q-text-muted)", fontSize: 11, margin: 0, fontStyle: "italic" }}>
-          Draws every 3 rounds.
-        </p>
+        <p style={{ color: "var(--q-text-muted)", fontSize: 11, margin: 0, fontStyle: "italic" }}>Draws every 3 rounds.</p>
       ) : (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
           {inventory.map((cardType, i) => {
             const isSelected = selectedCard === cardType;
             return (
-              <button
-                key={`${cardType}-${i}`}
-                title={`${CARD_NAME[cardType]}: ${CARD_DESC[cardType]}`}
+              <button key={`${cardType}-${i}`} title={`${CARD_NAME[cardType]}: ${CARD_DESC[cardType]}`}
                 onClick={() => isMyTurn && onSelectCard(isSelected ? null : cardType)}
                 style={{
-                  width: 52, height: 73,
-                  padding: 0, border: "none", borderRadius: 6,
-                  overflow: "hidden",
-                  cursor: isMyTurn ? "pointer" : "default",
-                  opacity: isMyTurn ? 1 : 0.55,
+                  width: 52, height: 73, padding: 0, border: "none", borderRadius: 6, overflow: "hidden",
+                  cursor: isMyTurn ? "pointer" : "default", opacity: isMyTurn ? 1 : 0.55,
                   transform: isSelected ? "translateY(-6px) scale(1.1)" : "none",
                   transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s",
-                  boxShadow: isSelected
-                    ? "0 8px 20px rgba(0,0,0,0.6), 0 0 14px rgba(212,175,55,0.5)"
-                    : "0 3px 8px rgba(0,0,0,0.5)",
-                  outline: isSelected ? "2px solid rgba(212,175,55,0.85)" : "none",
-                  outlineOffset: 2,
-                  background: "transparent",
-                  position: "relative",
-                }}
-              >
-                <img src={CARD_IMAGE[cardType]} alt={CARD_NAME[cardType]}
-                  style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: 6 }} />
-                {isSelected && (
-                  <div style={{
-                    position: "absolute", inset: 0, borderRadius: 6,
-                    background: "rgba(212,175,55,0.18)", pointerEvents: "none",
-                  }} />
-                )}
+                  boxShadow: isSelected ? "0 8px 20px rgba(0,0,0,0.6), 0 0 14px rgba(212,175,55,0.5)" : "0 3px 8px rgba(0,0,0,0.5)",
+                  outline: isSelected ? "2px solid rgba(212,175,55,0.85)" : "none", outlineOffset: 2,
+                  background: "transparent", position: "relative",
+                }}>
+                <img src={CARD_IMAGE[cardType]} alt={CARD_NAME[cardType]} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", borderRadius: 6 }} />
+                {isSelected && <div style={{ position: "absolute", inset: 0, borderRadius: 6, background: "rgba(212,175,55,0.18)", pointerEvents: "none" }} />}
               </button>
             );
           })}
         </div>
       )}
-
       {selectedCard && (
         <div style={{ marginTop: 8 }}>
-          <p style={{ fontSize: 11, color: "var(--q-text-muted)", margin: "0 0 4px", lineHeight: 1.4 }}>
-            {CARD_DESC[selectedCard]}
-          </p>
-          <button
-            onClick={() => onSelectCard(null)}
-            style={{
-              background: "none", border: "none", cursor: "pointer",
-              color: "var(--q-title,#c8a44a)", fontSize: 10,
-              padding: 0, letterSpacing: "0.08em", textDecoration: "underline",
-            }}
-          >
-            Cancel
-          </button>
+          <p style={{ fontSize: 11, color: "var(--q-text-muted)", margin: "0 0 4px", lineHeight: 1.4 }}>{CARD_DESC[selectedCard]}</p>
+          <button onClick={() => onSelectCard(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--q-title,#c8a44a)", fontSize: 10, padding: 0, letterSpacing: "0.08em", textDecoration: "underline" }}>Cancel</button>
         </div>
       )}
     </div>
@@ -326,8 +231,6 @@ function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn, lan
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-
-export type BoardTheme = "mystic-grove" | "obsidian-keep" | "celestial-sanctum";
 
 function getWsDomain() {
   return getApiDomain().replace(/^https/, "wss").replace(/^http/, "ws");
@@ -342,29 +245,57 @@ function buildMatrix(dto: GameDTO): CellValue[][] {
   for (const wall of dto.walls ?? []) {
     const { row, col, orientation } = wall;
     if (orientation === "HORIZONTAL") {
-      if (matrix[row]) { matrix[row][col-1] = 3; matrix[row][col] = 3; matrix[row][col+1] = 3; }
+      if (matrix[row]) {
+        matrix[row][col - 1] = WALL_VALUE;
+        matrix[row][col]     = WALL_VALUE;
+        matrix[row][col + 1] = WALL_VALUE;
+      }
     } else {
-      if (matrix[row-1]) matrix[row-1][col] = 3;
-      if (matrix[row])   matrix[row][col]   = 3;
-      if (matrix[row+1]) matrix[row+1][col] = 3;
+      if (matrix[row - 1]) matrix[row - 1][col] = WALL_VALUE;
+      if (matrix[row])     matrix[row][col]     = WALL_VALUE;
+      if (matrix[row + 1]) matrix[row + 1][col] = WALL_VALUE;
     }
   }
-  for (let i = 0; i < (dto.pawns ?? []).length; i++) {
-    const { row, col } = dto.pawns[i];
-    if (matrix[row]) matrix[row][col] = (i+1) as CellValue;
+  for (const pawn of dto.pawns ?? []) {
+    const { row, col, userId } = pawn;
+    const playerIndex = (dto.playerIds ?? []).findIndex((id) => id === userId);
+    if (playerIndex === -1) continue;
+    if (matrix[row]) matrix[row][col] = (playerIndex + 1) as CellValue;
   }
   return matrix;
 }
 
-interface PlayerInfo { id: number; username: string; walls: number; }
+function stripForfeitedPawns(
+  matrix: CellValue[][],
+  playerIds: number[],
+  forfeitedIds: number[]
+): CellValue[][] {
+  if (forfeitedIds.length === 0) return matrix;
+  const symbols = new Set<CellValue>(
+    forfeitedIds
+      .map((uid) => playerIds.findIndex((id) => id === uid))
+      .filter((idx) => idx >= 0)
+      .map((idx) => (idx + 1) as CellValue)
+  );
+  if (symbols.size === 0) return matrix;
+  return matrix.map((row) => row.map((cell) => (symbols.has(cell) ? 0 : cell)));
+}
 
 const EMPTY_GAME_STATE: GameState = {
-  matrix: makeEmptyMatrix(), currentTurnUserId: -1,
-  player1Id: -1, player2Id: -1, winnerId: null,
-  gameStatus: "WAITING_FOR_USER", wallsPerPlayer: 0,
-  remainingWalls: {}, mapTheme: null,
-  chaosMode: false, myInventory: [], canDrawCard: false, turnCounter: 0,
-  poisonZones: [], frozenPlayerIds: [],
+  matrix: makeEmptyMatrix(),
+  currentTurnUserId: -1,
+  playerIds: [],
+  winnerId: null,
+  gameStatus: "WAITING_FOR_USER",
+  wallsPerPlayer: 0,
+  remainingWalls: {},
+  mapTheme: null,
+  chaosMode: false,
+  myInventory: [],
+  canDrawCard: false,
+  turnCounter: 0,
+  poisonZones: [],
+  frozenPlayerIds: [],
 };
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
@@ -373,48 +304,48 @@ export default function GamePage() {
   const { gameId } = useParams<{ gameId: string }>();
   const { value: token } = useLocalStorage<string>("token", "");
   const { value: userId } = useLocalStorage<number>("userId", -1);
+  const router = useRouter();
 
   const [game, setGame]         = useState<GameState>(EMPTY_GAME_STATE);
   const [players, setPlayers]   = useState<PlayerInfo[]>([]);
+  const [pawnStyles, setPawnStyles] = useState<Record<number, string>>({});
   const [error, setError]       = useState<string | null>(null);
   const [banner, setBanner]     = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted]   = useState(false);
+  const [forfeitedPlayerIds, setForfeitedPlayerIds] = useState<number[]>([]);
 
   const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
 
-  // Card animation: which card is currently animating
+  // Card animation
   const [drawAnimCard, setDrawAnimCard] = useState<AbilityType | null>(null);
-  // Incrementing key forces CardDrawAnimation to fully remount each draw
-  const [drawKey, setDrawKey] = useState(0);
-  // Inventory shows the real list AFTER animation completes
+  const [drawKey, setDrawKey]           = useState(0);
   const [shownInventory, setShownInventory] = useState<AbilityType[]>([]);
   const [selectedCard, setSelectedCard]     = useState<AbilityType | null>(null);
 
-
-
-  // Ref to the inventory section — the fly animation targets this
   const inventoryLandingRef = useRef<HTMLDivElement | null>(null);
+  const drawnTurnsRef       = useRef<Set<number>>(new Set());
+  const drawingRef          = useRef(false);
+  const pendingInvRef       = useRef<AbilityType[]>([]);
 
-  const drawnTurnsRef = useRef<Set<number>>(new Set());
-  const drawingRef    = useRef(false);
-  const pendingInvRef = useRef<AbilityType[]>([]);
-
-  const wsRef  = useRef<WebSocket | null>(null);
-  const router = useRouter();
-  const api    = useApi(token);
-  const apiRef = useRef(api);
+  const wsRef      = useRef<WebSocket | null>(null);
+  const api        = useApi(token);
+  const apiRef     = useRef(api);
   useEffect(() => { apiRef.current = api; }, [api]);
-  const tokenRef = useRef(token);
+  const tokenRef   = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { setMounted(true); }, []);
-  const fetchedPlayerIdsRef = useRef<string>("");
 
-  // Sync shownInventory from game state when no animation is playing
+  const playerCountRef  = useRef(0);
+  const forfeitedRef    = useRef<number[]>([]);
+  const fetchedIdsRef   = useRef<string>("");
+
+  useEffect(() => { playerCountRef.current = game.playerIds?.length ?? 0; }, [game.playerIds]);
+  useEffect(() => { forfeitedRef.current = forfeitedPlayerIds; }, [forfeitedPlayerIds]);
+
+  // Sync shownInventory when no animation is playing
   useEffect(() => {
-    if (!drawAnimCard) {
-      setShownInventory(game.myInventory);
-    }
+    if (!drawAnimCard) setShownInventory(game.myInventory);
   }, [game.myInventory, drawAnimCard]);
 
   const fetchGame = useCallback(async () => {
@@ -422,11 +353,16 @@ export default function GamePage() {
     try {
       const dto = await apiRef.current.get<GameDTO>(`/games/${gameId}`);
 
+      const strippedMatrix = stripForfeitedPawns(
+        buildMatrix(dto),
+        dto.playerIds ?? [],
+        forfeitedRef.current
+      );
+
       setGame({
-        matrix:            buildMatrix(dto),
+        matrix:            strippedMatrix,
         currentTurnUserId: dto.currentTurnUserId,
-        player1Id:         dto.playerIds?.[0] ?? -1,
-        player2Id:         dto.playerIds?.[1] ?? -1,
+        playerIds:         dto.playerIds ?? [],
         winnerId:          dto.winnerId,
         gameStatus:        dto.gameStatus,
         wallsPerPlayer:    dto.wallsPerPlayer,
@@ -441,49 +377,55 @@ export default function GamePage() {
       });
       setLastSync(new Date());
 
-      // ── Player names ───────────────────────────────────────────────────────
       const idsKey = (dto.playerIds ?? []).join(",");
-      if (idsKey && idsKey !== fetchedPlayerIdsRef.current) {
-        fetchedPlayerIdsRef.current = idsKey;
+      if (idsKey && idsKey !== fetchedIdsRef.current) {
+        fetchedIdsRef.current = idsKey;
         const infos: PlayerInfo[] = [];
+        const skinStyles: Record<number, string> = {};
         for (const pid of dto.playerIds ?? []) {
+          const symbol = ((dto.playerIds ?? []).findIndex((id) => id === pid) + 1) as 1 | 2 | 3 | 4;
           try {
             const u = await apiRef.current.get<User>(`/users/${pid}`);
-            infos.push({ id: pid, username: u.displayName || u.username || `Player ${pid}`, walls: dto.remainingWalls?.[String(pid)] ?? 0 });
-          } catch { infos.push({ id: pid, username: `Player ${pid}`, walls: 0 }); }
+            infos.push({
+              id: pid,
+              username: u.displayName || u.username || `Player ${pid}`,
+              walls: dto.remainingWalls?.[String(pid)] ?? 0,
+              symbol,
+              hasLeft: forfeitedRef.current.includes(pid),
+            });
+            if (u.equippedPawnSkin && PAWN_SKIN_GRADIENTS[u.equippedPawnSkin]) {
+              skinStyles[symbol] = PAWN_SKIN_GRADIENTS[u.equippedPawnSkin];
+            }
+          } catch {
+            infos.push({ id: pid, username: `Player ${pid}`, walls: 0, symbol, hasLeft: forfeitedRef.current.includes(pid) });
+          }
         }
         setPlayers(infos);
+        setPawnStyles(skinStyles);
       } else {
-        setPlayers(prev => prev.map(p => ({ ...p, walls: dto.remainingWalls?.[String(p.id)] ?? 0 })));
+        setPlayers(prev => prev.map(p => ({
+          ...p,
+          walls: dto.remainingWalls?.[String(p.id)] ?? 0,
+          hasLeft: forfeitedRef.current.includes(p.id),
+        })));
       }
 
       if (dto.gameStatus === "ENDED") router.push(`/games/${gameId}/gameend`);
       setError(null);
-    } catch { setError("Could not reach server."); }
-  }, [gameId, token, api]); // eslint-disable-line react-hooks/exhaustive-deps
+    } catch {
+      setError("Could not reach server.");
+    }
+  }, [gameId, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── Dedicated draw effect ──────────────────────────────────────────────────
-  // Watches canDrawCard on game state. Completely separate from fetchGame so
-  // the animation plays without any re-render or state update racing against it.
   useEffect(() => {
-    if (
-      !game.chaosMode ||
-      !game.canDrawCard ||
-      drawingRef.current ||
-      drawnTurnsRef.current.has(game.turnCounter)
-    ) return;
-
+    if (!game.chaosMode || !game.canDrawCard || drawingRef.current || drawnTurnsRef.current.has(game.turnCounter)) return;
     drawnTurnsRef.current.add(game.turnCounter);
     drawingRef.current = true;
-
-    // Snapshot the inventory BEFORE the draw so we can diff it
     const oldInv = game.myInventory;
-
     apiRef.current.post<GameDTO>(`/games/${gameId}/ability/draw`, {})
       .then(drawn => {
         const newInv = drawn.myInventory ?? [];
-
-        // Find what was added
         let newCard: AbilityType | null = null;
         const scratch = [...oldInv];
         for (const c of newInv) {
@@ -492,21 +434,14 @@ export default function GamePage() {
           scratch.splice(idx, 1);
         }
         if (!newCard && newInv.length > oldInv.length) newCard = newInv[newInv.length - 1];
-
-        // Store the new inventory for after the animation, suppress canDrawCard
         pendingInvRef.current = newInv;
         setGame(prev => ({ ...prev, canDrawCard: false }));
-
-        // Trigger animation — bump key to force full remount
-        if (newCard) {
-          setDrawKey(k => k + 1);
-          setDrawAnimCard(newCard);
-        }
+        if (newCard) { setDrawKey(k => k + 1); setDrawAnimCard(newCard); }
       })
-      .catch(() => { /* server rejected — nothing to show */ })
+      .catch(() => {})
       .finally(() => { drawingRef.current = false; });
-
   }, [game.canDrawCard, game.turnCounter]); // eslint-disable-line react-hooks/exhaustive-deps
+
   function handleAnimDone() {
     setDrawAnimCard(null);
     if (pendingInvRef.current.length > 0) {
@@ -539,21 +474,27 @@ export default function GamePage() {
             userId?: string | number; gracePeriodSeconds?: number;
           };
           if (String(msg.gameId) !== String(gameId)) return;
-          if (msg.type === "CHAT") {
-            setChatRefreshTrigger(n => n + 1);
-            return;
-          }
+
+          if (msg.type === "CHAT") { setChatRefreshTrigger(n => n + 1); return; }
+
           if (msg.type === "PLAYER_DISCONNECTED") {
             if (Number(msg.userId) !== userId)
-              setBanner(`A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30} seconds for reconnection.`);
+              setBanner(`A player disconnected. Waiting ${msg.gracePeriodSeconds ?? 30}s for reconnection.`);
           } else if (msg.type === "PLAYER_RECONNECTED") {
             setBanner("The disconnected player reconnected.");
             if (bannerTimeout) clearTimeout(bannerTimeout);
             bannerTimeout = setTimeout(() => setBanner(null), 3000);
           } else if (msg.type === "PLAYER_FORFEITED") {
-            setBanner(Number(msg.userId) === userId
-              ? "You were removed from the game after not reconnecting in time."
-              : "A disconnected player did not return and was removed from the game.");
+            const fid = Number(msg.userId);
+            if (!Number.isNaN(fid)) {
+              setForfeitedPlayerIds(prev => prev.includes(fid) ? prev : [...prev, fid]);
+            }
+            if (fid === userId) {
+              if (playerCountRef.current === 4) { router.push("/users"); return; }
+              setBanner("You forfeited the game.");
+            } else {
+              setBanner("A player forfeited and left the game.");
+            }
           } else if (["MOVE","WALL","FORFEIT","GAME_UPDATED","ABILITY_USED","ABILITY_DRAW"].includes(msg.type)) {
             setBanner(null);
           }
@@ -570,14 +511,14 @@ export default function GamePage() {
       if (bannerTimeout) clearTimeout(bannerTimeout);
       ws?.close();
     };
-  }, [gameId, fetchGame, userId]);
+  }, [gameId, fetchGame, userId, router]);
 
   const username = players.find(p => p.id === userId)?.username ?? "";
 
-  const isMyTurn         = userId !== -1 && game.currentTurnUserId === userId;
-  const mySymbol         = (game.player1Id === userId ? 1 : 2) as 1 | 2;
-  const validMoves       = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
-  const myRemainingWalls = game.remainingWalls?.[String(userId)] ?? 0;
+  const isMyTurn      = userId !== -1 && game.currentTurnUserId === userId;
+  const myPlayerIndex = game.playerIds.findIndex((id) => id === userId);
+  const mySymbol      = (myPlayerIndex >= 0 ? myPlayerIndex + 1 : 1) as 1 | 2 | 3 | 4;
+  const validMoves    = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
 
   async function handleMove(matrixRow: number, matrixCol: number) {
     if (!isMyTurn) return;
@@ -594,20 +535,22 @@ export default function GamePage() {
   }
 
   async function handleForfeit() {
-    try { await api.post(`/games/${gameId}/forfeit`, {}); }
-    catch { setError("Could not forfeit."); }
+    try {
+      await api.post(`/games/${gameId}/forfeit`, {});
+      if ((game.playerIds?.length ?? 0) === 4) { router.push("/users"); return; }
+    } catch { setError("Could not forfeit."); }
   }
 
-  // Auto-dismiss errors after 3 seconds
+  // Auto-dismiss errors after 3s
   useEffect(() => {
     if (!error) return;
     const t = setTimeout(() => setError(null), 3000);
     return () => clearTimeout(t);
   }, [error]);
+
+  // ESC cancels ability targeting
   useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setSelectedCard(null);
-    }
+    const onKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") setSelectedCard(null); };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, []);
@@ -632,15 +575,12 @@ export default function GamePage() {
 
   async function handleUseCard(cardType: AbilityType) {
     if (!isMyTurn) return;
-    // No-target cards fire immediately
     if (["PLUS_TWO_WALLS", "TWO_MOVES"].includes(cardType)) {
       try {
         await apiRef.current.post(`/games/${gameId}/ability`, { abilityType: cardType });
-        setSelectedCard(null);
-        fetchGame();
+        setSelectedCard(null); fetchGame();
       } catch (e: unknown) { setError(e instanceof Error ? e.message : "Could not use ability."); }
     } else {
-      // Targeted cards enter targeting mode on the board
       setSelectedCard(prev => prev === cardType ? null : cardType);
     }
   }
@@ -652,58 +592,28 @@ export default function GamePage() {
         minHeight: "100vh", background: "var(--q-main-bg)",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
-        gap: 20, fontFamily: "system-ui,sans-serif",
+        gap: 20, fontFamily: "system-ui, sans-serif",
         transition: "background 0.3s ease",
       }}
     >
-      {/* Logo — centered above the board column */}
-      <div style={{
-        width: 624,
-        maxWidth: "100%",
-        display: "flex",
-        justifyContent: "center",
-        margin: "0 auto",
-      }}>
-        <img
-          src="/quoridor.png"
-          alt="Quoridor"
-          style={{ height: 180, objectFit: "contain", userSelect: "none" }}
-        />
-      </div>
+      {/* Logo */}
+      <img src="/quoridor.png" alt="Quoridor"
+        style={{ height: 90, objectFit: "contain", userSelect: "none" as const }} />
 
-      {/* Error toast — slides in, auto-dismisses after 3s */}
+      {/* Error toast */}
       {error && (
         <div style={{
-          position: "fixed",
-          top: 24,
-          left: "50%",
-          transform: "translateX(-50%)",
-          zIndex: 99999,
-          background: "var(--q-beam-bg, rgba(20,20,25,0.95))",
-          backdropFilter: "blur(10px)",
-          border: "1px solid rgba(255,255,255,0.15)",
-          borderRadius: 10,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
-          padding: "12px 24px",
-          display: "flex", alignItems: "center", gap: 12,
+          position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
+          zIndex: 99999, background: "var(--q-beam-bg, rgba(20,20,25,0.95))",
+          backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.15)",
+          borderRadius: 10, boxShadow: "0 8px 32px rgba(0,0,0,0.6)",
+          padding: "12px 24px", display: "flex", alignItems: "center", gap: 12,
           animation: "toast-in 0.3s cubic-bezier(0.34,1.56,0.64,1) forwards",
           minWidth: 260, maxWidth: 480,
         }}>
           <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
-          <span style={{
-            color: "#fff",
-            fontFamily: "Georgia, serif",
-            fontSize: 13,
-            lineHeight: 1.4,
-          }}>{error}</span>
-          <button
-            onClick={() => setError(null)}
-            style={{
-              marginLeft: "auto", background: "none", border: "none",
-              color: "rgba(255,255,255,0.5)", cursor: "pointer",
-              fontSize: 16, padding: "0 2px", flexShrink: 0,
-            }}
-          >✕</button>
+          <span style={{ color: "#fff", fontFamily: "Georgia, serif", fontSize: 13, lineHeight: 1.4 }}>{error}</span>
+          <button onClick={() => setError(null)} style={{ marginLeft: "auto", background: "none", border: "none", color: "rgba(255,255,255,0.5)", cursor: "pointer", fontSize: 16, padding: "0 2px", flexShrink: 0 }}>✕</button>
         </div>
       )}
 
@@ -721,12 +631,10 @@ export default function GamePage() {
         </p>
       )}
 
-      {/* Board + Chat in one game-layout via slots */}
+      {/* Board + Chat via chatSlot */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
         {mounted && (
           <QuoridorBoard
-            remainingWalls={myRemainingWalls}
-            totalWalls={game.wallsPerPlayer}
             mySymbol={mySymbol}
             matrix={game.matrix}
             isMyTurn={isMyTurn}
@@ -735,11 +643,12 @@ export default function GamePage() {
             onWall={handleWall}
             onForfeit={handleForfeit}
             players={players}
+            pawnStyles={pawnStyles}
             selectedAbilityCard={selectedCard}
             onAbilityTarget={handleAbilityTarget}
             poisonZones={game.poisonZones}
             frozenPlayerIds={game.frozenPlayerIds}
-              isFrozen={game.frozenPlayerIds.includes(userId)}
+            isFrozen={game.frozenPlayerIds.map(Number).includes(Number(userId))}
             chatSlot={
               <GameChat
                 gameId={gameId}
@@ -752,7 +661,7 @@ export default function GamePage() {
           />
         )}
 
-        {/* Inventory below the centered board, aligned under the board column */}
+        {/* Ability inventory below board */}
         {mounted && game.chaosMode && (
           <div style={{ paddingTop: 16, width: 624, maxWidth: "100%", margin: "0 auto" }}>
             <div style={{
@@ -781,7 +690,6 @@ export default function GamePage() {
         </p>
       )}
 
-      {/* Full-screen card draw animation */}
       <CardDrawAnimation
         key={drawKey}
         cardType={drawAnimCard}

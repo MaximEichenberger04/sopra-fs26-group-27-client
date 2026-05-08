@@ -1,8 +1,8 @@
-export type CellValue = 0 | 1 | 2 | 3;
+export type CellValue = 0 | 1 | 2 | 3 | 4 | 9;
+export const WALL_VALUE: CellValue = 9;
 export const BOARD_CELLS = 9;
 export const MATRIX_SIZE = BOARD_CELLS * 2 - 1; // 17
 
-// What the backend actually returns
 export interface PawnDTO {
   id: number;
   userId: number;
@@ -55,14 +55,12 @@ export interface GameDTO {
   poisonZones: PoisonZoneDTO[] | null;
 }
 
-// What the board component works with (derived)
 export interface GameState {
   remainingWalls: Record<string, number>;
   wallsPerPlayer: number;
   matrix: CellValue[][];
   currentTurnUserId: number;
-  player1Id: number;
-  player2Id: number;
+  playerIds: number[];
   winnerId: number | null;
   gameStatus: GameDTO["gameStatus"];
   mapTheme: string | null;
@@ -77,8 +75,10 @@ export interface GameState {
 
 export interface ChatMessageGetDTO {
   id: number;
+  gameId: number;
   userId: number;
   username: string;
-  text: string;
-  timestamp: string; // ISO format
+  text: string | null;
+  gifUrl: string | null;
+  timestamp: number; // Unix milliseconds
 }

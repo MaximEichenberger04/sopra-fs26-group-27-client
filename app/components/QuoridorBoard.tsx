@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { CellValue, MATRIX_SIZE, AbilityType, PoisonZoneDTO } from "@/types/game";
+import { CellValue, MATRIX_SIZE, WALL_VALUE, AbilityType, PoisonZoneDTO } from "@/types/game";
 import { getValidWallSet, slotToCenter } from "@/utils/ValidwallPlacements";
 
-const CELL = 56;
-const WALL = 12;
-const GAP  = 0;
-const PAD  = 12;
+const BASE_CELL = 56;
+const BASE_WALL = 12;
+const MIN_CELL  = 36;
+const MAX_CELL  = 56;
+const PAD       = 12;
 
-function cellPx(i: number): number { return PAD + i * (CELL + WALL); }
-function zonePx(n: number): number { return n * CELL + (n - 1) * WALL; }
+function cellPx(i: number, cell: number, wall: number): number { return PAD + i * (cell + wall); }
+function zonePx(n: number, cell: number, wall: number): number { return n * cell + (n - 1) * wall; }
 
 const ZONE_COLS: Partial<Record<AbilityType, number>> = {
   FIREBALL: 2, EARTHQUAKE: 3, POISON: 2, FREEZE: 1,
@@ -20,20 +21,28 @@ const ZONE_IMAGE: Partial<Record<AbilityType, string>> = {
   FREEZE:     "/effects/freeze_zone.png",
 };
 
+const PLAYER_OUTLINE_COLORS: Record<number, string> = {
+  1: "rgba(91, 141, 217, 0.9)",
+  2: "rgba(217, 107, 107, 0.9)",
+  3: "rgba(107, 217, 130, 0.9)",
+  4: "rgba(217, 180, 107, 0.9)",
+};
+
+// ─── PawnCell ─────────────────────────────────────────────────────────────────
+
 function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped,
-  isAbilityMode, onAbilityHover, onAbilityLeave, onAbilityClick,
+  cellSize, pawnStyles, isAbilityMode, onAbilityHover, onAbilityLeave, onAbilityClick,
 }: {
   value: CellValue; boardRow: number; boardCol: number;
-  isValidMove: boolean; onMove: (mr: number, mc: number) => void; flipped: boolean;
+  isValidMove: boolean; onMove: (mr: number, mc: number) => void;
+  flipped: boolean; cellSize: number; pawnStyles?: Record<number, string>;
   isAbilityMode: boolean;
   onAbilityHover: (r: number, c: number) => void;
   onAbilityLeave: () => void;
   onAbilityClick: (r: number, c: number) => void;
 }) {
-  // boardRow/boardCol are visual coords from the rotated grid.
-  // Convert to logical (server) coords before firing callbacks.
-  const logR = boardRow;
-  const logC = boardCol;
+  const logR = flipped ? 8 - boardRow : boardRow;
+  const logC = flipped ? 8 - boardCol : boardCol;
   return (
     <div
       onClick={() => isAbilityMode ? onAbilityClick(logR, logC) : isValidMove && onMove(logR * 2, logC * 2)}
@@ -41,20 +50,29 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped,
       onMouseLeave={() => isAbilityMode && onAbilityLeave()}
       className={`pawn-cell ${isValidMove && !isAbilityMode ? "valid-move" : ""}`}
       style={{
-        width: CELL, height: CELL,
+        width: cellSize, height: cellSize,
         cursor: isAbilityMode ? "crosshair" : isValidMove ? "pointer" : "default",
         transform: flipped ? "rotate(180deg)" : "none",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >
-      {(value === 1 || value === 2) && (
-        <div className={`pawn pawn-${value}`} style={{ width: CELL * 0.58, height: CELL * 0.58 }}>
+      {(value >= 1 && value <= 4) && (
+        <div
+          className={`pawn pawn-${value}`}
+          style={{
+            width: cellSize * 0.58, height: cellSize * 0.58,
+            ...(pawnStyles?.[value] ? { background: pawnStyles[value] } : {}),
+            borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
+          }}
+        >
           <div className="pawn-highlight" />
         </div>
       )}
     </div>
   );
 }
+
+// ─── WallSlot / Pillar ────────────────────────────────────────────────────────
 
 function getWallSlots(mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL"): Array<[number, number]> {
   return o === "HORIZONTAL"
@@ -63,14 +81,15 @@ function getWallSlots(mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL"): Arr
 }
 
 function WallSlot({ orientation, value, mr, mc, isMyTurn, isAbilityMode,
-  onWall, onHover, onHoverEnd, isHighlighted, isValid }: {
+  onWall, onHover, onHoverEnd, isHighlighted, isValid, cellSize, wallSize }: {
   orientation: "HORIZONTAL" | "VERTICAL"; value: CellValue; mr: number; mc: number;
   isMyTurn: boolean; isAbilityMode: boolean; isHighlighted: boolean; isValid: boolean;
+  cellSize: number; wallSize: number;
   onWall:    (mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") => void;
   onHover:   (mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") => void;
   onHoverEnd: () => void;
 }) {
-  const active = value === 3;
+  const active = value === WALL_VALUE;
   const canPlace = isMyTurn && !active && !isAbilityMode && isValid;
   const isH = orientation === "HORIZONTAL";
   return (
@@ -80,36 +99,42 @@ function WallSlot({ orientation, value, mr, mc, isMyTurn, isAbilityMode,
       onMouseLeave={() => onHoverEnd()}
       className={`wall-slot ${active ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
       style={{
-        width: isH ? CELL : WALL, height: isH ? WALL : CELL,
+        width: isH ? cellSize : wallSize, height: isH ? wallSize : cellSize,
         cursor: isAbilityMode ? "crosshair" : canPlace ? "pointer" : "default",
       }}
     />
   );
 }
 
-function Pillar({ value, isHighlighted }: { value: CellValue; isHighlighted: boolean }) {
+function Pillar({ value, isHighlighted, wallSize }: { value: CellValue; isHighlighted: boolean; wallSize: number }) {
   return (
     <div
-      className={`pillar ${value === 3 ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
-      style={{ width: WALL, height: WALL }}
+      className={`pillar ${value === WALL_VALUE ? "active" : ""} ${isHighlighted ? "highlighted" : ""}`}
+      style={{ width: wallSize, height: wallSize }}
     />
   );
 }
 
+// ─── Zone overlay ─────────────────────────────────────────────────────────────
+
 function ZoneRect({ boardRow, boardCol, cols, rows, imageSrc,
   opacity = 0.55, borderColor = "rgba(255,240,100,0.85)",
-  animName = "zone-pulse", badge, flipped = false }: {
+  animName = "zone-pulse", badge, flipped = false,
+  cellSize, wallSize }: {
   boardRow: number; boardCol: number; cols: number; rows: number;
   imageSrc: string; opacity?: number; borderColor?: string;
   animName?: string; badge?: string; flipped?: boolean;
+  cellSize: number; wallSize: number;
 }) {
   const r = Math.min(boardRow, 9 - rows);
   const c = Math.min(boardCol, 9 - cols);
   return (
     <div style={{
       position: "absolute",
-      left: cellPx(c), top: cellPx(r),
-      width: zonePx(cols), height: zonePx(rows),
+      left: cellPx(c, cellSize, wallSize),
+      top:  cellPx(r, cellSize, wallSize),
+      width:  zonePx(cols, cellSize, wallSize),
+      height: zonePx(rows, cellSize, wallSize),
       pointerEvents: "none", zIndex: 20,
       borderRadius: 6, overflow: "hidden",
     }}>
@@ -137,12 +162,18 @@ function ZoneRect({ boardRow, boardCol, cols, rows, imageSrc,
   );
 }
 
-interface PlayerInfo { id: number; username: string; walls: number; }
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+export interface PlayerInfo {
+  id: number;
+  username: string;
+  walls: number;
+  symbol: 1 | 2 | 3 | 4;
+  hasLeft: boolean;
+}
 
 interface QuoridorBoardProps {
-  mySymbol: 1 | 2;
-  remainingWalls: number;
-  totalWalls: number;
+  mySymbol: 1 | 2 | 3 | 4;
   matrix: CellValue[][];
   isMyTurn: boolean;
   validMoves: Array<[number, number]>;
@@ -150,19 +181,28 @@ interface QuoridorBoardProps {
   onWall:    (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
   onForfeit: () => void;
   players?: PlayerInfo[];
+  pawnStyles?: Record<number, string>;
   // Chaos mode
   selectedAbilityCard?: AbilityType | null;
   onAbilityTarget?: (boardRow: number, boardCol: number, targetUserId?: number) => void;
   poisonZones?: PoisonZoneDTO[];
   frozenPlayerIds?: number[];
   isFrozen?: boolean;
-  // Slots rendered inside the layout by the parent
   chatSlot?: React.ReactNode;
 }
 
+// ─── Board ────────────────────────────────────────────────────────────────────
+
+const BOARD_ROTATION: Record<1 | 2 | 3 | 4, string> = {
+  1: "rotate(0deg)",
+  2: "rotate(180deg)",
+  3: "rotate(90deg)",
+  4: "rotate(-90deg)",
+};
+
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall,
-  remainingWalls, totalWalls, onForfeit, mySymbol, players,
+  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit,
+  mySymbol, players, pawnStyles,
   selectedAbilityCard = null,
   onAbilityTarget = () => {},
   poisonZones = [],
@@ -173,24 +213,37 @@ export default function QuoridorBoard({
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const flipped       = mounted && mySymbol === 2;
+  const flipped = mounted && mySymbol !== 1;
+
+  // Responsive cell/wall sizing
+  const [sizes, setSizes] = useState({ cell: BASE_CELL, wall: BASE_WALL });
+  useEffect(() => {
+    function updateSizes() {
+      const available = Math.min(window.innerWidth * 0.52, window.innerHeight * 0.72);
+      const wallRatio = BASE_WALL / BASE_CELL;
+      const rawCell = Math.floor(available / (9 + 8 * wallRatio));
+      const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, rawCell));
+      const wall = Math.max(8, Math.round(cell * wallRatio));
+      setSizes({ cell, wall });
+    }
+    updateSizes();
+    window.addEventListener("resize", updateSizes);
+    return () => window.removeEventListener("resize", updateSizes);
+  }, []);
+
   const isAbilityMode = !!selectedAbilityCard;
 
-  // Compute valid wall placements once per matrix change (BFS is expensive)
   const validWalls = useMemo(() => getValidWallSet(matrix), [matrix]);
 
-  // Build set of poisoned pawn cells (matrix coords) for quick lookup
   const poisonedCells = useMemo(() => {
     const set = new Set<string>();
-    for (const z of poisonZones) {
+    for (const z of poisonZones)
       for (let dr = 0; dr <= 2; dr += 2)
         for (let dc = 0; dc <= 2; dc += 2)
           set.add(`${z.topLeftRow + dr},${z.topLeftCol + dc}`);
-    }
     return set;
   }, [poisonZones]);
 
-  // Filter moves: hide all if frozen, hide poisoned cells
   const effectiveValidMoves = useMemo(() => {
     if (isFrozen) return [];
     return validMoves.filter(([mr, mc]) => !poisonedCells.has(`${mr},${mc}`));
@@ -216,10 +269,11 @@ export default function QuoridorBoard({
     return hoveredWall.some(([hr, hc]) => hr === mr && hc === mc);
   }
 
-  // Send the wall CENTER (odd,odd) to the backend, converting visual→logical for player 2
   function handleWallClick(_vmr: number, _vmc: number, o: "HORIZONTAL" | "VERTICAL") {
     if (!hoveredCenter || hoveredCenter.o !== o) return;
-    onWall(hoveredCenter.mr, hoveredCenter.mc, o);
+    const logCr = flipped ? MATRIX_SIZE - 1 - hoveredCenter.mr : hoveredCenter.mr;
+    const logCc = flipped ? MATRIX_SIZE - 1 - hoveredCenter.mc : hoveredCenter.mc;
+    onWall(logCr, logCc, o);
   }
 
   function handleAbilityClick(logR: number, logC: number) {
@@ -227,7 +281,7 @@ export default function QuoridorBoard({
     if (selectedAbilityCard === "FREEZE") {
       const cellVal = matrix[logR * 2]?.[logC * 2] ?? 0;
       if (cellVal !== 1 && cellVal !== 2) return;
-      const target = players?.find((_, i) => i + 1 === cellVal);
+      const target = players?.find(p => p.symbol === cellVal);
       if (!target) return;
       onAbilityTarget(logR, logC, target.id);
     } else {
@@ -235,23 +289,21 @@ export default function QuoridorBoard({
     }
   }
 
-  // Visual hover coords — used directly for overlay positioning (board-surface is already rotated)
   const hoverVisR = abilityHover?.r ?? null;
   const hoverVisC = abilityHover?.c ?? null;
-
-  // Logical coords — only used when clicking to send to backend
   const hoverLogR = abilityHover ? (flipped ? 8 - abilityHover.r : abilityHover.r) : null;
   const hoverLogC = abilityHover ? (flipped ? 8 - abilityHover.c : abilityHover.c) : null;
 
   const showHoverZone = hoverVisR !== null && hoverVisC !== null &&
     selectedAbilityCard !== null && (() => {
       if (selectedAbilityCard === "FREEZE") {
-        // Check using logical coords since matrix is in logical space
         const v = matrix[hoverLogR! * 2]?.[hoverLogC! * 2] ?? 0;
         return v === 1 || v === 2;
       }
       return true;
     })();
+
+  const { cell: CELL, wall: WALL } = sizes;
 
   return (
     <div className="game-layout">
@@ -262,13 +314,20 @@ export default function QuoridorBoard({
           <div className="beam-section">
             <h4>PLAYERS</h4>
             {players && players.length > 0 ? (
-              players.map((p, i) => (
+              players.map((p) => (
                 <div key={p.id} className="player-row">
                   <div className="player-badge">
-                    <div className={`pawn-icon pawn-${i + 1}-icon`} />
-                    <span className="player-name">{p.username}</span>
+                    <div
+                      className={`pawn-icon pawn-${p.symbol}-icon`}
+                      style={pawnStyles?.[p.symbol] ? { background: pawnStyles[p.symbol] } : {}}
+                    />
+                    <span className={`player-name ${p.hasLeft ? "player-name-left" : ""}`}>{p.username}</span>
                   </div>
-                  <span className="player-walls">Walls: {p.walls}</span>
+                  {p.hasLeft ? (
+                    <span className="player-left-note">has left the game</span>
+                  ) : (
+                    <span className="player-walls">Walls: {p.walls}</span>
+                  )}
                 </div>
               ))
             ) : (
@@ -293,7 +352,7 @@ export default function QuoridorBoard({
         </div>
       </div>
 
-      {/* Board column: board + ability inventory below */}
+      {/* Board column */}
       <div className="left-column">
         <div className="board-3d-wrapper">
           <style>{`
@@ -317,8 +376,8 @@ export default function QuoridorBoard({
               display: "inline-grid",
               gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
               gridTemplateRows:    Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
-              gap: GAP,
-              transform: flipped ? "rotate(180deg)" : "none",
+              gap: 0,
+              transform: mounted ? BOARD_ROTATION[mySymbol] : "rotate(0deg)",
               position: "relative",
               borderBottom: "none",
             }}
@@ -335,6 +394,7 @@ export default function QuoridorBoard({
                       value={value} boardRow={mr / 2} boardCol={mc / 2}
                       isValidMove={effectiveValidMoves.some(([vr, vc]) => vr === mr && vc === mc)}
                       onMove={onMove} flipped={flipped}
+                      cellSize={CELL} pawnStyles={pawnStyles}
                       isAbilityMode={isAbilityMode}
                       onAbilityHover={(r, c) => setAbilityHover({ r, c })}
                       onAbilityLeave={() => setAbilityHover(null)}
@@ -346,8 +406,8 @@ export default function QuoridorBoard({
                   const hValid = validWalls.has(`${hcr},${hcc},HORIZONTAL`);
                   return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
                     mr={mr} mc={mc} isMyTurn={isMyTurn} isAbilityMode={isAbilityMode}
-                    isHighlighted={isWallHighlighted(mr, mc)}
-                    isValid={hValid}
+                    isHighlighted={isWallHighlighted(mr, mc)} isValid={hValid}
+                    cellSize={CELL} wallSize={WALL}
                     onWall={handleWallClick} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
                 }
                 if (evenRow && !evenCol) {
@@ -355,38 +415,40 @@ export default function QuoridorBoard({
                   const vValid = validWalls.has(`${vcr},${vcc},VERTICAL`);
                   return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
                     mr={mr} mc={mc} isMyTurn={isMyTurn} isAbilityMode={isAbilityMode}
-                    isHighlighted={isWallHighlighted(mr, mc)}
-                    isValid={vValid}
+                    isHighlighted={isWallHighlighted(mr, mc)} isValid={vValid}
+                    cellSize={CELL} wallSize={WALL}
                     onWall={handleWallClick} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
                 }
-                return <Pillar key={`${mr}-${mc}`} value={value} isHighlighted={isWallHighlighted(mr, mc)} />;
+                return <Pillar key={`${mr}-${mc}`} value={value} isHighlighted={isWallHighlighted(mr, mc)} wallSize={WALL} />;
               })
             )}
 
+            {/* Poison zones */}
             {poisonZones.map((z, i) => (
               <ZoneRect key={`poison-${i}`}
                 boardRow={z.topLeftRow / 2} boardCol={z.topLeftCol / 2}
                 cols={2} rows={2} imageSrc="/effects/poison_zone.png"
                 opacity={0.55} borderColor="rgba(80,255,0,0.7)" animName="poison-pulse"
-                badge={String(z.roundsRemaining)}
-                flipped={flipped}
+                badge={String(z.roundsRemaining)} flipped={flipped}
+                cellSize={CELL} wallSize={WALL}
               />
             ))}
 
+            {/* Freeze overlays */}
             {frozenPlayerIds.length > 0 && (() => {
               const els: React.ReactNode[] = [];
               for (let mr = 0; mr < MATRIX_SIZE; mr += 2) {
                 for (let mc = 0; mc < MATRIX_SIZE; mc += 2) {
                   const cv = matrix[mr]?.[mc] ?? 0;
                   if (cv !== 1 && cv !== 2) continue;
-                  const p = players?.[(cv as number) - 1];
+                  const p = players?.find(p => p.symbol === cv);
                   if (!p || !frozenPlayerIds.includes(p.id)) continue;
                   els.push(
                     <ZoneRect key={`freeze-${mr}-${mc}`}
                       boardRow={mr / 2} boardCol={mc / 2}
                       cols={1} rows={1} imageSrc="/effects/freeze_zone.png"
                       opacity={0.55} borderColor="rgba(100,210,255,0.9)" animName="freeze-pulse"
-                      flipped={flipped}
+                      flipped={flipped} cellSize={CELL} wallSize={WALL}
                     />
                   );
                 }
@@ -394,16 +456,16 @@ export default function QuoridorBoard({
               return els;
             })()}
 
+            {/* Ability hover zone */}
             {showHoverZone && hoverVisR !== null && hoverVisC !== null &&
               selectedAbilityCard && ZONE_IMAGE[selectedAbilityCard] && (
               <ZoneRect
-                boardRow={hoverVisR}
-                boardCol={hoverVisC}
+                boardRow={hoverVisR} boardCol={hoverVisC}
                 cols={ZONE_COLS[selectedAbilityCard] ?? 1}
                 rows={ZONE_COLS[selectedAbilityCard] ?? 1}
                 imageSrc={ZONE_IMAGE[selectedAbilityCard]!}
                 opacity={0.6} borderColor="rgba(255,240,100,0.85)" animName="zone-pulse"
-                flipped={flipped}
+                flipped={flipped} cellSize={CELL} wallSize={WALL}
               />
             )}
           </div>
@@ -420,7 +482,6 @@ export default function QuoridorBoard({
             </div>
           )}
         </div>
-
       </div>
 
       {/* Chat column */}

@@ -1,0 +1,74 @@
+.leaderboard-page {
+  min-height: 100vh;
+  background: #111;
+}
+
+.leaderboard-content {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 48px 24px;
+}
+
+.leaderboard-card {
+  padding: 32px;
+}
+
+.leaderboard-header {
+  margin-bottom: 28px;
+}
+
+.leaderboard-header h1 {
+  margin: 0;
+  font-size: 36px;
+}
+
+.leaderboard-header p {
+  margin-top: 8px;
+  opacity: 0.75;
+}
+
+.leaderboard-table {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.leaderboard-row {
+  display: grid;
+  grid-template-columns: 90px 1fr 120px 100px;
+  align-items: center;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.leaderboard-row-head {
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.leaderboard-rank {
+  font-weight: 700;
+}
+
+.leaderboard-player {
+  background: none;
+  border: none;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.leaderboard-player:hover {
+  text-decoration: underline;
+}
+
+.leaderboard-error {
+  color: #ff7777;
+  margin-bottom: 16px;
+}
+
+.leaderboard-back {
+  margin-top: 28px;
+}

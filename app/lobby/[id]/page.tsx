@@ -7,6 +7,9 @@ import { Lobby } from "@/types/lobby";
 import { User } from "@/types/user";
 import { useApi } from "@/hooks/useApi";
 import NavBar from "@/components/NavBar";
+import { Avatar } from "antd";
+import { UserOutlined } from "@ant-design/icons";
+import { getCosmeticById } from "@/types/cosmetics";
 
 const LobbyPage: React.FC = () => {
   const router = useRouter();
@@ -194,14 +197,27 @@ const LobbyPage: React.FC = () => {
 
           <div className="lobby-room-section">
             <h3 className="g-section-title">Players ({lobby.currentPlayers}/{lobby.maxPlayers})</h3>
-            {users.map((user) => (
-              <div key={user.id} className="lobby-player-row">
-                <span>@{user.username}</span>
-                {String(user.id) === String(lobby.hostId) && (
-                  <span className="lobby-host-badge">Host</span>
-                )}
-              </div>
-            ))}
+            {users.map((user) => {
+              const borderItem = user.equippedBorder ? getCosmeticById(user.equippedBorder) : null;
+              return (
+                <div key={user.id} className="lobby-player-row">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div className={`avatar-ring-wrap avatar-ring-sm ${borderItem ? borderItem.cssClass : ""}`}>
+                      <Avatar
+                        size={28}
+                        src={user.avatarURL ?? undefined}
+                        icon={!user.avatarURL && <UserOutlined />}
+                        style={{ background: "#2a1f12", border: "1px solid rgba(200,168,50,.3)" }}
+                      />
+                    </div>
+                    <span>@{user.username}</span>
+                    {String(user.id) === String(lobby.hostId) && (
+                      <span className="lobby-host-badge">Host</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
 
             {Array.from({ length: emptySlots }).map((_, i) => (
               <p key={`empty-${i}`} className="lobby-slot-empty">
@@ -269,17 +285,6 @@ const LobbyPage: React.FC = () => {
             </button>
           </div>
         )}
-
-        <div className="lobby-chat-section">
-          <h3 className="g-section-title">Chat</h3>
-          <div className="lobby-chat-messages">
-            <p className="lobby-chat-empty">Chat coming soon...</p>
-          </div>
-          <div className="lobby-chat-input-row">
-            <input className="g-input lobby-chat-input" placeholder="Type a message..." disabled />
-            <button className="btn-outline" disabled>Send</button>
-          </div>
-        </div>
 
         <div className="lobby-bottom-actions">
           <button className="btn-outline" onClick={() => router.push("/lobbies")}>
