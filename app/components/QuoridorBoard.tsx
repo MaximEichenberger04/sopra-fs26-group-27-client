@@ -30,29 +30,26 @@ const PLAYER_OUTLINE_COLORS: Record<number, string> = {
 
 // ─── PawnCell ─────────────────────────────────────────────────────────────────
 
-function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped,
+function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, counterRotation,
   cellSize, pawnStyles, isAbilityMode, onAbilityHover, onAbilityLeave, onAbilityClick,
 }: {
   value: CellValue; boardRow: number; boardCol: number;
   isValidMove: boolean; onMove: (mr: number, mc: number) => void;
-  flipped: boolean; cellSize: number; pawnStyles?: Record<number, string>;
+  counterRotation: string; cellSize: number; pawnStyles?: Record<number, string>;
   isAbilityMode: boolean;
   onAbilityHover: (r: number, c: number) => void;
   onAbilityLeave: () => void;
   onAbilityClick: (r: number, c: number) => void;
 }) {
-  const logR = flipped ? 8 - boardRow : boardRow;
-  const logC = flipped ? 8 - boardCol : boardCol;
   return (
     <div
-      onClick={() => isAbilityMode ? onAbilityClick(logR, logC) : isValidMove && onMove(logR * 2, logC * 2)}
+      onClick={() => isAbilityMode ? onAbilityClick(boardRow, boardCol) : isValidMove && onMove(boardRow * 2, boardCol * 2)}
       onMouseEnter={() => isAbilityMode && onAbilityHover(boardRow, boardCol)}
       onMouseLeave={() => isAbilityMode && onAbilityLeave()}
       className={`pawn-cell ${isValidMove && !isAbilityMode ? "valid-move" : ""}`}
       style={{
         width: cellSize, height: cellSize,
         cursor: isAbilityMode ? "crosshair" : isValidMove ? "pointer" : "default",
-        transform: flipped ? "rotate(180deg)" : "none",
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >
@@ -61,6 +58,7 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, flipped,
           className={`pawn pawn-${value}`}
           style={{
             width: cellSize * 0.58, height: cellSize * 0.58,
+            transform: counterRotation,
             ...(pawnStyles?.[value] ? { background: pawnStyles[value] } : {}),
             borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
           }}
@@ -119,11 +117,11 @@ function Pillar({ value, isHighlighted, wallSize }: { value: CellValue; isHighli
 
 function ZoneRect({ boardRow, boardCol, cols, rows, imageSrc,
   opacity = 0.55, borderColor = "rgba(255,240,100,0.85)",
-  animName = "zone-pulse", badge, flipped = false,
+  animName = "zone-pulse", badge, counterRotation = "none",
   cellSize, wallSize }: {
     boardRow: number; boardCol: number; cols: number; rows: number;
     imageSrc: string; opacity?: number; borderColor?: string;
-    animName?: string; badge?: string; flipped?: boolean;
+    animName?: string; badge?: string; counterRotation?: string;
     cellSize: number; wallSize: number;
   }) {
   const r = Math.min(boardRow, 9 - rows);
@@ -141,7 +139,7 @@ function ZoneRect({ boardRow, boardCol, cols, rows, imageSrc,
       <img src={imageSrc} alt="" style={{
         width: "100%", height: "100%",
         objectFit: "cover", display: "block", opacity,
-        transform: flipped ? "rotate(180deg)" : "none",
+        transform: counterRotation,
       }} />
       <div style={{
         position: "absolute", inset: 0, borderRadius: 6,
@@ -155,7 +153,7 @@ function ZoneRect({ boardRow, boardCol, cols, rows, imageSrc,
           fontFamily: "'Cinzel','Georgia',serif",
           fontSize: 13, fontWeight: 700, color: "#a0ff60",
           textShadow: "0 0 8px rgba(80,255,0,0.9)",
-          transform: flipped ? "rotate(180deg)" : "none",
+          transform: counterRotation,
         }}>{badge}</div>
       )}
     </div>
@@ -193,11 +191,11 @@ interface QuoridorBoardProps {
 
 // ─── Board ────────────────────────────────────────────────────────────────────
 
-const BOARD_ROTATION: Record<1 | 2 | 3 | 4, string> = {
-  1: "rotate(0deg)",
-  2: "rotate(180deg)",
-  3: "rotate(90deg)",
-  4: "rotate(-90deg)",
+const BOARD_ROTATION: Record<1 | 2 | 3 | 4, number> = {
+  1: 0,
+  2: 180,
+  3: 90,
+  4: -90,
 };
 
 export default function QuoridorBoard({
@@ -213,7 +211,8 @@ export default function QuoridorBoard({
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
-  const flipped = mounted && mySymbol !== 1;
+  const boardRotation = mounted ? BOARD_ROTATION[mySymbol] : 0;
+  const counterRotation = boardRotation === 0 ? "none" : `rotate(${-boardRotation}deg)`;
 
   // Responsive cell/wall sizing
   const [sizes, setSizes] = useState({ cell: BASE_CELL, wall: BASE_WALL });
@@ -271,9 +270,7 @@ export default function QuoridorBoard({
 
   function handleWallClick(_vmr: number, _vmc: number, o: "HORIZONTAL" | "VERTICAL") {
     if (!hoveredCenter || hoveredCenter.o !== o) return;
-    const logCr = flipped ? MATRIX_SIZE - 1 - hoveredCenter.mr : hoveredCenter.mr;
-    const logCc = flipped ? MATRIX_SIZE - 1 - hoveredCenter.mc : hoveredCenter.mc;
-    onWall(logCr, logCc, o);
+    onWall(hoveredCenter.mr, hoveredCenter.mc, o);
   }
 
   function handleAbilityClick(logR: number, logC: number) {
@@ -291,8 +288,8 @@ export default function QuoridorBoard({
 
   const hoverVisR = abilityHover?.r ?? null;
   const hoverVisC = abilityHover?.c ?? null;
-  const hoverLogR = abilityHover ? (flipped ? 8 - abilityHover.r : abilityHover.r) : null;
-  const hoverLogC = abilityHover ? (flipped ? 8 - abilityHover.c : abilityHover.c) : null;
+  const hoverLogR = abilityHover ? abilityHover.r : null;
+  const hoverLogC = abilityHover ? abilityHover.c : null;
 
   const showHoverZone = hoverVisR !== null && hoverVisC !== null &&
     selectedAbilityCard !== null && (() => {
@@ -377,7 +374,7 @@ export default function QuoridorBoard({
               gridTemplateColumns: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
               gridTemplateRows: Array.from({ length: MATRIX_SIZE }, (_, i) => i % 2 === 0 ? `${CELL}px` : `${WALL}px`).join(" "),
               gap: 0,
-              transform: mounted ? BOARD_ROTATION[mySymbol] : "rotate(0deg)",
+              transform: `rotate(${boardRotation}deg)`,
               position: "relative",
               borderBottom: "none",
             }}
@@ -393,7 +390,7 @@ export default function QuoridorBoard({
                     <PawnCell key={`${mr}-${mc}`}
                       value={value} boardRow={mr / 2} boardCol={mc / 2}
                       isValidMove={effectiveValidMoves.some(([vr, vc]) => vr === mr && vc === mc)}
-                      onMove={onMove} flipped={flipped}
+                      onMove={onMove} counterRotation={counterRotation}
                       cellSize={CELL} pawnStyles={pawnStyles}
                       isAbilityMode={isAbilityMode}
                       onAbilityHover={(r, c) => setAbilityHover({ r, c })}
@@ -429,7 +426,7 @@ export default function QuoridorBoard({
                 boardRow={z.topLeftRow / 2} boardCol={z.topLeftCol / 2}
                 cols={2} rows={2} imageSrc="/effects/poison_zone.png"
                 opacity={0.55} borderColor="rgba(80,255,0,0.7)" animName="poison-pulse"
-                badge={String(z.roundsRemaining)} flipped={flipped}
+                badge={String(z.roundsRemaining)} counterRotation={counterRotation}
                 cellSize={CELL} wallSize={WALL}
               />
             ))}
@@ -448,7 +445,7 @@ export default function QuoridorBoard({
                       boardRow={mr / 2} boardCol={mc / 2}
                       cols={1} rows={1} imageSrc="/effects/freeze_zone.png"
                       opacity={0.55} borderColor="rgba(100,210,255,0.9)" animName="freeze-pulse"
-                      flipped={flipped} cellSize={CELL} wallSize={WALL}
+                      counterRotation={counterRotation} cellSize={CELL} wallSize={WALL}
                     />
                   );
                 }
@@ -465,7 +462,7 @@ export default function QuoridorBoard({
                   rows={ZONE_COLS[selectedAbilityCard] ?? 1}
                   imageSrc={ZONE_IMAGE[selectedAbilityCard]!}
                   opacity={0.6} borderColor="rgba(255,240,100,0.85)" animName="zone-pulse"
-                  flipped={flipped} cellSize={CELL} wallSize={WALL}
+                  counterRotation={counterRotation} cellSize={CELL} wallSize={WALL}
                 />
               )}
           </div>
