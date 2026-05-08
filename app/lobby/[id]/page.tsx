@@ -270,17 +270,6 @@ const LobbyPage: React.FC = () => {
           </div>
         )}
 
-        <div className="lobby-chat-section">
-          <h3 className="g-section-title">Chat</h3>
-          <div className="lobby-chat-messages">
-            <p className="lobby-chat-empty">Chat coming soon...</p>
-          </div>
-          <div className="lobby-chat-input-row">
-            <input className="g-input lobby-chat-input" placeholder="Type a message..." disabled />
-            <button className="btn-outline" disabled>Send</button>
-          </div>
-        </div>
-
         <div className="lobby-bottom-actions">
           <button className="btn-outline" onClick={() => router.push("/lobbies")}>
             ← Back to Browser
