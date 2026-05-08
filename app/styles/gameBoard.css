@@ -18,7 +18,6 @@
     align-items: center;
     gap: 40px;
     justify-self: center;
-    /* Space between board and chat */
 }
 
 .board-3d-wrapper {
@@ -28,24 +27,21 @@
 }
 
 .right-column {
+    grid-column: 1;
     width: 260px;
     justify-self: end;
-}
-
-.chat-column {
-    width: 380px;
-    justify-self: start;
-}
-
-.right-column {
-    grid-column: 1;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .chat-column {
     grid-column: 3;
+    width: 380px;
+    justify-self: start;
     display: flex;
     flex-direction: column;
     align-self: stretch;
+    overflow: hidden;
 }
 
 /* Horizontal & Vertical Beams (Solid Color) */

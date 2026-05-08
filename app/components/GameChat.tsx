@@ -156,7 +156,9 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
 
       {gifPickerOpen && (
         <div style={{
-          height: "50%",
+          flex: "0 1 50%",
+          minHeight: 0,
+          overflow: "hidden",
           display: "flex",
           flexDirection: "column",
           gap: 6,
