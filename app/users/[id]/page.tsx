@@ -5,7 +5,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
-import { User } from "@/types/user";
+import { User, Achievement } from "@/types/user";
 import { COSMETICS, CosmeticItem, getOwnedCosmetics, getCosmeticById } from "@/types/cosmetics";
 import { Avatar, Button, Input, message } from "antd";
 import { UserOutlined, CameraOutlined } from "@ant-design/icons";
@@ -63,6 +63,7 @@ const Profile: React.FC = () => {
   const params = useParams();
   const apiService = useApi();
   const [user, setUser] = useState<User | null>(null);
+  const [achievements, setAchievements] = useState<Achievement[]>([]);
   const [matchHistory, setMatchHistory] = useState<MatchRecord[]>([]);
   const [statistics, setStatistics] = useState<UserStatistics | null>(null);
   const [matchHistoryError, setMatchHistoryError] = useState<string | null>(null);
@@ -100,8 +101,12 @@ const Profile: React.FC = () => {
 
     const fetchUser = async () => {
       try {
-        const fetchedUser = await apiService.get<User>(`/users/${params.id}`);
+        const [fetchedUser, fetchedAchievements] = await Promise.all([
+          apiService.get<User>(`/users/${params.id}`),
+          apiService.get<Achievement[]>(`/users/${params.id}/achievements`),
+        ]);
         setUser(fetchedUser);
+        setAchievements(fetchedAchievements);
         setEditUsername(fetchedUser.username ?? "");
         setEditDisplayName(fetchedUser.displayName ?? "");
         setEditBiography(fetchedUser.biography ?? "");
