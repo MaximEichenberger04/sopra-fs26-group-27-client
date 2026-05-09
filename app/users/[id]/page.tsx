@@ -278,10 +278,9 @@ const Profile: React.FC = () => {
   const avatarRingClass = equippedBorderItem ? equippedBorderItem.cssClass : "";
 
   // ── XP / Level helpers ──────────────────────────────────────────────
-  const currentXp = user.xp ?? 0;
-  const xpPerLevel = 1000;
-  const xpIntoLevel = currentXp % xpPerLevel;
-  const xpPercent = Math.min((xpIntoLevel / xpPerLevel) * 100, 100);
+  const xpIntoLevel = user.xpCurrentLevelProgress ?? 0;
+  const xpPerLevel = user.xpRequiredForNextLevel ?? 130;
+  const xpPercent = xpPerLevel > 0 ? Math.min((xpIntoLevel / xpPerLevel) * 100, 100) : 0;
 
   // ── Win / Loss from match history ───────────────────────────────────
   const wins = statistics?.wins ?? matchHistory.filter((m) => m.won).length;
@@ -617,6 +616,10 @@ const Profile: React.FC = () => {
               </div>
               <div className="view-xp-bar-bg">
                 <div className="view-xp-bar-fill" style={{ width: `${xpPercent}%` }} />
+              </div>
+              <div className="view-xp-threshold-row">
+                <span className="view-xp-threshold">{(() => { const l = user.level ?? 1; return 130 * l * (l - 1) / 2; })()} XP</span>
+                <span className="view-xp-threshold">{(() => { const l = user.level ?? 1; return 130 * (l + 1) * l / 2; })()} XP</span>
               </div>
             </div>
 

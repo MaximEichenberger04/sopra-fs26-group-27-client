@@ -42,6 +42,7 @@ export interface GameDTO {
   wallsPerPlayer: number;
   winnerId: number | null;
   playerIds: number[];
+  activePlayerIds: number[];
   pawns: PawnDTO[];
   walls: WallDTO[];
   remainingWalls: Record<string, number>;

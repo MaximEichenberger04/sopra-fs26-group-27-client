@@ -118,11 +118,14 @@
 }
 
 .dash-xp-text {
-  display: block;
-  text-align: right;
   font-family: 'Crimson Text', serif;
   font-size: 11px;
   color: var(--muted);
+}
+
+.dash-xp-labels {
+  display: flex;
+  justify-content: space-between;
   margin-top: 3px;
 }
 

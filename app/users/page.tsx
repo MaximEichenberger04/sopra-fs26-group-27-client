@@ -83,10 +83,25 @@ const Dashboard: React.FC = () => {
               </div>
             </div>
             <div className="dash-xp-section">
-              <div className="dash-xp-bar-bg">
-                <div className="dash-xp-bar-fill" style={{ width: `${Math.min(((currentUser.xp ?? 0) % 1000) / 10, 100)}%` }} />
-              </div>
-              <span className="dash-xp-text">{currentUser.xp ?? 0} XP</span>
+              {(() => {
+                const level = currentUser.level ?? 1;
+                const xpLevelStart = 130 * level * (level - 1) / 2;
+                const xpLevelEnd = 130 * (level + 1) * level / 2;
+                const progress = currentUser.xpCurrentLevelProgress ?? 0;
+                const required = currentUser.xpRequiredForNextLevel ?? 130;
+                const pct = required > 0 ? Math.min((progress / required) * 100, 100) : 0;
+                return (
+                  <>
+                    <div className="dash-xp-bar-bg">
+                      <div className="dash-xp-bar-fill" style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="dash-xp-labels">
+                      <span className="dash-xp-text">{xpLevelStart} XP</span>
+                      <span className="dash-xp-text">{xpLevelEnd} XP</span>
+                    </div>
+                  </>
+                );
+              })()}
             </div>
             <div className="dash-stats-grid">
               <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.score ?? 0}</span><span className="dash-stat-label">Score</span></div>
