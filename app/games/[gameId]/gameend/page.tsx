@@ -1,65 +1,103 @@
 "use client";
- 
+
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { useApi } from "@/hooks/useApi";
 import useLocalStorage from "@/hooks/useLocalStorage";
 import { GameDTO } from "@/types/game";
 import { User } from "@/types/user";
- 
+
+interface MatchResult {
+  userId: number;
+  won: boolean;
+  xpEarned: number;
+}
+
 interface LeaderboardEntry {
   userId: number;
   username: string;
   won: boolean;
+  forfeited: boolean;
+  xpEarned: number;
 }
- 
+
 export default function WinningPage() {
   const { gameId } = useParams<{ gameId: string }>();
   const router = useRouter();
-  const { value: token }  = useLocalStorage<string>("token", "");
+  const { value: token } = useLocalStorage<string>("token", "");
   const { value: userId } = useLocalStorage<number>("userId", -1);
   const api = useApi(token);
- 
-  const [entries, setEntries]   = useState<LeaderboardEntry[]>([]);
-  const [iWon, setIWon]         = useState<boolean | null>(null);
-  const [loading, setLoading]   = useState(true);
- 
+
+  const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [iWon, setIWon] = useState<boolean | null>(null);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     if (!token) return;
     async function load() {
       try {
-        const dto = await api.get<GameDTO>(`/games/${gameId}`);
+        // Fetch game state and match results (with XP) in parallel
+        const [dto, results] = await Promise.all([
+          api.get<GameDTO>(`/games/${gameId}`),
+          api.get<MatchResult[]>(`/games/${gameId}/results`),
+        ]);
+
         const winnerId = dto.winnerId;
+        const playerIds = dto.playerIds ?? [];
+        const activePlayerIds = dto.activePlayerIds ?? [];
         setIWon(winnerId === userId);
- 
-        // fetch usernames for all players
+
+        // Build a map of userId -> xpEarned from server results
+        const xpMap = new Map<number, number>();
+        for (const r of results) {
+          xpMap.set(r.userId, r.xpEarned);
+        }
+
+        // Build entries
         const playerEntries: LeaderboardEntry[] = await Promise.all(
-          (dto.playerIds ?? []).map(async (pid) => {
+          playerIds.map(async (pid) => {
             try {
               const user = await api.get<User>(`/users/${pid}`);
+              const won = pid === winnerId;
+              const forfeited = activePlayerIds.length > 0
+                ? (!activePlayerIds.includes(pid) && !won)
+                : false;
+
               return {
                 userId: pid,
                 username: user.username ?? `Player ${pid}`,
-                won: pid === winnerId,
+                won,
+                forfeited,
+                xpEarned: xpMap.get(pid) ?? 0,
               };
             } catch {
-              return { userId: pid, username: `Player ${pid}`, won: pid === winnerId };
+              return {
+                userId: pid,
+                username: `Player ${pid}`,
+                won: pid === winnerId,
+                forfeited: false,
+                xpEarned: xpMap.get(pid) ?? 0,
+              };
             }
           })
         );
- 
-        // winner first
-        playerEntries.sort((a, b) => (b.won ? 1 : 0) - (a.won ? 1 : 0));
+
+        // Sort: winner first, then by XP descending, forfeited last
+        playerEntries.sort((a, b) => {
+          if (a.won !== b.won) return b.won ? 1 : -1;
+          if (a.forfeited !== b.forfeited) return a.forfeited ? 1 : -1;
+          return b.xpEarned - a.xpEarned;
+        });
         setEntries(playerEntries);
       } catch {
-        // fallback — just show result
+        // fallback
       } finally {
         setLoading(false);
       }
     }
     load();
   }, [gameId, token, userId, api]);
- 
+
   if (loading) {
     return (
       <main style={styles.root}>
@@ -67,12 +105,12 @@ export default function WinningPage() {
       </main>
     );
   }
- 
+
   return (
     <main style={styles.root}>
       {/* Background grid decoration */}
       <div style={styles.gridOverlay} aria-hidden />
- 
+
       {/* Result banner */}
       <div style={styles.banner}>
         <div style={{
@@ -88,10 +126,10 @@ export default function WinningPage() {
           {iWon ? "The path is yours." : "The walls held you back."}
         </div>
       </div>
- 
+
       {/* Divider */}
       <div style={styles.divider} />
- 
+
       {/* Leaderboard */}
       <div style={styles.leaderboard}>
         <div style={styles.leaderboardTitle}>RESULT</div>
@@ -100,39 +138,66 @@ export default function WinningPage() {
             key={entry.userId}
             style={{
               ...styles.row,
-              borderColor: entry.won ? "rgba(200,164,74,0.25)" : "rgba(107,58,58,0.2)",
-              background:  entry.won ? "rgba(200,164,74,0.05)" : "rgba(107,58,58,0.04)",
+              borderColor: entry.won
+                ? "rgba(200,164,74,0.25)"
+                : entry.forfeited
+                  ? "rgba(80,70,60,0.2)"
+                  : "rgba(107,58,58,0.2)",
+              background: entry.won
+                ? "rgba(200,164,74,0.05)"
+                : entry.forfeited
+                  ? "rgba(80,70,60,0.03)"
+                  : "rgba(107,58,58,0.04)",
             }}
           >
             {/* Rank */}
             <div style={{
               ...styles.rank,
-              color: entry.won ? "#c8a44a" : "#4a3030",
+              color: entry.won ? "#c8a44a" : entry.forfeited ? "#3a3228" : "#4a3030",
             }}>
               {i + 1}
             </div>
- 
+
             {/* Name */}
             <div style={styles.name}>
-              {entry.username}
+              <span style={entry.forfeited ? { textDecoration: "line-through", opacity: 0.5 } : {}}>
+                {entry.username}
+              </span>
               {entry.userId === userId && (
                 <span style={styles.youBadge}>YOU</span>
               )}
             </div>
- 
+
+            {/* XP Earned */}
+            <div style={{
+              ...styles.xpBadge,
+              color: entry.xpEarned > 0 ? "#c8a44a" : "#4a3a28",
+              opacity: entry.xpEarned > 0 ? 1 : 0.5,
+            }}>
+              +{entry.xpEarned} XP
+            </div>
+
             {/* Result badge */}
             <div style={{
               ...styles.badge,
-              color:       entry.won ? "#c8a44a" : "#6a4040",
-              borderColor: entry.won ? "rgba(200,164,74,0.35)" : "rgba(107,64,64,0.3)",
-              background:  entry.won ? "rgba(200,164,74,0.08)" : "rgba(107,64,64,0.06)",
+              color: entry.won ? "#c8a44a" : entry.forfeited ? "#4a3a28" : "#6a4040",
+              borderColor: entry.won
+                ? "rgba(200,164,74,0.35)"
+                : entry.forfeited
+                  ? "rgba(80,70,60,0.3)"
+                  : "rgba(107,64,64,0.3)",
+              background: entry.won
+                ? "rgba(200,164,74,0.08)"
+                : entry.forfeited
+                  ? "rgba(80,70,60,0.06)"
+                  : "rgba(107,64,64,0.06)",
             }}>
-              {entry.won ? "WIN" : "LOSS"}
+              {entry.won ? "WIN" : entry.forfeited ? "QUIT" : "LOSS"}
             </div>
           </div>
         ))}
       </div>
- 
+
       {/* Return button */}
       <button
         onClick={() => router.push("/users")}
@@ -153,7 +218,7 @@ export default function WinningPage() {
     </main>
   );
 }
- 
+
 const styles: Record<string, React.CSSProperties> = {
   root: {
     minHeight: "100vh",
@@ -208,7 +273,7 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     gap: 10,
     width: "100%",
-    maxWidth: 360,
+    maxWidth: 420,
     zIndex: 1,
   },
   leaderboardTitle: {
@@ -251,6 +316,15 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "1px 5px",
     letterSpacing: "0.1em",
   },
+  xpBadge: {
+    fontSize: 12,
+    fontWeight: 600,
+    letterSpacing: "0.06em",
+    fontFamily: "'Crimson Text', serif",
+    flexShrink: 0,
+    minWidth: 60,
+    textAlign: "right",
+  },
   badge: {
     fontSize: 10,
     letterSpacing: "0.12em",
@@ -258,6 +332,8 @@ const styles: Record<string, React.CSSProperties> = {
     borderRadius: 4,
     padding: "3px 8px",
     flexShrink: 0,
+    minWidth: 40,
+    textAlign: "center",
   },
   returnBtn: {
     zIndex: 1,
