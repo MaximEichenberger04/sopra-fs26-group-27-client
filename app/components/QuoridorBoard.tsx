@@ -483,7 +483,7 @@ export default function QuoridorBoard({
 
       {/* Chat column */}
       {chatSlot && (
-        <div className="chat-column">
+        <div className="chat-column" style={{ height: 9 * CELL + 8 * WALL + 26 }}>
           {chatSlot}
         </div>
       )}
