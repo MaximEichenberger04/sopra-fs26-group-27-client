@@ -763,14 +763,6 @@ const Profile: React.FC = () => {
               </div>
             )}
           </div>
-
-          <Button
-            className="auth-btn-secondary"
-            style={{ marginTop: 28 }}
-            onClick={() => router.back()}
-          >
-            Back
-          </Button>
         </div>
       </div>
     </div>

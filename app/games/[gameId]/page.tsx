@@ -13,6 +13,31 @@ import { getApiDomain } from "@/utils/domain";
 
 import "@/styles/gameBoard.css";
 
+// ─── Sound effects ────────────────────────────────────────────────────────────
+
+const ABILITY_SOUNDS: Record<AbilityType, string> = {
+  FIREBALL: "/sounds/fireball.mp3",
+  EARTHQUAKE: "/sounds/earthquake.mp3",
+  FREEZE: "/sounds/freeze.mp3",
+  POISON: "/sounds/poison.mp3",
+  PLUS_TWO_WALLS: "/sounds/wall.wav",
+  TWO_MOVES: "/sounds/move.wav",
+};
+
+function playSound(src: string) {
+  try {
+    const audio = new Audio(src);
+    audio.play().catch(() => { /* browser autoplay policy — ignore */ });
+  } catch { /* ignore */ }
+}
+
+function useGameSounds() {
+  const playMove = useCallback(() => playSound("/sounds/move.wav"), []);
+  const playWall = useCallback(() => playSound("/sounds/wall.wav"), []);
+  const playAbility = useCallback((type: AbilityType) => playSound(ABILITY_SOUNDS[type]), []);
+  return { playMove, playWall, playAbility };
+}
+
 // ─── Pawn skin gradients ──────────────────────────────────────────────────────
 
 const PAWN_SKIN_GRADIENTS: Record<string, string> = {
@@ -330,6 +355,8 @@ export default function GamePage() {
   const drawingRef = useRef(false);
   const pendingInvRef = useRef<AbilityType[]>([]);
 
+  const { playMove, playWall, playAbility } = useGameSounds();
+
   const wsRef = useRef<WebSocket | null>(null);
   const api = useApi(token);
   const apiRef = useRef(api);
@@ -530,7 +557,7 @@ export default function GamePage() {
 
   async function handleMove(matrixRow: number, matrixCol: number) {
     if (!isMyTurn) return;
-    try { await apiRef.current.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] }); setSelectedCard(null); fetchGame(); }
+    try { await apiRef.current.post(`/games/${gameId}/move`, { targetField: [matrixRow, matrixCol] }); playMove(); setSelectedCard(null); fetchGame(); }
     catch { setError("Invalid move."); }
   }
 
@@ -538,7 +565,7 @@ export default function GamePage() {
     if (!isMyTurn) return;
     try {
       await apiRef.current.post(`/games/${gameId}/wall`, { targetField: [centerRow, centerCol], orientation });
-      setSelectedCard(null); fetchGame();
+      playWall(); setSelectedCard(null); fetchGame();
     } catch { setError("Invalid wall placement."); }
   }
 
@@ -581,6 +608,7 @@ export default function GamePage() {
         body.targetCol = boardCol;
       }
       await apiRef.current.post(`/games/${gameId}/ability`, body);
+      playAbility(selectedCard);
       setSelectedCard(null);
       fetchGame();
     } catch (e: unknown) {
@@ -593,6 +621,7 @@ export default function GamePage() {
     if (["PLUS_TWO_WALLS", "TWO_MOVES"].includes(cardType)) {
       try {
         await apiRef.current.post(`/games/${gameId}/ability`, { abilityType: cardType });
+        playAbility(cardType);
         setSelectedCard(null); fetchGame();
       } catch (e: unknown) { setError(e instanceof Error ? e.message : "Could not use ability."); }
     } else {
