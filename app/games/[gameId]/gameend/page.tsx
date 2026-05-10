@@ -36,26 +36,27 @@ export default function WinningPage() {
     if (!token) return;
     async function load() {
       try {
-        // Fetch game state and match results (with XP) in parallel
-        const [dto, results] = await Promise.all([
-          api.get<GameDTO>(`/games/${gameId}`),
-          api.get<MatchResult[]>(`/games/${gameId}/results`),
-        ]);
-
+        // 1) Fetch game state — this is critical for determining the winner
+        const dto = await api.get<GameDTO>(`/games/${gameId}`);
         const winnerId = dto.winnerId;
         const playerIds = dto.playerIds ?? [];
         const activePlayerIds = dto.activePlayerIds ?? [];
         setIWon(winnerId === userId);
 
-        // Build a map of userId -> xpEarned from server results
-        const xpMap = new Map<number, number>();
-        for (const r of results) {
-          xpMap.set(r.userId, r.xpEarned);
+        // 2) Fetch match results separately — non-critical, XP display only
+        let xpMap = new Map<number, number>();
+        try {
+          const results = await api.get<MatchResult[]>(`/games/${gameId}/results`);
+          for (const r of results) {
+            xpMap.set(r.userId, r.xpEarned);
+          }
+        } catch {
+          // Results endpoint may fail if cache was already evicted — continue without XP
         }
 
-        // Build entries
+        // 3) Build leaderboard entries
         const playerEntries: LeaderboardEntry[] = await Promise.all(
-          playerIds.map(async (pid) => {
+          playerIds.map(async (pid: number) => {
             try {
               const user = await api.get<User>(`/users/${pid}`);
               const won = pid === winnerId;
@@ -90,7 +91,8 @@ export default function WinningPage() {
         });
         setEntries(playerEntries);
       } catch {
-        // fallback
+        // Even the game fetch failed — winnerId unknown, show fallback
+        setIWon(null);
       } finally {
         setLoading(false);
       }
@@ -115,15 +117,21 @@ export default function WinningPage() {
       <div style={styles.banner}>
         <div style={{
           ...styles.resultLabel,
-          color: iWon ? "#c8a44a" : "#6a3a3a",
-          textShadow: iWon
+          color: iWon === true ? "#c8a44a" : iWon === false ? "#6a3a3a" : "#4a4438",
+          textShadow: iWon === true
             ? "0 0 40px rgba(200,164,74,0.5), 0 0 80px rgba(200,164,74,0.2)"
-            : "0 0 40px rgba(200,80,80,0.3)",
+            : iWon === false
+              ? "0 0 40px rgba(200,80,80,0.3)"
+              : "none",
         }}>
-          {iWon ? "VICTORY" : "DEFEAT"}
+          {iWon === true ? "VICTORY" : iWon === false ? "DEFEAT" : "GAME OVER"}
         </div>
         <div style={styles.resultSub}>
-          {iWon ? "The path is yours." : "The walls held you back."}
+          {iWon === true
+            ? "The path is yours."
+            : iWon === false
+              ? "The walls held you back."
+              : "Could not load game results."}
         </div>
       </div>
 
