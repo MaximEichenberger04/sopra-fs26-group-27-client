@@ -634,9 +634,6 @@ export default function GamePage() {
         gap: 20, fontFamily: "system-ui, sans-serif",
       }}
     >
-      <img src="/quoridor.png" alt="Quoridor"
-        style={{ height: 200, objectFit: "contain", userSelect: "none" as const }} />
-
       {error && (
         <div style={{
           position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
@@ -667,7 +664,9 @@ export default function GamePage() {
         </p>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", alignSelf: "flex-start", width: "100%", minWidth: "fit-content", padding: "0 120px" }}>
+        <img src="/quoridor.png" alt="Quoridor"
+          style={{ height: 200, objectFit: "contain", userSelect: "none" as const }} />
         {mounted && (
           <QuoridorBoard
             mySymbol={mySymbol}

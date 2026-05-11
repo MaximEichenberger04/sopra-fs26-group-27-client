@@ -220,7 +220,7 @@ export default function QuoridorBoard({
   const [sizes, setSizes] = useState({ cell: BASE_CELL, wall: BASE_WALL });
   useEffect(() => {
     function updateSizes() {
-      const available = Math.min(window.innerWidth * 0.52, window.innerHeight * 0.72);
+      const available = window.innerHeight * 0.72;
       const wallRatio = BASE_WALL / BASE_CELL;
       const rawCell = Math.floor(available / (9 + 8 * wallRatio));
       const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, rawCell));
