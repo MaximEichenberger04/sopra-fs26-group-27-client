@@ -632,6 +632,7 @@ export default function GamePage() {
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         gap: 20, fontFamily: "system-ui, sans-serif",
+        overflowX: "auto",
       }}
     >
       {error && (
@@ -664,7 +665,7 @@ export default function GamePage() {
         </p>
       )}
 
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", alignSelf: "flex-start", width: "100%", minWidth: "fit-content", padding: "0 120px" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", alignSelf: "flex-start", width: "100%", minWidth: "fit-content", padding: "0 40px" }}>
         <img src="/quoridor.png" alt="Quoridor"
           style={{ height: 200, objectFit: "contain", userSelect: "none" as const }} />
         {mounted && (

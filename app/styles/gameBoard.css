@@ -28,7 +28,7 @@
 
 .right-column {
     grid-column: 1;
-    width: 260px;
+    width: 380px;
     justify-self: end;
     display: flex;
     justify-content: flex-end;
