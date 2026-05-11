@@ -178,6 +178,8 @@ interface QuoridorBoardProps {
   onMove: (mr: number, mc: number) => void;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
   onForfeit: () => void;
+  onSkipTurn?: () => void;
+  boardEffect?: { type: "fireball" | "earthquake"; targetRow: number; targetCol: number } | null;
   players?: PlayerInfo[];
   pawnStyles?: Record<number, string>;
   // Chaos mode
@@ -199,7 +201,8 @@ const BOARD_ROTATION: Record<1 | 2 | 3 | 4, number> = {
 };
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit,
+  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit, onSkipTurn,
+  boardEffect = null,
   mySymbol, players, pawnStyles,
   selectedAbilityCard = null,
   onAbilityTarget = () => { },
@@ -345,6 +348,15 @@ export default function QuoridorBoard({
             )}
           </div>
           <div className="beam-spacer" />
+          {isMyTurn && effectiveValidMoves.length === 0 && onSkipTurn && (
+            <button
+              onClick={onSkipTurn}
+              className="forfeit-btn"
+              style={{ marginBottom: 8, background: "rgba(80,80,180,0.25)", borderColor: "rgba(120,120,220,0.6)" }}
+            >
+              SKIP TURN
+            </button>
+          )}
           <button onClick={onForfeit} className="forfeit-btn">FORFEIT</button>
         </div>
       </div>
@@ -364,6 +376,19 @@ export default function QuoridorBoard({
             @keyframes freeze-pulse {
               from { opacity:0.5; border-color: rgba(100,200,255,0.4); }
               to   { opacity:1;   border-color: rgba(180,240,255,1); }
+            }
+            @keyframes fireball-glow {
+              0%, 100% { box-shadow: 0 0 18px 6px rgba(255,60,0,0.7), 0 0 40px 16px rgba(255,100,0,0.35); }
+              50%       { box-shadow: 0 0 36px 14px rgba(255,60,0,1),   0 0 70px 30px rgba(255,100,0,0.6); }
+            }
+            @keyframes earthquake-shake {
+              0%,100% { transform: translate(0,0) rotate(0deg); }
+              15%     { transform: translate(-5px, 3px) rotate(-0.4deg); }
+              30%     { transform: translate(5px, -3px) rotate(0.4deg); }
+              45%     { transform: translate(-4px, 4px) rotate(-0.3deg); }
+              60%     { transform: translate(4px, -4px) rotate(0.3deg); }
+              75%     { transform: translate(-3px, 2px) rotate(-0.2deg); }
+              90%     { transform: translate(3px, -2px) rotate(0.2deg); }
             }
           `}</style>
 
@@ -465,6 +490,38 @@ export default function QuoridorBoard({
                   counterRotation={counterRotation} cellSize={CELL} wallSize={WALL}
                 />
               )}
+
+            {/* Fireball / Earthquake played animation — glowing border on the affected cells */}
+            {boardEffect?.type === "fireball" && (() => {
+              const cols = 2;
+              const r = Math.min(boardEffect.targetRow, 9 - cols);
+              const c = Math.min(boardEffect.targetCol, 9 - cols);
+              return (
+                <div key="fireball-fx" style={{
+                  position: "absolute", pointerEvents: "none", zIndex: 30,
+                  left: cellPx(c, CELL, WALL), top: cellPx(r, CELL, WALL),
+                  width: zonePx(cols, CELL, WALL), height: zonePx(cols, CELL, WALL),
+                  borderRadius: 6,
+                  border: "3px solid rgba(255,60,0,0.95)",
+                  animation: "fireball-glow 0.5s ease-in-out infinite",
+                }} />
+              );
+            })()}
+            {boardEffect?.type === "earthquake" && (() => {
+              const cols = 3;
+              const r = Math.min(boardEffect.targetRow, 9 - cols);
+              const c = Math.min(boardEffect.targetCol, 9 - cols);
+              return (
+                <div key="earthquake-fx" style={{
+                  position: "absolute", pointerEvents: "none", zIndex: 30,
+                  left: cellPx(c, CELL, WALL), top: cellPx(r, CELL, WALL),
+                  width: zonePx(cols, CELL, WALL), height: zonePx(cols, CELL, WALL),
+                  borderRadius: 6,
+                  border: "3px solid rgba(139,90,40,0.95)",
+                  animation: "earthquake-shake 0.12s ease-in-out infinite",
+                }} />
+              );
+            })()}
           </div>
 
           {isAbilityMode && (

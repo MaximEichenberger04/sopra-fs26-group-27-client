@@ -198,14 +198,14 @@ function AbilityInventory({ inventory, selectedCard, onSelectCard, isMyTurn, lan
       {inventory.length === 0 ? (
         <p style={{ color: "var(--q-text-muted)", fontSize: 11, margin: 0, fontStyle: "italic" }}>Draws every 3 rounds.</p>
       ) : (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+        <div style={{ display: "flex", flexWrap: "nowrap", gap: 10, justifyContent: "center" }}>
           {inventory.map((cardType, i) => {
             const isSelected = selectedCard === cardType;
             return (
               <button key={`${cardType}-${i}`} title={`${CARD_NAME[cardType]}: ${CARD_DESC[cardType]}`}
                 onClick={() => isMyTurn && onSelectCard(isSelected ? null : cardType)}
                 style={{
-                  width: 52, height: 73, padding: 0, border: "none", borderRadius: 6, overflow: "hidden",
+                  width: 76, height: 106, padding: 0, border: "none", borderRadius: 8, overflow: "hidden",
                   cursor: isMyTurn ? "pointer" : "default", opacity: isMyTurn ? 1 : 0.55,
                   transform: isSelected ? "translateY(-6px) scale(1.1)" : "none",
                   transition: "transform 0.2s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.2s",
@@ -322,6 +322,8 @@ export default function GamePage() {
   const [drawKey, setDrawKey]           = useState(0);
   const [shownInventory, setShownInventory] = useState<AbilityType[]>([]);
   const [selectedCard, setSelectedCard]     = useState<AbilityType | null>(null);
+  const [boardEffect, setBoardEffect]       = useState<{ type: "fireball" | "earthquake"; targetRow: number; targetCol: number } | null>(null);
+  const boardEffectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inventoryLandingRef = useRef<HTMLDivElement | null>(null);
   const drawnTurnsRef       = useRef<Set<number>>(new Set());
@@ -495,7 +497,13 @@ export default function GamePage() {
             } else {
               setBanner("A player forfeited and left the game.");
             }
-          } else if (["MOVE","WALL","FORFEIT","GAME_UPDATED","ABILITY_USED","ABILITY_DRAW"].includes(msg.type)) {
+          } else if (msg.type === "FIREBALL" || msg.type === "EARTHQUAKE") {
+            const m = msg as typeof msg & { targetRow?: number; targetCol?: number };
+            setBoardEffect({ type: msg.type.toLowerCase() as "fireball" | "earthquake", targetRow: m.targetRow ?? 0, targetCol: m.targetCol ?? 0 });
+            if (boardEffectTimerRef.current) clearTimeout(boardEffectTimerRef.current);
+            boardEffectTimerRef.current = setTimeout(() => setBoardEffect(null), 1000);
+            setBanner(null);
+          } else if (["MOVE","WALL","FORFEIT","GAME_UPDATED","ABILITY_USED","ABILITY_DRAW","SKIP"].includes(msg.type)) {
             setBanner(null);
           }
           fetchGame();
@@ -539,6 +547,13 @@ export default function GamePage() {
       await api.post(`/games/${gameId}/forfeit`, {});
       if ((game.playerIds?.length ?? 0) === 4) { router.push("/users"); return; }
     } catch { setError("Could not forfeit."); }
+  }
+
+  async function handleSkipTurn() {
+    try {
+      await api.post(`/games/${gameId}/skip`, {});
+      fetchGame();
+    } catch { setError("Could not skip turn."); }
   }
 
   // Auto-dismiss errors after 3s
@@ -589,16 +604,25 @@ export default function GamePage() {
     <main
       className={`theme-${game.mapTheme}`}
       style={{
-        minHeight: "100vh", background: "var(--q-main-bg)",
-        display: "flex", flexDirection: "column",
-        alignItems: "center", justifyContent: "center",
-        gap: 20, fontFamily: "system-ui, sans-serif",
-        transition: "background 0.3s ease",
+        minHeight: "100vh",
+        display: "block",
+        paddingTop: 40, paddingBottom: 40,
+        fontFamily: "system-ui, sans-serif",
+        position: "relative",
       }}
     >
-      {/* Logo */}
+      {/* Fixed viewport background — always covers 100vw×100vh regardless of content width */}
+      <div style={{
+        position: "fixed", top: 0, left: 0,
+        width: "100vw", height: "100vh",
+        zIndex: -1,
+        background: "var(--q-main-bg)",
+        transition: "background 0.3s ease",
+      }} />
+      {/* Content wrapper - fit-content + margin auto centers relative to its own width */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "fit-content", margin: "0 auto" }}>
       <img src="/quoridor.png" alt="Quoridor"
-        style={{ height: 90, objectFit: "contain", userSelect: "none" as const }} />
+        style={{ height: 240, objectFit: "contain", userSelect: "none" as const }} />
 
       {/* Error toast */}
       {error && (
@@ -632,7 +656,7 @@ export default function GamePage() {
       )}
 
       {/* Board + Chat via chatSlot */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
         {mounted && (
           <QuoridorBoard
             mySymbol={mySymbol}
@@ -642,6 +666,8 @@ export default function GamePage() {
             onMove={handleMove}
             onWall={handleWall}
             onForfeit={handleForfeit}
+            onSkipTurn={handleSkipTurn}
+            boardEffect={boardEffect}
             players={players}
             pawnStyles={pawnStyles}
             selectedAbilityCard={selectedCard}
@@ -661,16 +687,17 @@ export default function GamePage() {
           />
         )}
 
-        {/* Ability inventory below board */}
+        {/* Ability inventory below board — outer div stays 624px wide to stay centred under board */}
         {mounted && game.chaosMode && (
-          <div style={{ paddingTop: 16, width: 624, maxWidth: "100%", margin: "0 auto" }}>
+          <div style={{ paddingTop: 16, width: 624, display: "flex", justifyContent: "center" }}>
             <div style={{
               background: "var(--q-beam-bg, rgba(20,20,25,0.85))",
               backdropFilter: "blur(10px)",
               border: "1px solid var(--q-beam-border, rgba(255,255,255,0.1))",
               borderRadius: 12,
               boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
-              padding: "16px 24px",
+              padding: "16px 20px",
+              width: "fit-content",
             }}>
               <AbilityInventory
                 inventory={shownInventory}
@@ -689,6 +716,7 @@ export default function GamePage() {
           last sync {lastSync.toLocaleTimeString()}
         </p>
       )}
+      </div>{/* end content wrapper */}
 
       <CardDrawAnimation
         key={drawKey}
