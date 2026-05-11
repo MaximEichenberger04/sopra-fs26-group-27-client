@@ -95,9 +95,18 @@ const LobbyBrowserPage: React.FC = () => {
                   <span className={`lobby-status-tag ${lobby.lobbyStatus === "WAITING" ? "status-waiting" : "status-other"}`}>
                     {lobby.lobbyStatus}
                   </span>
+                {lobby.lobbyStatus === "INGAME" ? (
+                  <button
+                    className="btn-outline lobby-join-btn"
+                    onClick={() => lobby.gameId != null && router.push(`/games/${lobby.gameId}`)}
+                  >
+                    👁 Spectate
+                  </button>
+                ) : (
                   <button className="btn-gold lobby-join-btn" onClick={() => { if (lobby.id !== null) joinLobbyById(lobby.id); }}>
                     Join
                   </button>
+                )}
                 </div>
               </div>
             ))

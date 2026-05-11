@@ -214,6 +214,8 @@ export default function QuoridorBoard({
   const [mounted, setMounted] = useState(false);
   useEffect(() => { setMounted(true); }, []);
 
+  const [showHelp, setShowHelp] = useState(false);
+
   const boardRotation = mounted ? BOARD_ROTATION[mySymbol] : 0;
   const counterRotation = boardRotation === 0 ? "none" : `rotate(${-boardRotation}deg)`;
 
@@ -308,9 +310,41 @@ export default function QuoridorBoard({
   return (
     <div className="game-layout">
 
+      {/* Help modal */}
+      {showHelp && (
+        <div className="help-modal-overlay" onClick={() => setShowHelp(false)}>
+          <div className="help-modal" onClick={e => e.stopPropagation()}>
+            <button className="help-modal-close" onClick={() => setShowHelp(false)}>×</button>
+            <h3 className="help-modal-title">How to Play</h3>
+            <h4 className="help-modal-subtitle">Classic Mode</h4>
+            <p className="help-modal-text">Be the first to move your pawn to the opposite side of the board (top-row).</p>
+            <p className="help-modal-text">Each turn, do one of two things:</p>
+            <ul className="help-modal-list">
+              <li>Move your pawn one square (up, down, left, or right)</li>
+              <li>Place a wall to block your opponent&apos;s path</li>
+            </ul>
+            <p className="help-modal-rule">Wall rule: You can never fully trap a player. Every opponent must always have at least one path to their goal.</p>
+            <h4 className="help-modal-subtitle">Chaos Mode</h4>
+            <p className="help-modal-text">The same basic rules apply as in Classic Mode.</p>
+            <p className="help-modal-text">Each turn, you can either play an ability card, or make a classic action (move/wall).</p>
+            <p className="help-modal-text">After every 3 full rounds, draw a random ability card:</p>
+            <ul className="help-modal-list">
+              <li><strong>Poison:</strong> blocks a 2x2 area for 2 rounds</li>
+              <li><strong>Earthquake:</strong> randomly destroys or rotates walls in a 3x3 area</li>
+              <li><strong>Fireball:</strong> destroys all walls in a 2x2 area</li>
+              <li><strong>Freeze:</strong> skips an opponent&apos;s next turn</li>
+              <li><strong>+2 Walls:</strong> gain 2 extra walls</li>
+              <li><strong>2 Moves:</strong> take 2 actions this turn</li>
+            </ul>
+            <p className="help-modal-footer">Think ahead, block smart, and good luck.</p>
+          </div>
+        </div>
+      )}
+
       {/* Sidebar: Players + Forfeit */}
       <div className="right-column">
         <div className="vertical-beam">
+          <button className="help-btn" onClick={() => setShowHelp(true)}>HOW TO PLAY</button>
           <div className="beam-section">
             <h4>PLAYERS</h4>
             {players && players.length > 0 ? (
@@ -540,7 +574,7 @@ export default function QuoridorBoard({
 
       {/* Chat column */}
       {chatSlot && (
-        <div className="chat-column">
+        <div className="chat-column" style={{ height: 9 * CELL + 8 * WALL + 26 }}>
           {chatSlot}
         </div>
       )}

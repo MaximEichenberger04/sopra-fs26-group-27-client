@@ -15,6 +15,8 @@ export interface User {
   ownedCosmetics: string | null;
   equippedBorder: string | null;
   equippedPawnSkin: string | null;
+  xpCurrentLevelProgress: number | null;
+  xpRequiredForNextLevel: number | null;
 }
 
 export interface LeaderboardUser {
@@ -32,4 +34,3 @@ export interface Achievement {
   description: string;
   coinReward: number;
 }
-
