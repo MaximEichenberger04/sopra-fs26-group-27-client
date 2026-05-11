@@ -615,14 +615,23 @@ export default function GamePage() {
   }
 
   return (
+    <>
+    <div
+      className={`theme-${game.mapTheme}`}
+      style={{
+        position: "fixed", inset: 0, zIndex: 0,
+        background: "var(--q-main-bg)",
+        transition: "background 0.3s ease",
+      }}
+    />
     <main
       className={`theme-${game.mapTheme}`}
       style={{
-        minHeight: "100vh", background: "var(--q-main-bg)",
+        position: "relative", zIndex: 1,
+        minHeight: "100vh",
         display: "flex", flexDirection: "column",
         alignItems: "center", justifyContent: "center",
         gap: 20, fontFamily: "system-ui, sans-serif",
-        transition: "background 0.3s ease",
       }}
     >
       <img src="/quoridor.png" alt="Quoridor"
@@ -722,5 +731,6 @@ export default function GamePage() {
         inventorySlotRef={inventoryLandingRef}
       />
     </main>
+    </>
   );
 }

@@ -440,7 +440,7 @@
 
 /* 1. Mystic Grove */
 .theme-mystic-grove {
-    --q-main-bg: url('/maps/forest.png') center/cover no-repeat;
+    --q-main-bg: url('/maps/forest.png') center/cover no-repeat fixed;
     --q-title: #a0c890;
     --q-beam-bg: rgba(16, 24, 14, 0.92);
     --q-beam-border: rgba(80, 120, 60, 0.25);
@@ -467,7 +467,7 @@
 
 /* 2. Obsidian Keep */
 .theme-obsidian-keep {
-    --q-main-bg: url('/maps/castle.png') center/cover no-repeat;
+    --q-main-bg: url('/maps/castle.png') center/cover no-repeat fixed;
     --q-title: #c090c0;
     --q-beam-bg: rgba(10, 8, 16, 0.93);
     --q-beam-border: rgba(120, 50, 160, 0.2);
@@ -494,7 +494,7 @@
 
 /* 3. Celestial Sanctum */
 .theme-celestial-sanctum {
-    --q-main-bg: url('/maps/sanctum.png') center/cover no-repeat;
+    --q-main-bg: url('/maps/sanctum.png') center/cover no-repeat fixed;
     --q-title: #8a7a50;
     --q-beam-bg: rgba(248, 246, 240, 0.92);
     --q-beam-border: rgba(200, 180, 130, 0.35);
