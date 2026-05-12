@@ -590,39 +590,41 @@
   border-radius: 50%;
 }
 
-/* Pawn skin gradients */
-.pskin-lava {
-  background: linear-gradient(135deg, #e04020, #f0a030, #e04020);
+/* Pawn skin images */
+.pskin-angel {
+  background: url('/cosmetics/pawnskins/angel.png') center/cover no-repeat;
 }
 
-.pskin-ocean {
-  background: linear-gradient(135deg, #2060b0, #40a0e0, #2060b0);
+.pskin-builder {
+  background: url('/cosmetics/pawnskins/builder.png') center/cover no-repeat;
 }
 
-.pskin-galaxy {
-  background: linear-gradient(135deg, #2a1a4a, #6a3a9a, #2a1a4a);
-  box-shadow: inset 0 0 4px rgba(180, 140, 255, .3);
+.pskin-frog {
+  background: url('/cosmetics/pawnskins/frog.png') center/cover no-repeat;
 }
 
-.pskin-forest {
-  background: linear-gradient(135deg, #1a4a20, #3a8a30, #1a4a20);
+.pskin-king {
+  background: url('/cosmetics/pawnskins/king.png') center/cover no-repeat;
 }
 
-.pskin-diamond {
-  background: linear-gradient(135deg, #a0c0e0, #e0f0ff, #a0c0e0);
+.pskin-knight {
+  background: url('/cosmetics/pawnskins/knight.png') center/cover no-repeat;
 }
 
-.pskin-gold {
-  background: linear-gradient(135deg, #8a7420, #e8d06a, #8a7420);
+.pskin-wealthy {
+  background: url('/cosmetics/pawnskins/wealthy.png') center/cover no-repeat;
 }
 
-.pskin-void {
-  background: linear-gradient(135deg, #0a0a1a, #2a2a4a, #0a0a1a);
-  box-shadow: inset 0 0 4px rgba(100, 60, 200, .4);
+.pskin-witch {
+  background: url('/cosmetics/pawnskins/witch.png') center/cover no-repeat;
 }
 
-.pskin-rose {
-  background: linear-gradient(135deg, #9a3060, #e070a0, #9a3060);
+.pskin-wizard {
+  background: url('/cosmetics/pawnskins/wizard.png') center/cover no-repeat;
+}
+
+.pskin-wolf {
+  background: url('/cosmetics/pawnskins/wolf.png') center/cover no-repeat;
 }
 
 /* ═══════════════════════════════════════════════
