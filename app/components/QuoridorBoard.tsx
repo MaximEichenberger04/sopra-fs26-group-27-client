@@ -28,19 +28,33 @@ const PLAYER_OUTLINE_COLORS: Record<number, string> = {
   4: "rgba(217, 180, 107, 0.9)",
 };
 
+// Original board positions for each symbol (degrees, same as BOARD_ROTATION)
+// Symbol 1 starts at bottom (0°), Symbol 2 at top (180°), Symbol 3 at left (90°), Symbol 4 at right (-90°)
+const SYMBOL_POSITION: Record<number, number> = { 1: 180, 2: 0, 3: 90, 4: -90 };
+
 // ─── PawnCell ─────────────────────────────────────────────────────────────────
 
-function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, counterRotation,
+function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, boardRotation,
   cellSize, pawnStyles, isAbilityMode, onAbilityHover, onAbilityLeave, onAbilityClick,
 }: {
   value: CellValue; boardRow: number; boardCol: number;
   isValidMove: boolean; onMove: (mr: number, mc: number) => void;
-  counterRotation: string; cellSize: number; pawnStyles?: Record<number, string>;
+  boardRotation: number; cellSize: number; pawnStyles?: Record<number, string>;
   isAbilityMode: boolean;
   onAbilityHover: (r: number, c: number) => void;
   onAbilityLeave: () => void;
   onAbilityClick: (r: number, c: number) => void;
 }) {
+  // Each pawn faces inward from its apparent screen position.
+  // The board container is CSS-rotated by boardRotation, so the pawn's actual
+  // on-screen rotation = boardRotation + pawnAngle.  We want the screen rotation
+  // to equal the pawn's apparent position (= SYMBOL_POSITION[value] − boardRotation),
+  // so: pawnAngle = apparentPos − boardRotation = SYMBOL_POSITION[value] − 2·boardRotation.
+  const pawnAngle = (value >= 1 && value <= 4)
+    ? (SYMBOL_POSITION[value] ?? 0) - 2 * boardRotation
+    : 0;
+  const pawnTransform = pawnAngle === 0 ? "none" : `rotate(${pawnAngle}deg)`;
+
   return (
     <div
       onClick={() => isAbilityMode ? onAbilityClick(boardRow, boardCol) : isValidMove && onMove(boardRow * 2, boardCol * 2)}
@@ -57,8 +71,8 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, counterRotat
         <div
           className={`pawn pawn-${value}`}
           style={{
-            width: cellSize * 0.58, height: cellSize * 0.58,
-            transform: counterRotation,
+            width: cellSize * 0.82, height: cellSize * 0.82,
+            transform: pawnTransform,
             ...(pawnStyles?.[value] ? { background: pawnStyles[value] } : {}),
             borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
           }}
@@ -449,7 +463,7 @@ export default function QuoridorBoard({
                     <PawnCell key={`${mr}-${mc}`}
                       value={value} boardRow={mr / 2} boardCol={mc / 2}
                       isValidMove={effectiveValidMoves.some(([vr, vc]) => vr === mr && vc === mc)}
-                      onMove={onMove} counterRotation={counterRotation}
+                      onMove={onMove} boardRotation={boardRotation}
                       cellSize={CELL} pawnStyles={pawnStyles}
                       isAbilityMode={isAbilityMode}
                       onAbilityHover={(r, c) => setAbilityHover({ r, c })}

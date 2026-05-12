@@ -20,7 +20,12 @@ const ABILITY_SOUNDS: Record<AbilityType, string> = {
   EARTHQUAKE: "/sounds/earthquake.mp3",
   FREEZE: "/sounds/freeze.mp3",
   POISON: "/sounds/poison.mp3",
+  FIREBALL: "/sounds/fireball.mp3",
+  EARTHQUAKE: "/sounds/earthquake.mp3",
+  FREEZE: "/sounds/freeze.mp3",
+  POISON: "/sounds/poison.mp3",
   PLUS_TWO_WALLS: "/sounds/wall.wav",
+  TWO_MOVES: "/sounds/move.wav",
   TWO_MOVES: "/sounds/move.wav",
 };
 
@@ -34,6 +39,8 @@ function playSound(src: string) {
 function useGameSounds() {
   const playMove = useCallback(() => playSound("/sounds/move.wav"), []);
   const playWall = useCallback(() => playSound("/sounds/wall.wav"), []);
+  const playMove = useCallback(() => playSound("/sounds/move.wav"), []);
+  const playWall = useCallback(() => playSound("/sounds/wall.wav"), []);
   const playAbility = useCallback((type: AbilityType) => playSound(ABILITY_SOUNDS[type]), []);
   return { playMove, playWall, playAbility };
 }
@@ -41,14 +48,15 @@ function useGameSounds() {
 // ─── Pawn skin gradients ──────────────────────────────────────────────────────
 
 const PAWN_SKIN_GRADIENTS: Record<string, string> = {
-  "pawn-lava": "linear-gradient(135deg, #e04020, #f0a030, #e04020)",
-  "pawn-ocean": "linear-gradient(135deg, #2060b0, #40a0e0, #2060b0)",
-  "pawn-galaxy": "linear-gradient(135deg, #2a1a4a, #6a3a9a, #2a1a4a)",
-  "pawn-forest": "linear-gradient(135deg, #1a4a20, #3a8a30, #1a4a20)",
-  "pawn-diamond": "linear-gradient(135deg, #a0c0e0, #e0f0ff, #a0c0e0)",
-  "pawn-gold": "linear-gradient(135deg, #8a7420, #e8d06a, #8a7420)",
-  "pawn-void": "linear-gradient(135deg, #0a0a1a, #2a2a4a, #0a0a1a)",
-  "pawn-rose": "linear-gradient(135deg, #9a3060, #e070a0, #9a3060)",
+  "pawn-angel": "url('/cosmetics/pawnskins/angel.png') center/cover no-repeat",
+  "pawn-builder": "url('/cosmetics/pawnskins/builder.png') center/cover no-repeat",
+  "pawn-frog": "url('/cosmetics/pawnskins/frog.png') center/cover no-repeat",
+  "pawn-king": "url('/cosmetics/pawnskins/king.png') center/cover no-repeat",
+  "pawn-knight": "url('/cosmetics/pawnskins/knight.png') center/cover no-repeat",
+  "pawn-wealthy": "url('/cosmetics/pawnskins/wealthy.png') center/cover no-repeat",
+  "pawn-witch": "url('/cosmetics/pawnskins/witch.png') center/cover no-repeat",
+  "pawn-wizard": "url('/cosmetics/pawnskins/wizard.png') center/cover no-repeat",
+  "pawn-wolf": "url('/cosmetics/pawnskins/wolf.png') center/cover no-repeat",
 };
 
 // ─── Card assets ──────────────────────────────────────────────────────────────
@@ -58,7 +66,12 @@ const CARD_IMAGE: Record<AbilityType, string> = {
   EARTHQUAKE: "/abilities/earthquake.png",
   FREEZE: "/abilities/freeze.png",
   POISON: "/abilities/poison.png",
+  FIREBALL: "/abilities/fireball.png",
+  EARTHQUAKE: "/abilities/earthquake.png",
+  FREEZE: "/abilities/freeze.png",
+  POISON: "/abilities/poison.png",
   PLUS_TWO_WALLS: "/abilities/walls.png",
+  TWO_MOVES: "/abilities/moves.png",
   TWO_MOVES: "/abilities/moves.png",
 };
 
@@ -67,7 +80,12 @@ const CARD_NAME: Record<AbilityType, string> = {
   EARTHQUAKE: "Earthquake",
   FREEZE: "Freeze",
   POISON: "Poison",
+  FIREBALL: "Fireball",
+  EARTHQUAKE: "Earthquake",
+  FREEZE: "Freeze",
+  POISON: "Poison",
   PLUS_TWO_WALLS: "+2 Walls",
+  TWO_MOVES: "2 Moves",
   TWO_MOVES: "2 Moves",
 };
 
@@ -76,7 +94,12 @@ const CARD_DESC: Record<AbilityType, string> = {
   EARTHQUAKE: "Randomly shifts walls in a 3×3 area.",
   FREEZE: "Opponent skips their next turn.",
   POISON: "Marks a 2×2 area impassable for 3 rounds.",
+  FIREBALL: "Destroys all walls in a 2×2 area.",
+  EARTHQUAKE: "Randomly shifts walls in a 3×3 area.",
+  FREEZE: "Opponent skips their next turn.",
+  POISON: "Marks a 2×2 area impassable for 3 rounds.",
   PLUS_TWO_WALLS: "Instantly gain 2 extra walls.",
+  TWO_MOVES: "Perform 2 actions this turn.",
   TWO_MOVES: "Perform 2 actions this turn.",
 };
 
@@ -129,6 +152,9 @@ function CardDrawAnimation({ cardType, onDone, inventorySlotRef }: {
     const t1 = setTimeout(() => setPhase("flipping"), 670);
     const t2 = setTimeout(() => setPhase("shining"), 1320);
     const t3 = setTimeout(() => setPhase("revealed"), 1780);
+    const t1 = setTimeout(() => setPhase("flipping"), 670);
+    const t2 = setTimeout(() => setPhase("shining"), 1320);
+    const t3 = setTimeout(() => setPhase("revealed"), 1780);
     const t4 = setTimeout(() => {
       if (cardRef.current && inventorySlotRef.current) {
         const cr = cardRef.current.getBoundingClientRect();
@@ -146,6 +172,7 @@ function CardDrawAnimation({ cardType, onDone, inventorySlotRef }: {
 
   if (phase === "idle" || !cardType) return null;
 
+  const flipped = ["flipping", "shining", "revealed", "flying"].includes(phase);
   const flipped = ["flipping", "shining", "revealed", "flying"].includes(phase);
   const isFlying = phase === "flying";
 
@@ -174,6 +201,7 @@ function CardDrawAnimation({ cardType, onDone, inventorySlotRef }: {
             width: 210, height: 294, position: "relative", transformStyle: "preserve-3d",
             transition: isFlying ? "none" : "transform 0.65s cubic-bezier(0.4,0.2,0.2,1), filter 0.4s ease",
             transform: flipped ? "rotateY(180deg)" : "rotateY(0deg)",
+            filter: ["shining", "revealed"].includes(phase)
             filter: ["shining", "revealed"].includes(phase)
               ? "drop-shadow(0 0 24px rgba(212,175,55,0.85))"
               : "drop-shadow(0 16px 32px rgba(0,0,0,0.85))",
@@ -273,10 +301,12 @@ function buildMatrix(dto: GameDTO): CellValue[][] {
       if (matrix[row]) {
         matrix[row][col - 1] = WALL_VALUE;
         matrix[row][col] = WALL_VALUE;
+        matrix[row][col] = WALL_VALUE;
         matrix[row][col + 1] = WALL_VALUE;
       }
     } else {
       if (matrix[row - 1]) matrix[row - 1][col] = WALL_VALUE;
+      if (matrix[row]) matrix[row][col] = WALL_VALUE;
       if (matrix[row]) matrix[row][col] = WALL_VALUE;
       if (matrix[row + 1]) matrix[row + 1][col] = WALL_VALUE;
     }
@@ -333,10 +363,15 @@ export default function GamePage() {
 
   const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
+  const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
+  const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [pawnStyles, setPawnStyles] = useState<Record<number, string>>({});
   const [error, setError] = useState<string | null>(null);
   const [banner, setBanner] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [banner, setBanner] = useState<string | null>(null);
   const [lastSync, setLastSync] = useState<Date | null>(null);
+  const [mounted, setMounted] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [forfeitedPlayerIds, setForfeitedPlayerIds] = useState<number[]>([]);
 
@@ -345,12 +380,18 @@ export default function GamePage() {
   // Card animation
   const [drawAnimCard, setDrawAnimCard] = useState<AbilityType | null>(null);
   const [drawKey, setDrawKey] = useState(0);
+  const [drawKey, setDrawKey] = useState(0);
   const [shownInventory, setShownInventory] = useState<AbilityType[]>([]);
+  const [selectedCard, setSelectedCard] = useState<AbilityType | null>(null);
+  const [boardEffect, setBoardEffect] = useState<{ type: "fireball" | "earthquake"; targetRow: number; targetCol: number } | null>(null);
   const [selectedCard, setSelectedCard] = useState<AbilityType | null>(null);
   const [boardEffect, setBoardEffect] = useState<{ type: "fireball" | "earthquake"; targetRow: number; targetCol: number } | null>(null);
   const boardEffectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const inventoryLandingRef = useRef<HTMLDivElement | null>(null);
+  const drawnTurnsRef = useRef<Set<number>>(new Set());
+  const drawingRef = useRef(false);
+  const pendingInvRef = useRef<AbilityType[]>([]);
   const drawnTurnsRef = useRef<Set<number>>(new Set());
   const drawingRef = useRef(false);
   const pendingInvRef = useRef<AbilityType[]>([]);
@@ -360,11 +401,18 @@ export default function GamePage() {
   const wsRef = useRef<WebSocket | null>(null);
   const api = useApi(token);
   const apiRef = useRef(api);
+  const wsRef = useRef<WebSocket | null>(null);
+  const api = useApi(token);
+  const apiRef = useRef(api);
   useEffect(() => { apiRef.current = api; }, [api]);
+  const tokenRef = useRef(token);
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { setMounted(true); }, []);
 
+  const playerCountRef = useRef(0);
+  const forfeitedRef = useRef<number[]>([]);
+  const fetchedIdsRef = useRef<string>("");
   const playerCountRef = useRef(0);
   const forfeitedRef = useRef<number[]>([]);
   const fetchedIdsRef = useRef<string>("");
@@ -390,7 +438,20 @@ export default function GamePage() {
 
       setGame({
         matrix: strippedMatrix,
+        matrix: strippedMatrix,
         currentTurnUserId: dto.currentTurnUserId,
+        playerIds: dto.playerIds ?? [],
+        winnerId: dto.winnerId,
+        gameStatus: dto.gameStatus,
+        wallsPerPlayer: dto.wallsPerPlayer,
+        remainingWalls: dto.remainingWalls,
+        mapTheme: dto.mapTheme || "mystic-grove",
+        chaosMode: dto.chaosMode ?? false,
+        myInventory: dto.myInventory ?? [],
+        canDrawCard: dto.canDrawCard ?? false,
+        turnCounter: dto.turnCounter ?? 0,
+        poisonZones: dto.poisonZones ?? [],
+        frozenPlayerIds: (dto.frozenPlayerIds ?? []) as number[],
         playerIds: dto.playerIds ?? [],
         winnerId: dto.winnerId,
         gameStatus: dto.gameStatus,
@@ -468,6 +529,7 @@ export default function GamePage() {
         if (newCard) { setDrawKey(k => k + 1); setDrawAnimCard(newCard); }
       })
       .catch(() => { })
+      .catch(() => { })
       .finally(() => { drawingRef.current = false; });
   }, [game.canDrawCard, game.turnCounter]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -485,6 +547,7 @@ export default function GamePage() {
     fetchGame();
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
+    let bannerTimeout: ReturnType<typeof setTimeout> | undefined;
     let bannerTimeout: ReturnType<typeof setTimeout> | undefined;
     let destroyed = false;
 
@@ -531,6 +594,7 @@ export default function GamePage() {
             boardEffectTimerRef.current = setTimeout(() => setBoardEffect(null), 1000);
             setBanner(null);
           } else if (["MOVE", "WALL", "FORFEIT", "GAME_UPDATED", "ABILITY_USED", "ABILITY_DRAW", "SKIP"].includes(msg.type)) {
+          } else if (["MOVE", "WALL", "FORFEIT", "GAME_UPDATED", "ABILITY_USED", "ABILITY_DRAW", "SKIP"].includes(msg.type)) {
             setBanner(null);
           }
           fetchGame();
@@ -551,7 +615,10 @@ export default function GamePage() {
   const username = players.find(p => p.id === userId)?.username ?? "";
 
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
+  const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const myPlayerIndex = game.playerIds.findIndex((id) => id === userId);
+  const mySymbol = (myPlayerIndex >= 0 ? myPlayerIndex + 1 : 1) as 1 | 2 | 3 | 4;
+  const validMoves = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
   const mySymbol = (myPlayerIndex >= 0 ? myPlayerIndex + 1 : 1) as 1 | 2 | 3 | 4;
   const validMoves = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
 
@@ -652,8 +719,9 @@ export default function GamePage() {
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "fit-content", margin: "0 auto" }}>
         <img src="/quoridor.png" alt="Quoridor"
           style={{ height: 240, objectFit: "contain", userSelect: "none" as const }} />
+        <img src="/quoridor.png" alt="Quoridor"
+          style={{ height: 240, objectFit: "contain", userSelect: "none" as const }} />
 
-        {/* Error toast */}
         {error && (
           <div style={{
             position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
@@ -677,6 +745,12 @@ export default function GamePage() {
         }
       `}</style>
 
+        {banner && <p style={{ color: "var(--q-title,#c8a44a)", fontSize: 13 }}>{banner}</p>}
+        {game.gameStatus === "ENDED" && (
+          <p style={{ color: "var(--q-title,#c8a44a)", fontSize: 15 }}>
+            {game.winnerId === userId ? "You win!" : "You lose."}
+          </p>
+        )}
         {banner && <p style={{ color: "var(--q-title,#c8a44a)", fontSize: 13 }}>{banner}</p>}
         {game.gameStatus === "ENDED" && (
           <p style={{ color: "var(--q-title,#c8a44a)", fontSize: 15 }}>
@@ -715,7 +789,61 @@ export default function GamePage() {
               }
             />
           )}
+          {/* Board + Chat via chatSlot */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            {mounted && (
+              <QuoridorBoard
+                mySymbol={mySymbol}
+                matrix={game.matrix}
+                isMyTurn={isMyTurn}
+                validMoves={validMoves}
+                onMove={handleMove}
+                onWall={handleWall}
+                onForfeit={handleForfeit}
+                onSkipTurn={handleSkipTurn}
+                boardEffect={boardEffect}
+                players={players}
+                pawnStyles={pawnStyles}
+                selectedAbilityCard={selectedCard}
+                onAbilityTarget={handleAbilityTarget}
+                poisonZones={game.poisonZones}
+                frozenPlayerIds={game.frozenPlayerIds}
+                isFrozen={game.frozenPlayerIds.map(Number).includes(Number(userId))}
+                chatSlot={
+                  <GameChat
+                    gameId={gameId}
+                    userId={userId}
+                    username={username}
+                    token={token}
+                    refreshTrigger={chatRefreshTrigger}
+                  />
+                }
+              />
+            )}
 
+            {/* Ability inventory below board — outer div stays 624px wide to stay centred under board */}
+            {mounted && game.chaosMode && (
+              <div style={{ paddingTop: 16, width: 624, display: "flex", justifyContent: "center" }}>
+                <div style={{
+                  background: "var(--q-beam-bg, rgba(20,20,25,0.85))",
+                  backdropFilter: "blur(10px)",
+                  border: "1px solid var(--q-beam-border, rgba(255,255,255,0.1))",
+                  borderRadius: 12,
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.5)",
+                  padding: "16px 20px",
+                  width: "fit-content",
+                }}>
+                  <AbilityInventory
+                    inventory={shownInventory}
+                    selectedCard={selectedCard}
+                    onSelectCard={(card) => card ? handleUseCard(card) : setSelectedCard(null)}
+                    isMyTurn={isMyTurn}
+                    landingRef={inventoryLandingRef}
+                  />
+                </div>
+              </div>
+            )}
+          </div>
           {/* Ability inventory below board — outer div stays 624px wide to stay centred under board */}
           {mounted && game.chaosMode && (
             <div style={{ paddingTop: 16, width: 624, display: "flex", justifyContent: "center" }}>
@@ -740,6 +868,11 @@ export default function GamePage() {
           )}
         </div>
 
+        {lastSync && (
+          <p style={{ color: "var(--q-text-muted,#4a4438)", fontSize: 11, margin: 0 }}>
+            last sync {lastSync.toLocaleTimeString()}
+          </p>
+        )}
         {lastSync && (
           <p style={{ color: "var(--q-text-muted,#4a4438)", fontSize: 11, margin: 0 }}>
             last sync {lastSync.toLocaleTimeString()}
