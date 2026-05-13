@@ -24,6 +24,8 @@ interface MatchRecord {
 function modeIcon(gameMode?: string | null): string {
   if (gameMode === "CLASSIC") return "♟️";
   if (gameMode === "CHAOS") return "☠️";
+
+  return "🎮";
 }
 
 // ─── Today filter ─────────────────────────────────────────────────────────────
