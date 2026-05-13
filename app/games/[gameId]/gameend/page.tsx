@@ -44,7 +44,7 @@ export default function WinningPage() {
         setIWon(winnerId === userId);
 
         // 2) Fetch match results separately — non-critical, XP display only
-        let xpMap = new Map<number, number>();
+        const xpMap = new Map<number, number>();
         try {
           const results = await api.get<MatchResult[]>(`/games/${gameId}/results`);
           for (const r of results) {
