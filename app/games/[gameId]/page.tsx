@@ -366,6 +366,9 @@ export default function GamePage() {
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { setMounted(true); }, []);
 
+  // Clear the stored lobby so the NavBar global watcher stops polling once we're in a game
+  useEffect(() => { sessionStorage.removeItem("activeLobbyId"); }, []);
+
   const playerCountRef = useRef(0);
   const forfeitedRef = useRef<number[]>([]);
   const fetchedIdsRef = useRef<string>("");

@@ -1,7 +1,7 @@
 "use client";
 
 import "../../lobbies/lobbies.css";
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { Lobby } from "@/types/lobby";
 import { User } from "@/types/user";
@@ -10,6 +10,14 @@ import NavBar from "@/components/NavBar";
 import { Avatar } from "antd";
 import { UserOutlined } from "@ant-design/icons";
 import { getCosmeticById } from "@/types/cosmetics";
+import Image from "next/image";
+
+// Map metadata: theme key → display name + image path
+const MAP_INFO: Record<string, { label: string; image: string }> = {
+  "mystic-grove": { label: "Mystic Grove", image: "/maps/forest.png" },
+  "obsidian-keep": { label: "Obsidian Keep", image: "/maps/castle.png" },
+  "celestial-sanctum": { label: "Celestial Sanctum", image: "/maps/sanctum.png" },
+};
 
 const LobbyPage: React.FC = () => {
   const router = useRouter();
@@ -25,7 +33,11 @@ const LobbyPage: React.FC = () => {
   const [editName, setEditName] = useState("");
   const [editGameMode, setEditGameMode] = useState("");
   const [editMaxPlayers, setEditMaxPlayers] = useState("");
-  const [editMapTheme, setEditMapTheme] = useState("mystic-grove"); // <-- Added Map State
+  const [editMapTheme, setEditMapTheme] = useState("mystic-grove");
+
+  // Track whether we've done the first load — only sync edit state on first fetch,
+  // not on every 2-second poll (which was causing the dropdown reset bug).
+  const initializedRef = useRef(false);
 
   const fetchUsers = useCallback(async (playerIds: number[]) => {
     try {
@@ -49,10 +61,14 @@ const LobbyPage: React.FC = () => {
 
       setLobby(response);
 
-      // Sync the edit states with the fetched lobby data so the dropdowns show the correct current value
-      if (response.mapTheme) setEditMapTheme(response.mapTheme);
-      if (response.gameMode) setEditGameMode(response.gameMode);
-      if (response.maxPlayers) setEditMaxPlayers(String(response.maxPlayers));
+      // Only sync edit dropdowns on the FIRST load so in-progress edits aren't stomped by polling
+      if (!initializedRef.current) {
+        initializedRef.current = true;
+        if (response.mapTheme) setEditMapTheme(response.mapTheme);
+        if (response.gameMode) setEditGameMode(response.gameMode);
+        if (response.maxPlayers) setEditMaxPlayers(String(response.maxPlayers));
+        if (response.name) setEditName(response.name);
+      }
 
       if (response.playerIds) {
         await fetchUsers(response.playerIds);
@@ -101,9 +117,19 @@ const LobbyPage: React.FC = () => {
     };
   }, [fetchLobby]);
 
+  // Store active lobby in sessionStorage so the global watcher (NavBar) can redirect
+  // even when the player has navigated away from this page.
+  useEffect(() => {
+    sessionStorage.setItem("activeLobbyId", lobbyId);
+    return () => {
+      // Leave it set; the game page clears it on arrival
+    };
+  }, [lobbyId]);
+
   const handleLeave = async () => {
     try {
       await apiService.post(`/lobbies/${lobbyId}/leave`, {});
+      sessionStorage.removeItem("activeLobbyId");
       router.push("/lobbies");
     } catch (error) {
       if (error instanceof Error) {
@@ -116,6 +142,7 @@ const LobbyPage: React.FC = () => {
     setStarting(true);
     try {
       const game = await apiService.post<{ id: string }>(`/lobbies/${lobbyId}/start`, {});
+      sessionStorage.removeItem("activeLobbyId");
       router.push(`/games/${game.id}`);
     } catch (error) {
       if (error instanceof Error) {
@@ -135,10 +162,13 @@ const LobbyPage: React.FC = () => {
         name: editName || lobby.name,
         gameMode: editGameMode || lobby.gameMode,
         maxPlayers: editMaxPlayers ? Number(editMaxPlayers) : lobby.maxPlayers,
-        mapTheme: editMapTheme, // <-- Send the map selection to backend
+        mapTheme: editMapTheme,
       });
 
-      await fetchLobby(); // refresh UI after save
+      // Refresh lobby display WITHOUT resetting edit fields
+      const response = await apiService.get<Lobby>(`/lobbies/${lobbyId}`);
+      setLobby(response);
+      if (response.playerIds) await fetchUsers(response.playerIds);
     } catch (error) {
       if (error instanceof Error) {
         alert(`Failed to save:\n${error.message}`);
@@ -163,6 +193,11 @@ const LobbyPage: React.FC = () => {
   const canStart = isHost && isFull && lobby.lobbyStatus === "WAITING";
   const emptySlots = Math.max(0, (lobby.maxPlayers ?? 0) - users.length);
 
+  // Host sees a live preview (their current dropdown selection).
+  // Guest sees the saved lobby value.
+  const activeMapTheme = isHost ? editMapTheme : (lobby.mapTheme ?? "mystic-grove");
+  const activeMap = MAP_INFO[activeMapTheme] ?? MAP_INFO["mystic-grove"];
+
   return (
     <div className="lobby-room-wrap">
       <NavBar />
@@ -182,6 +217,10 @@ const LobbyPage: React.FC = () => {
             <div className="lobby-info-row">
               <span className="lobby-info-label">Max Players</span>
               <span className="lobby-info-value">{lobby.maxPlayers}</span>
+            </div>
+            <div className="lobby-info-row">
+              <span className="lobby-info-label">Map</span>
+              <span className="lobby-info-value">{MAP_INFO[lobby.mapTheme ?? "mystic-grove"]?.label ?? lobby.mapTheme}</span>
             </div>
             <div className="lobby-info-row">
               <span className="lobby-info-label">Status</span>
@@ -244,45 +283,79 @@ const LobbyPage: React.FC = () => {
           </div>
         </div>
 
+        {/* ── Host: compact edit panel with live map preview on the right ── */}
         {isHost && (
           <div className="g-card lobby-edit-section">
-            <h3 className="g-section-title">Edit Lobby (Host Only)</h3>
-            <div className="g-field">
-              <label className="g-label">Lobby Name</label>
-              <input
-                className="g-input"
-                placeholder={lobby.name ?? ""}
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
+            <h3 className="g-section-title">
+              Edit Lobby <span style={{ fontWeight: 400, opacity: 0.55, fontSize: 12 }}>(Host Only)</span>
+            </h3>
+            <div className="lobby-edit-inner">
+              {/* Left: controls */}
+              <div className="lobby-edit-controls">
+                <div className="g-field">
+                  <label className="g-label">Lobby Name</label>
+                  <input
+                    className="g-input"
+                    placeholder={lobby.name ?? ""}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+                </div>
+                <div className="g-field">
+                  <label className="g-label">Game Mode</label>
+                  <select className="g-select" value={editGameMode} onChange={(e) => setEditGameMode(e.target.value)}>
+                    <option value="CLASSIC">Classic</option>
+                    <option value="CHAOS">Chaos</option>
+                  </select>
+                </div>
+                <div className="g-field">
+                  <label className="g-label">Map</label>
+                  <select className="g-select" value={editMapTheme} onChange={(e) => setEditMapTheme(e.target.value)}>
+                    <option value="mystic-grove">Mystic Grove</option>
+                    <option value="obsidian-keep">Obsidian Keep</option>
+                    <option value="celestial-sanctum">Celestial Sanctum</option>
+                  </select>
+                </div>
+                <div className="g-field">
+                  <label className="g-label">Player Count</label>
+                  <select className="g-select" value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)}>
+                    <option value="2">2</option>
+                    <option value="4">4</option>
+                  </select>
+                </div>
+                <button className="btn-outline" onClick={handleSave} disabled={saving}>
+                  {saving ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+
+              {/* Right: live map preview */}
+              <div className="lobby-map-preview">
+                <p className="lobby-map-preview-name">{activeMap.label}</p>
+                <div className="lobby-map-preview-img-wrap">
+                  <Image
+                    src={activeMap.image}
+                    alt={activeMap.label}
+                    fill
+                    style={{ objectFit: "cover", borderRadius: 8 }}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── Non-host: map preview card ── */}
+        {!isHost && (
+          <div className="lobby-map-viewer">
+            <p className="lobby-map-viewer-name">{activeMap.label}</p>
+            <div className="lobby-map-viewer-img-wrap">
+              <Image
+                src={activeMap.image}
+                alt={activeMap.label}
+                fill
+                style={{ objectFit: "cover", borderRadius: 10 }}
               />
             </div>
-            <div className="g-field">
-              <label className="g-label">Game Mode</label>
-              <select className="g-select" value={editGameMode} onChange={(e) => setEditGameMode(e.target.value)}>
-                <option value="CLASSIC">Classic</option>
-                <option value="CHAOS">Chaos</option>
-              </select>
-            </div>
-
-            <div className="g-field">
-              <label className="g-label"><span className="required">*</span> Map</label>
-              <select className="g-select" value={editMapTheme} onChange={(e) => setEditMapTheme(e.target.value)}>
-                <option value="mystic-grove">Mystic Grove</option>
-                <option value="obsidian-keep">Obsidian Keep</option>
-                <option value="celestial-sanctum">Celestial Sanctum</option>
-              </select>
-            </div>
-
-            <div className="g-field">
-              <label className="g-label">Player Count</label>
-              <select className="g-select" value={editMaxPlayers} onChange={(e) => setEditMaxPlayers(e.target.value)}>
-                <option value="2">2</option>
-                <option value="4">4</option>
-              </select>
-            </div>
-            <button className="btn-outline" onClick={handleSave} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
           </div>
         )}
 
