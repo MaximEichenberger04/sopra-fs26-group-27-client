@@ -11,10 +11,19 @@ import { UserOutlined } from "@ant-design/icons";
 import NavBar from "@/components/NavBar";
 import { getCosmeticById } from "@/types/cosmetics";
 
+interface UserStatistics {
+  totalGames: number;
+  wins: number;
+  losses: number;
+  winLossRatio: number;
+  mostPlayedGameMode: string | null;
+}
+
 const Dashboard: React.FC = () => {
   const router = useRouter();
   const apiService = useApi();
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [statistics, setStatistics] = useState<UserStatistics | null>(null);
 
   const { value: token, clear: clearToken } = useLocalStorage<string>("token", "");
   const { value: userId, clear: clearUserId } = useLocalStorage<string>("userId", "");
@@ -30,6 +39,12 @@ const Dashboard: React.FC = () => {
         if (userId) {
           const user = await apiService.get<User>(`/users/${userId}`);
           setCurrentUser(user);
+          try {
+            const stats = await apiService.get<UserStatistics>(`/users/${userId}/statistics`);
+            setStatistics(stats);
+          } catch {
+            // statistics not available
+          }
         }
       } catch (error) {
         if (error instanceof Error) console.error("Failed to fetch user:", error.message);
@@ -41,6 +56,14 @@ const Dashboard: React.FC = () => {
   const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
 
   if (!currentUser) return null;
+
+  const level = currentUser.level ?? 1;
+  const xpLevelStart = 130 * level * (level - 1) / 2;
+  const progress = currentUser.xpCurrentLevelProgress ?? 0;
+  const required = currentUser.xpRequiredForNextLevel ?? 130;
+  const pct = required > 0 ? Math.min((progress / required) * 100, 100) : 0;
+  const wins = statistics?.wins ?? 0;
+  const losses = statistics?.losses ?? 0;
 
   return (
     <div className="dash-page">
@@ -79,34 +102,31 @@ const Dashboard: React.FC = () => {
               </div>
               <div className="dash-profile-info">
                 <span className="dash-profile-name">{currentUser.displayName}</span>
-                <span className="dash-profile-level">Level {currentUser.level ?? 0}</span>
               </div>
             </div>
             <div className="dash-xp-section">
-              {(() => {
-                const level = currentUser.level ?? 1;
-                const xpLevelStart = 130 * level * (level - 1) / 2;
-                const xpLevelEnd = 130 * (level + 1) * level / 2;
-                const progress = currentUser.xpCurrentLevelProgress ?? 0;
-                const required = currentUser.xpRequiredForNextLevel ?? 130;
-                const pct = required > 0 ? Math.min((progress / required) * 100, 100) : 0;
-                return (
-                  <>
-                    <div className="dash-xp-bar-bg">
-                      <div className="dash-xp-bar-fill" style={{ width: `${pct}%` }} />
-                    </div>
-                    <div className="dash-xp-labels">
-                      <span className="dash-xp-text">{xpLevelStart} XP</span>
-                      <span className="dash-xp-text">{xpLevelEnd} XP</span>
-                    </div>
-                  </>
-                );
-              })()}
+              <div className="dash-xp-label-row">
+                <span className="dash-xp-level-tag">LVL {level}</span>
+              </div>
+              <div className="dash-xp-bar-bg">
+                <div className="dash-xp-bar-fill" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="dash-xp-labels">
+                <span className="dash-xp-text">{xpLevelStart} XP</span>
+                <span className="dash-xp-text">{progress} / {required} XP</span>
+              </div>
             </div>
             <div className="dash-stats-grid">
               <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.score ?? 0}</span><span className="dash-stat-label">Score</span></div>
-              <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.level ?? 0}</span><span className="dash-stat-label">Level</span></div>
               <div className="dash-stat-box"><span className="dash-stat-value">{currentUser.xp ?? 0}</span><span className="dash-stat-label">XP</span></div>
+              <div className="dash-stat-box dash-stat-wl">
+                <div className="dash-wl-row">
+                  <span className="dash-stat-value dash-stat-wins">{wins}</span>
+                  <span className="dash-wl-slash">/</span>
+                  <span className="dash-stat-value dash-stat-losses">{losses}</span>
+                </div>
+                <span className="dash-stat-label">W / L</span>
+              </div>
             </div>
           </div>
 
