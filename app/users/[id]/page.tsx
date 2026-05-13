@@ -612,14 +612,13 @@ const Profile: React.FC = () => {
             <div className="view-xp-section">
               <div className="view-xp-label-row">
                 <span className="view-xp-level-tag">LVL {user.level ?? 0}</span>
-                <span className="view-xp-counter">{xpIntoLevel} / {xpPerLevel} XP</span>
               </div>
               <div className="view-xp-bar-bg">
                 <div className="view-xp-bar-fill" style={{ width: `${xpPercent}%` }} />
               </div>
               <div className="view-xp-threshold-row">
                 <span className="view-xp-threshold">{(() => { const l = user.level ?? 1; return 130 * l * (l - 1) / 2; })()} XP</span>
-                <span className="view-xp-threshold">{(() => { const l = user.level ?? 1; return 130 * (l + 1) * l / 2; })()} XP</span>
+                <span className="view-xp-threshold">{xpIntoLevel} / {xpPerLevel} XP</span>
               </div>
             </div>
 
@@ -630,8 +629,8 @@ const Profile: React.FC = () => {
                 <span className="view-stat-label">Score</span>
               </div>
               <div className="view-stat-box">
-                <span className="view-stat-value">{user.level ?? 0}</span>
-                <span className="view-stat-label">Level</span>
+                <span className="view-stat-value">{user.xp ?? 0}</span>
+                <span className="view-stat-label">XP</span>
               </div>
               <div className="view-stat-box view-stat-wl">
                 <div className="view-wl-row">
