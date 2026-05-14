@@ -51,6 +51,60 @@ const NavBar: React.FC = () => {
         return () => window.removeEventListener("cosmetic-changed", handler);
     }, [fetchCurrentUser]);
 
+    // ── Global game-start redirect ──────────────────────────────────────────
+    // When a player is part of a lobby but navigates away (e.g. profile, browse),
+    // the lobby page is no longer mounted and its polling stops.
+    // We keep the activeLobbyId in sessionStorage and poll from here so the
+    // player still gets redirected as soon as the host starts the game.
+    useEffect(() => {
+        let destroyed = false;
+
+        const checkLobby = async () => {
+            const activeLobbyId = sessionStorage.getItem("activeLobbyId");
+            if (!activeLobbyId) return;
+
+            // Don't run this redirect watcher on the lobby page itself (it has its own)
+            if (window.location.pathname.includes(`/lobby/${activeLobbyId}`)) return;
+            // Don't redirect if already on a game page
+            if (window.location.pathname.startsWith("/games/")) return;
+
+            try {
+                const res = await fetch(
+                    `${process.env.NEXT_PUBLIC_PROD_API_URL || "http://localhost:8080"}/lobbies/${activeLobbyId}`,
+                    {
+                        headers: (() => {
+                            const raw = localStorage.getItem("token");
+                            let token: string | null = null;
+                            try { token = raw ? JSON.parse(raw) : null; } catch { token = raw; }
+                            return {
+                                "Content-Type": "application/json",
+                                ...(token ? { Authorization: token } : {}),
+                            };
+                        })(),
+                    }
+                );
+                if (!res.ok) {
+                    // Lobby gone (deleted/closed) — clear it
+                    sessionStorage.removeItem("activeLobbyId");
+                    return;
+                }
+                const data = await res.json();
+                if (data.lobbyStatus === "INGAME" && data.gameId) {
+                    sessionStorage.removeItem("activeLobbyId");
+                    if (!destroyed) router.push(`/games/${data.gameId}`);
+                }
+            } catch {
+                // silently ignore network errors
+            }
+        };
+
+        const interval = setInterval(checkLobby, 2000);
+        return () => {
+            destroyed = true;
+            clearInterval(interval);
+        };
+    }, [router]);
+
     const borderItem = currentUser?.equippedBorder ? getCosmeticById(currentUser.equippedBorder) : null;
 
     async function handleLogout() {

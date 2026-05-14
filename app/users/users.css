@@ -236,3 +236,161 @@
     padding: 20px;
   }
 }
+
+/* ═══════════════════════════════════════════════
+   RECENT MATCHES — dashboard card  ← NEW
+   ═══════════════════════════════════════════════ */
+
+.dash-matches-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.dash-matches-date {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.dash-match-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.dash-match-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  transition: background .15s, border-color .15s;
+}
+
+.dash-match-row:hover {
+  background: rgba(200, 168, 50, .04);
+  border-color: rgba(200, 168, 50, .15);
+}
+
+.dash-match-win {
+  background: rgba(106, 184, 90, .04);
+  border-color: rgba(106, 184, 90, .15);
+}
+
+.dash-match-loss {
+  background: rgba(184, 90, 90, .04);
+  border-color: rgba(184, 90, 90, .12);
+}
+
+/* W / L pill */
+.dash-match-badge {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.dash-badge-win {
+  background: rgba(106, 184, 90, .14);
+  color: #6ab85a;
+  border: 1px solid rgba(106, 184, 90, .35);
+}
+
+.dash-badge-loss {
+  background: rgba(184, 90, 90, .14);
+  color: #b85a5a;
+  border: 1px solid rgba(184, 90, 90, .3);
+}
+
+/* Body */
+.dash-match-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.dash-match-players {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.dash-match-player-count {
+  font-family: 'Cinzel', serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--gold);
+  background: rgba(200, 168, 50, .08);
+  border: 1px solid rgba(200, 168, 50, .2);
+  border-radius: 3px;
+  padding: 1px 5px;
+  flex-shrink: 0;
+}
+
+.dash-match-player-names {
+  font-family: 'Crimson Text', serif;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dash-match-tags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.dash-match-mode-tag,
+.dash-match-map-tag {
+  font-weight: 600;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 3px;
+  color: var(--muted);
+  border: 1px solid rgba(122, 110, 85, .2);
+  background: rgba(154, 109, 12, 0.05);
+  letter-spacing: 0;
+  font-family: 'Crimson Text', serif;
+  font-size: 12px;
+}
+
+.tag-classic {
+  color: var(--gold);
+  border: 1px solid rgba(200, 168, 50, .25);
+  background: rgba(200, 168, 50, .06);
+}
+
+.tag-chaos {
+  color: #a07ade;
+  border: 1px solid rgba(160, 122, 222, .3);
+  background: rgba(160, 122, 222, .07);
+}
+
+/* Time */
+.dash-match-time {
+  font-family: 'Cinzel', serif;
+  font-size: 15px;
+  color: var(--muted);
+  flex-shrink: 0;
+  letter-spacing: .05em;
+}
