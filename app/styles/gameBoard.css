@@ -117,6 +117,65 @@
     background: rgba(212, 175, 55, 0.18);
 }
 
+.turn-timer-box {
+    margin: 0 0 16px 0;
+    padding: 12px;
+    border-radius: 12px;
+    background: rgba(10, 10, 14, 0.72);
+    border: 1px solid rgba(212, 175, 55, 0.35);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+    text-align: center;
+}
+
+.turn-timer-label {
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: rgba(212, 175, 55, 0.8);
+    margin-bottom: 4px;
+    font-weight: bold;
+}
+
+.turn-timer-value {
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--q-title, #c8a44a);
+    line-height: 1.1;
+}
+
+.turn-timer-status {
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--q-text-muted, #aaa);
+}
+
+.turn-timer-bar {
+    height: 7px;
+    margin-top: 10px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.turn-timer-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--q-title, #c8a44a);
+    transition: width 0.25s linear;
+}
+
+.turn-timer-box.warning {
+    border-color: rgba(220, 40, 40, 0.75);
+    box-shadow: 0 0 18px rgba(220, 40, 40, 0.25);
+}
+
+.turn-timer-box.warning .turn-timer-value {
+    color: #ff5a5a;
+}
+
+.turn-timer-box.warning .turn-timer-fill {
+    background: #ff5a5a;
+}
+
 .help-modal-overlay {
     position: fixed;
     inset: 0;
