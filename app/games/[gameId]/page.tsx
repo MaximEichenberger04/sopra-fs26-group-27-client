@@ -332,6 +332,10 @@ export default function GamePage() {
   const { value: userId } = useLocalStorage<number>("userId", -1);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!token) router.push("/login");
+  }, [token, router]);
+
   const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [pawnStyles, setPawnStyles] = useState<Record<number, string>>({});
@@ -366,6 +370,17 @@ export default function GamePage() {
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflowX;
+    const prevBody = document.body.style.overflowX;
+    document.documentElement.style.overflowX = "auto";
+    document.body.style.overflowX = "auto";
+    return () => {
+      document.documentElement.style.overflowX = prevHtml;
+      document.body.style.overflowX = prevBody;
+    };
+  }, []);
 
   // Clear the stored lobby so the NavBar global watcher stops polling once we're in a game
   useEffect(() => { sessionStorage.removeItem("activeLobbyId"); }, []);

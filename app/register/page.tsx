@@ -112,14 +112,6 @@ const Regisration: React.FC = () => {
             <Input.Password placeholder="Create a password" />
           </Form.Item>
 
-          <Form.Item
-            name="biography"
-            label="Bio"
-            rules={[{ required: false, message: "Please enter a bio." }]}
-          >
-            <Input placeholder="Enter your bio" />
-          </Form.Item>
-
           <Form.Item style={{ marginTop: "20px" }}>
             <Button type="primary" htmlType="submit" className="auth-btn-primary">
               Register
