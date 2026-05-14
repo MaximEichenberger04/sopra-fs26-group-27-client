@@ -136,7 +136,11 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
                 fontWeight: 700,
                 color: msg.userId === userId ? "var(--q-title)" : "var(--q-text)",
               }}>
-                {msg.userId === userId ? "You" : msg.username}:
+                {msg.userId === userId ? "You" : msg.username}
+                {msg.spectator && (
+                  <span style={{ color: "#d96b6b" }}> (Spectator)</span>
+                )}
+                :
               </span>{" "}
               {msg.gifUrl ? (
                 <img

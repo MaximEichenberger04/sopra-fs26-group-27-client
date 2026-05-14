@@ -342,6 +342,7 @@ export default function GamePage() {
   const [forfeitedPlayerIds, setForfeitedPlayerIds] = useState<number[]>([]);
 
   const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
+  const [spectatorUsername, setSpectatorUsername] = useState<string>("");
 
   // Card animation
   const [drawAnimCard, setDrawAnimCard] = useState<AbilityType | null>(null);
@@ -450,6 +451,18 @@ export default function GamePage() {
     }
   }, [gameId, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    if (userId === -1 || game.playerIds.length === 0) return;
+    if (game.playerIds.includes(userId)) return;
+    if (spectatorUsername) return;
+    let cancelled = false;
+    apiRef.current.get<User>(`/users/${userId}`).then(u => {
+      if (cancelled) return;
+      setSpectatorUsername(u.displayName || u.username || `User ${userId}`);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [userId, game.playerIds, spectatorUsername]);
+
   // ── Dedicated draw effect ──────────────────────────────────────────────────
   useEffect(() => {
     if (!game.chaosMode || !game.canDrawCard || drawingRef.current || drawnTurnsRef.current.has(game.turnCounter)) return;
@@ -552,7 +565,7 @@ export default function GamePage() {
     };
   }, [gameId, fetchGame, userId, router]);
 
-  const username = players.find(p => p.id === userId)?.username ?? "";
+  const username = players.find(p => p.id === userId)?.username ?? spectatorUsername;
 
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const myPlayerIndex = game.playerIds.findIndex((id) => id === userId);
