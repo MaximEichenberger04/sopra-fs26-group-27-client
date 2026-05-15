@@ -332,6 +332,10 @@ export default function GamePage() {
   const { value: userId } = useLocalStorage<number>("userId", -1);
   const router = useRouter();
 
+  useEffect(() => {
+    if (!token) router.push("/login");
+  }, [token, router]);
+
   const [game, setGame] = useState<GameState>(EMPTY_GAME_STATE);
   const [players, setPlayers] = useState<PlayerInfo[]>([]);
   const [pawnStyles, setPawnStyles] = useState<Record<number, string>>({});
@@ -342,6 +346,7 @@ export default function GamePage() {
   const [forfeitedPlayerIds, setForfeitedPlayerIds] = useState<number[]>([]);
 
   const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
+  const [spectatorUsername, setSpectatorUsername] = useState<string>("");
 
   // Card animation
   const [drawAnimCard, setDrawAnimCard] = useState<AbilityType | null>(null);
@@ -365,6 +370,17 @@ export default function GamePage() {
   const tokenRef = useRef(token);
   useEffect(() => { tokenRef.current = token; }, [token]);
   useEffect(() => { setMounted(true); }, []);
+
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.overflowX;
+    const prevBody = document.body.style.overflowX;
+    document.documentElement.style.overflowX = "auto";
+    document.body.style.overflowX = "auto";
+    return () => {
+      document.documentElement.style.overflowX = prevHtml;
+      document.body.style.overflowX = prevBody;
+    };
+  }, []);
 
   // Clear the stored lobby so the NavBar global watcher stops polling once we're in a game
   useEffect(() => { sessionStorage.removeItem("activeLobbyId"); }, []);
@@ -449,6 +465,18 @@ export default function GamePage() {
       setError("Could not reach server.");
     }
   }, [gameId, router]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (userId === -1 || game.playerIds.length === 0) return;
+    if (game.playerIds.includes(userId)) return;
+    if (spectatorUsername) return;
+    let cancelled = false;
+    apiRef.current.get<User>(`/users/${userId}`).then(u => {
+      if (cancelled) return;
+      setSpectatorUsername(u.displayName || u.username || `User ${userId}`);
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [userId, game.playerIds, spectatorUsername]);
 
   // ── Dedicated draw effect ──────────────────────────────────────────────────
   useEffect(() => {
@@ -552,7 +580,7 @@ export default function GamePage() {
     };
   }, [gameId, fetchGame, userId, router]);
 
-  const username = players.find(p => p.id === userId)?.username ?? "";
+  const username = players.find(p => p.id === userId)?.username ?? spectatorUsername;
 
   const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
   const myPlayerIndex = game.playerIds.findIndex((id) => id === userId);
