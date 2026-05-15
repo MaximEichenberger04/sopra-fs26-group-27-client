@@ -88,4 +88,5 @@ export interface ChatMessageGetDTO {
   text: string | null;
   gifUrl: string | null;
   timestamp: number; // Unix milliseconds
+  spectator: boolean;
 }
