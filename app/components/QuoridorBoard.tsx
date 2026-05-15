@@ -188,6 +188,8 @@ interface QuoridorBoardProps {
   mySymbol: 1 | 2 | 3 | 4;
   matrix: CellValue[][];
   isMyTurn: boolean;
+  remainingMillis?: number;
+  turnTimeLimitSeconds?: number;
   validMoves: Array<[number, number]>;
   onMove: (mr: number, mc: number) => void;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
@@ -215,7 +217,8 @@ const BOARD_ROTATION: Record<1 | 2 | 3 | 4, number> = {
 };
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit, onSkipTurn,
+  matrix, isMyTurn, remainingMillis = 0,
+  turnTimeLimitSeconds = 60, validMoves, onMove, onWall, onForfeit, onSkipTurn,
   boardEffect = null,
   mySymbol, players, pawnStyles,
   selectedAbilityCard = null,
@@ -320,6 +323,13 @@ export default function QuoridorBoard({
     })();
 
   const { cell: CELL, wall: WALL } = sizes;
+  const remainingSeconds = Math.ceil(remainingMillis / 1000);
+
+  const timerRatio = turnTimeLimitSeconds > 0
+    ? Math.max(0, Math.min(1, remainingMillis / (turnTimeLimitSeconds * 1000)))
+    : 0;
+
+  const timerWarning = remainingSeconds <= 10;
 
   return (
     <div className="game-layout">
@@ -359,6 +369,21 @@ export default function QuoridorBoard({
       <div className="right-column">
         <div className="vertical-beam">
           <button className="help-btn" onClick={() => setShowHelp(true)}>HOW TO PLAY</button>
+
+          <div className={`turn-timer-box ${timerWarning ? "warning" : ""}`}>
+            <div className="turn-timer-label">TURN TIMER</div>
+            <div className="turn-timer-value">{remainingSeconds}s</div>
+            <div className="turn-timer-bar">
+              <div
+                className="turn-timer-fill"
+                style={{ width: `${timerRatio * 100}%` }}
+              />
+            </div>
+            <div className="turn-timer-status">
+              {isMyTurn ? "Your turn" : "Opponent's turn"}
+            </div>
+          </div>
+
           <div className="beam-section">
             <h4>PLAYERS</h4>
             {players && players.length > 0 ? (

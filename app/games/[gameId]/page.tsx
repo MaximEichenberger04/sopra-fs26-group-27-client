@@ -310,6 +310,9 @@ function stripForfeitedPawns(
 const EMPTY_GAME_STATE: GameState = {
   matrix: makeEmptyMatrix(),
   currentTurnUserId: -1,
+  turnTimeLimitSeconds: 30,
+  turnDeadlineMillis: null,
+  serverTimeMillis: null,
   playerIds: [],
   winnerId: null,
   gameStatus: "WAITING_FOR_USER",
@@ -344,6 +347,7 @@ export default function GamePage() {
   const [lastSync, setLastSync] = useState<Date | null>(null);
   const [mounted, setMounted] = useState(false);
   const [forfeitedPlayerIds, setForfeitedPlayerIds] = useState<number[]>([]);
+  const [remainingMillis, setRemainingMillis] = useState<number>(0);
 
   const [chatRefreshTrigger, setChatRefreshTrigger] = useState(0);
   const [spectatorUsername, setSpectatorUsername] = useState<string>("");
@@ -411,6 +415,9 @@ export default function GamePage() {
       setGame({
         matrix: strippedMatrix,
         currentTurnUserId: dto.currentTurnUserId,
+        turnTimeLimitSeconds: dto.turnTimeLimitSeconds ?? 60,
+        turnDeadlineMillis: dto.turnDeadlineMillis ?? null,
+        serverTimeMillis: dto.serverTimeMillis ?? null,
         playerIds: dto.playerIds ?? [],
         winnerId: dto.winnerId,
         gameStatus: dto.gameStatus,
@@ -466,6 +473,47 @@ export default function GamePage() {
     }
   }, [gameId, router]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Timer
+  useEffect(() => {
+    if (!game.turnDeadlineMillis || game.gameStatus !== "RUNNING") {
+      setRemainingMillis(0);
+      return;
+    }
+
+    const serverOffset =
+      game.serverTimeMillis != null
+        ? game.serverTimeMillis - Date.now()
+        : 0;
+
+    const updateRemaining = () => {
+      const serverNow = Date.now() + serverOffset;
+      setRemainingMillis(Math.max(0, game.turnDeadlineMillis! - serverNow));
+    };
+
+    updateRemaining();
+
+    const interval = setInterval(updateRemaining, 250);
+    return () => clearInterval(interval);
+  }, [game.turnDeadlineMillis, game.serverTimeMillis, game.gameStatus]);
+
+  const timeoutRefreshRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      game.gameStatus === "RUNNING" &&
+      game.turnDeadlineMillis &&
+      remainingMillis === 0 &&
+      !timeoutRefreshRef.current
+    ) {
+      timeoutRefreshRef.current = true;
+      fetchGame();
+    }
+
+    if (remainingMillis > 0) {
+      timeoutRefreshRef.current = false;
+    }
+  }, [remainingMillis, game.gameStatus, game.turnDeadlineMillis, fetchGame]);
+  
   useEffect(() => {
     if (userId === -1 || game.playerIds.length === 0) return;
     if (game.playerIds.includes(userId)) return;
@@ -582,7 +630,14 @@ export default function GamePage() {
 
   const username = players.find(p => p.id === userId)?.username ?? spectatorUsername;
 
-  const isMyTurn = userId !== -1 && game.currentTurnUserId === userId;
+  const timerExpiredLocally =
+    game.gameStatus === "RUNNING" &&
+    game.turnDeadlineMillis != null &&
+    remainingMillis === 0;
+  const isMyTurn =
+    userId !== -1 &&
+    game.currentTurnUserId === userId &&
+    !timerExpiredLocally;
   const myPlayerIndex = game.playerIds.findIndex((id) => id === userId);
   const mySymbol = (myPlayerIndex >= 0 ? myPlayerIndex + 1 : 1) as 1 | 2 | 3 | 4;
   const validMoves = isMyTurn ? getValidMoves(game.matrix, mySymbol) : [];
@@ -722,6 +777,8 @@ export default function GamePage() {
               mySymbol={mySymbol}
               matrix={game.matrix}
               isMyTurn={isMyTurn}
+              remainingMillis={remainingMillis}
+              turnTimeLimitSeconds={game.turnTimeLimitSeconds}
               validMoves={validMoves}
               onMove={handleMove}
               onWall={handleWall}
