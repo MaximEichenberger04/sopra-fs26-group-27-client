@@ -45,7 +45,7 @@ export function getValidMoves(
 
       if (!outOfBounds && !wallBehind && matrix[jumpR]?.[jumpC] === 0) {
         moves.push([jumpR, jumpC]);
-      } else {
+      } else if (outOfBounds || wallBehind) {
         for (const [dr2, dc2] of directions) {
           if (dr2 === dr && dc2 === dc) continue;
           if (dr2 === -dr && dc2 === -dc) continue;
