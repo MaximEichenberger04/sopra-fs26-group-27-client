@@ -299,7 +299,7 @@ export default function QuoridorBoard({
     if (!selectedAbilityCard) return;
     if (selectedAbilityCard === "FREEZE") {
       const cellVal = matrix[logR * 2]?.[logC * 2] ?? 0;
-      if (cellVal !== 1 && cellVal !== 2) return;
+      if (cellVal < 1 || cellVal > 4) return;
       const target = players?.find(p => p.symbol === cellVal);
       if (!target) return;
       onAbilityTarget(logR, logC, target.id);
@@ -317,7 +317,7 @@ export default function QuoridorBoard({
     selectedAbilityCard !== null && (() => {
       if (selectedAbilityCard === "FREEZE") {
         const v = matrix[hoverLogR! * 2]?.[hoverLogC! * 2] ?? 0;
-        return v === 1 || v === 2;
+        return v >= 1 && v <= 4;
       }
       return true;
     })();
@@ -535,7 +535,7 @@ export default function QuoridorBoard({
               for (let mr = 0; mr < MATRIX_SIZE; mr += 2) {
                 for (let mc = 0; mc < MATRIX_SIZE; mc += 2) {
                   const cv = matrix[mr]?.[mc] ?? 0;
-                  if (cv !== 1 && cv !== 2) continue;
+                  if (cv < 1 || cv > 4) continue;
                   const p = players?.find(p => p.symbol === cv);
                   if (!p || !frozenPlayerIds.includes(p.id)) continue;
                   els.push(
@@ -594,6 +594,34 @@ export default function QuoridorBoard({
                   animation: "earthquake-shake 0.12s ease-in-out infinite",
                 }} />
               );
+            })()}
+
+            {/* Goal side glow — each side glows in the color of the player who must reach it */}
+            {players && (() => {
+              const symbolsPresent = new Set(players.map(p => p.symbol));
+              // Symbol 1 starts bottom → goal is top, symbol 2 starts top → goal is bottom,
+              // symbol 3 starts right → goal is left, symbol 4 starts left → goal is right
+              const sides: Record<number, React.CSSProperties> = {
+                1: { top: 0, left: 0, right: 0, height: 4 },
+                2: { bottom: 0, left: 0, right: 0, height: 4 },
+                3: { top: 0, bottom: 0, left: 0, width: 4 },
+                4: { top: 0, bottom: 0, right: 0, width: 4 },
+              };
+              return ([1, 2, 3, 4] as const)
+                .filter(sym => symbolsPresent.has(sym))
+                .map(sym => {
+                  const color = PLAYER_OUTLINE_COLORS[sym];
+                  return (
+                    <div key={`goal-glow-${sym}`} style={{
+                      position: "absolute",
+                      ...sides[sym],
+                      background: color,
+                      boxShadow: `0 0 18px 8px ${color}`,
+                      pointerEvents: "none",
+                      zIndex: 20,
+                    }} />
+                  );
+                });
             })()}
           </div>
 
