@@ -39,6 +39,9 @@ export interface GameDTO {
   sizeBoard: number;
   creatorId: number;
   currentTurnUserId: number;
+  turnTimeLimitSeconds: number;
+  turnDeadlineMillis: number | null;
+  serverTimeMillis: number | null;
   wallsPerPlayer: number;
   winnerId: number | null;
   playerIds: number[];
@@ -61,6 +64,9 @@ export interface GameState {
   wallsPerPlayer: number;
   matrix: CellValue[][];
   currentTurnUserId: number;
+  turnTimeLimitSeconds: number;
+  turnDeadlineMillis: number | null;
+  serverTimeMillis: number | null;
   playerIds: number[];
   winnerId: number | null;
   gameStatus: GameDTO["gameStatus"];
@@ -82,4 +88,5 @@ export interface ChatMessageGetDTO {
   text: string | null;
   gifUrl: string | null;
   timestamp: number; // Unix milliseconds
+  spectator: boolean;
 }

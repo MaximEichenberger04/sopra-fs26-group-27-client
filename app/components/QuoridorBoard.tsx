@@ -28,19 +28,33 @@ const PLAYER_OUTLINE_COLORS: Record<number, string> = {
   4: "rgba(217, 180, 107, 0.9)",
 };
 
+// Original board positions for each symbol (degrees, same as BOARD_ROTATION)
+// Symbol 1 starts at bottom (0°), Symbol 2 at top (180°), Symbol 3 at left (90°), Symbol 4 at right (-90°)
+const SYMBOL_POSITION: Record<number, number> = { 1: 180, 2: 0, 3: 90, 4: -90 };
+
 // ─── PawnCell ─────────────────────────────────────────────────────────────────
 
-function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, counterRotation,
+function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, boardRotation,
   cellSize, pawnStyles, isAbilityMode, onAbilityHover, onAbilityLeave, onAbilityClick,
 }: {
   value: CellValue; boardRow: number; boardCol: number;
   isValidMove: boolean; onMove: (mr: number, mc: number) => void;
-  counterRotation: string; cellSize: number; pawnStyles?: Record<number, string>;
+  boardRotation: number; cellSize: number; pawnStyles?: Record<number, string>;
   isAbilityMode: boolean;
   onAbilityHover: (r: number, c: number) => void;
   onAbilityLeave: () => void;
   onAbilityClick: (r: number, c: number) => void;
 }) {
+  // Each pawn faces inward from its apparent screen position.
+  // The board container is CSS-rotated by boardRotation, so the pawn's actual
+  // on-screen rotation = boardRotation + pawnAngle.  We want the screen rotation
+  // to equal the pawn's apparent position (= SYMBOL_POSITION[value] − boardRotation),
+  // so: pawnAngle = apparentPos − boardRotation = SYMBOL_POSITION[value] − 2·boardRotation.
+  const pawnAngle = (value >= 1 && value <= 4)
+    ? (SYMBOL_POSITION[value] ?? 0) - 2 * boardRotation
+    : 0;
+  const pawnTransform = pawnAngle === 0 ? "none" : `rotate(${pawnAngle}deg)`;
+
   return (
     <div
       onClick={() => isAbilityMode ? onAbilityClick(boardRow, boardCol) : isValidMove && onMove(boardRow * 2, boardCol * 2)}
@@ -57,8 +71,8 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, counterRotat
         <div
           className={`pawn pawn-${value}`}
           style={{
-            width: cellSize * 0.58, height: cellSize * 0.58,
-            transform: counterRotation,
+            width: cellSize * 0.82, height: cellSize * 0.82,
+            transform: pawnTransform,
             ...(pawnStyles?.[value] ? { background: pawnStyles[value] } : {}),
             borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
           }}
@@ -174,6 +188,8 @@ interface QuoridorBoardProps {
   mySymbol: 1 | 2 | 3 | 4;
   matrix: CellValue[][];
   isMyTurn: boolean;
+  remainingMillis?: number;
+  turnTimeLimitSeconds?: number;
   validMoves: Array<[number, number]>;
   onMove: (mr: number, mc: number) => void;
   onWall: (mr: number, mc: number, orientation: "HORIZONTAL" | "VERTICAL") => void;
@@ -201,7 +217,8 @@ const BOARD_ROTATION: Record<1 | 2 | 3 | 4, number> = {
 };
 
 export default function QuoridorBoard({
-  matrix, isMyTurn, validMoves, onMove, onWall, onForfeit, onSkipTurn,
+  matrix, isMyTurn, remainingMillis = 0,
+  turnTimeLimitSeconds = 60, validMoves, onMove, onWall, onForfeit, onSkipTurn,
   boardEffect = null,
   mySymbol, players, pawnStyles,
   selectedAbilityCard = null,
@@ -306,6 +323,13 @@ export default function QuoridorBoard({
     })();
 
   const { cell: CELL, wall: WALL } = sizes;
+  const remainingSeconds = Math.ceil(remainingMillis / 1000);
+
+  const timerRatio = turnTimeLimitSeconds > 0
+    ? Math.max(0, Math.min(1, remainingMillis / (turnTimeLimitSeconds * 1000)))
+    : 0;
+
+  const timerWarning = remainingSeconds <= 10;
 
   return (
     <div className="game-layout">
@@ -345,6 +369,21 @@ export default function QuoridorBoard({
       <div className="right-column">
         <div className="vertical-beam">
           <button className="help-btn" onClick={() => setShowHelp(true)}>HOW TO PLAY</button>
+
+          <div className={`turn-timer-box ${timerWarning ? "warning" : ""}`}>
+            <div className="turn-timer-label">TURN TIMER</div>
+            <div className="turn-timer-value">{remainingSeconds}s</div>
+            <div className="turn-timer-bar">
+              <div
+                className="turn-timer-fill"
+                style={{ width: `${timerRatio * 100}%` }}
+              />
+            </div>
+            <div className="turn-timer-status">
+              {isMyTurn ? "Your turn" : "Opponent's turn"}
+            </div>
+          </div>
+
           <div className="beam-section">
             <h4>PLAYERS</h4>
             {players && players.length > 0 ? (
@@ -449,7 +488,7 @@ export default function QuoridorBoard({
                     <PawnCell key={`${mr}-${mc}`}
                       value={value} boardRow={mr / 2} boardCol={mc / 2}
                       isValidMove={effectiveValidMoves.some(([vr, vc]) => vr === mr && vc === mc)}
-                      onMove={onMove} counterRotation={counterRotation}
+                      onMove={onMove} boardRotation={boardRotation}
                       cellSize={CELL} pawnStyles={pawnStyles}
                       isAbilityMode={isAbilityMode}
                       onAbilityHover={(r, c) => setAbilityHover({ r, c })}
