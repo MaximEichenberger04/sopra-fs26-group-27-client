@@ -189,9 +189,19 @@ const LobbyPage: React.FC = () => {
   }
 
   const isHost = currentUserId !== null && Number(currentUserId) === lobby.hostId;
-  const isFull = lobby.currentPlayers === lobby.maxPlayers;
-  const canStart = isHost && isFull && lobby.lobbyStatus === "WAITING";
-  const emptySlots = Math.max(0, (lobby.maxPlayers ?? 0) - users.length);
+  const currentPlayers = lobby.currentPlayers ?? 0;
+  const maxPlayers = lobby.maxPlayers ?? 0;
+  const hasEnoughPlayers =
+    maxPlayers === 2
+      ? currentPlayers === 2
+      : maxPlayers === 4 && currentPlayers >= 3;
+
+  const canStart = isHost && hasEnoughPlayers && lobby.lobbyStatus === "WAITING";
+  const emptySlots = Math.max(0, maxPlayers - users.length);
+  const waitingText =
+    maxPlayers === 4
+      ? `Waiting for at least 3 players (${currentPlayers}/${maxPlayers})`
+      : `Waiting for players (${currentPlayers}/${maxPlayers})`;
 
   // Host sees a live preview (their current dropdown selection).
   // Guest sees the saved lobby value.
@@ -275,9 +285,9 @@ const LobbyPage: React.FC = () => {
               </button>
             )}
 
-            {isHost && !canStart && (lobby.currentPlayers ?? 0) < (lobby.maxPlayers ?? 0) && (
+            {isHost && !canStart && currentPlayers < maxPlayers && (
               <button className="btn-outline" style={{ width: "100%", marginTop: 16 }} disabled>
-                Waiting for players ({lobby.currentPlayers}/{lobby.maxPlayers})
+                {waitingText}
               </button>
             )}
           </div>

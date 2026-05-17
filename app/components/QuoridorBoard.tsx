@@ -299,9 +299,10 @@ export default function QuoridorBoard({
     if (!selectedAbilityCard) return;
     if (selectedAbilityCard === "FREEZE") {
       const cellVal = matrix[logR * 2]?.[logC * 2] ?? 0;
-      if (cellVal !== 1 && cellVal !== 2) return;
+      if (cellVal < 1 || cellVal > 4) return;
+      if (cellVal === mySymbol) return;
       const target = players?.find(p => p.symbol === cellVal);
-      if (!target) return;
+      if (!target || target.hasLeft) return;
       onAbilityTarget(logR, logC, target.id);
     } else {
       onAbilityTarget(logR, logC);
@@ -317,7 +318,7 @@ export default function QuoridorBoard({
     selectedAbilityCard !== null && (() => {
       if (selectedAbilityCard === "FREEZE") {
         const v = matrix[hoverLogR! * 2]?.[hoverLogC! * 2] ?? 0;
-        return v === 1 || v === 2;
+        return v >= 1 && v <= 4 && v !== mySymbol;
       }
       return true;
     })();
