@@ -150,7 +150,6 @@ const NavBar: React.FC = () => {
                                 <button className="nav-dd-item" onClick={() => { setDropdownOpen(false); router.push("/shop"); }}>
                                     Cosmetics Shop
                                 </button>
-                                <button className="nav-dd-item nav-dd-disabled">Match History</button>
                                 <div className="nav-dd-divider" />
                                 <button className="nav-dd-item nav-dd-logout" onClick={handleLogout}>
                                     Logout
