@@ -1,4 +1,4 @@
-import { CellValue, MATRIX_SIZE } from "@/types/game";
+import { CellValue, MATRIX_SIZE, WALL_VALUE } from "@/types/game";
 
 /**
  * Computes which wall placements are valid for the current board state.
@@ -62,16 +62,32 @@ function checkValid(
 
   for (const [r, c] of cells) {
     if (r < 0 || r >= MATRIX_SIZE || c < 0 || c >= MATRIX_SIZE) return false;
-    if ((matrix[r]?.[c] ?? 0) === 3) return false;
+    if ((matrix[r]?.[c] ?? 0) === WALL_VALUE) return false;
   }
 
   const sim: CellValue[][] = matrix.map(row => [...row] as CellValue[]);
-  for (const [r, c] of cells) sim[r][c] = 3;
+  for (const [r, c] of cells) sim[r][c] = WALL_VALUE;
 
-  return canReach(sim, 1, 0) && canReach(sim, 2, 16);
+  return canReachGoalRow(sim, 1, 0)
+    && canReachGoalRow(sim, 2, MATRIX_SIZE - 1)
+    && canReachGoalCol(sim, 3, 0)
+    && canReachGoalCol(sim, 4, MATRIX_SIZE - 1);
 }
 
-function canReach(matrix: CellValue[][], player: 1 | 2, goalRow: number): boolean {
+function canReachGoalRow(matrix: CellValue[][], player: 1 | 2 | 3 | 4, goalRow: number): boolean {
+  return canReach(matrix, player, goalRow, null);
+}
+
+function canReachGoalCol(matrix: CellValue[][], player: 1 | 2 | 3 | 4, goalCol: number): boolean {
+  return canReach(matrix, player, null, goalCol);
+}
+
+function canReach(
+  matrix: CellValue[][],
+  player: 1 | 2 | 3 | 4,
+  goalRow: number | null,
+  goalCol: number | null
+): boolean {
   let sr = -1, sc = -1;
   outer:
   for (let r = 0; r < MATRIX_SIZE; r += 2) {
@@ -87,14 +103,14 @@ function canReach(matrix: CellValue[][], player: 1 | 2, goalRow: number): boolea
 
   while (queue.length > 0) {
     const [r, c] = queue.shift()!;
-    if (r === goalRow) return true;
+    if ((goalRow !== null && r === goalRow) || (goalCol !== null && c === goalCol)) return true;
     for (const [dr, dc] of [[-2, 0], [2, 0], [0, -2], [0, 2]] as [number, number][]) {
       const wr = r + dr / 2;
       const wc = c + dc / 2;
       const nr = r + dr;
       const nc = c + dc;
       if (nr < 0 || nr >= MATRIX_SIZE || nc < 0 || nc >= MATRIX_SIZE) continue;
-      if ((matrix[wr]?.[wc] ?? 0) === 3) continue;
+      if ((matrix[wr]?.[wc] ?? 0) === WALL_VALUE) continue;
       const key = `${nr},${nc}`;
       if (!visited.has(key)) { visited.add(key); queue.push([nr, nc]); }
     }

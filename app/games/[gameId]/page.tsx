@@ -599,7 +599,7 @@ export default function GamePage() {
               setForfeitedPlayerIds(prev => prev.includes(fid) ? prev : [...prev, fid]);
             }
             if (fid === userId) {
-              if (playerCountRef.current === 4) { router.push("/users"); return; }
+              if (playerCountRef.current >= 3) { router.push("/users"); return; }
               setBanner("You forfeited the game.");
             } else {
               setBanner("A player forfeited and left the game.");
@@ -659,7 +659,7 @@ export default function GamePage() {
   async function handleForfeit() {
     try {
       await api.post(`/games/${gameId}/forfeit`, {});
-      if ((game.playerIds?.length ?? 0) === 4) { router.push("/users"); return; }
+      if ((game.playerIds?.length ?? 0) >= 3) { router.push("/users"); return; }
     } catch { setError("Could not forfeit."); }
   }
 
