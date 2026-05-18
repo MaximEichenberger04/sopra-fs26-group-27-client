@@ -46,14 +46,12 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, boardRotatio
   onAbilityLeave: () => void;
   onAbilityClick: (r: number, c: number) => void;
 }) {
-  // Each pawn faces inward from its apparent screen position.
-  // The board container is CSS-rotated by boardRotation, so the pawn's actual
-  // on-screen rotation = boardRotation + pawnAngle.  We want the screen rotation
-  // to equal the pawn's apparent position (= SYMBOL_POSITION[value] − boardRotation),
-  // so: pawnAngle = apparentPos − boardRotation = SYMBOL_POSITION[value] − 2·boardRotation.
+
+  // Notice we removed the `- 2 * boardRotation` entirely
   const pawnAngle = (value >= 1 && value <= 4)
-    ? (SYMBOL_POSITION[value] ?? 0) - 2 * boardRotation
+    ? (SYMBOL_POSITION[value] ?? 0)
     : 0;
+
   const pawnTransform = pawnAngle === 0 ? "none" : `rotate(${pawnAngle}deg)`;
 
   return (
