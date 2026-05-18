@@ -47,7 +47,7 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, boardRotatio
   onAbilityClick: (r: number, c: number) => void;
 }) {
 
-  // Notice we removed the `- 2 * boardRotation` entirely
+
   const pawnAngle = (value >= 1 && value <= 4)
     ? (SYMBOL_POSITION[value] ?? 0)
     : 0;
