@@ -50,6 +50,10 @@ const PAWN_SKIN_GRADIENTS: Record<string, string> = {
   "pawn-witch": "url('/cosmetics/pawnskins/witch.png') center/cover no-repeat",
   "pawn-wizard": "url('/cosmetics/pawnskins/wizard.png') center/cover no-repeat",
   "pawn-wolf": "url('/cosmetics/pawnskins/wolf.png') center/cover no-repeat",
+  "pawn-demon": "url('/cosmetics/pawnskins/demon.png') center/cover no-repeat",
+  "pawn-queen": "url('/cosmetics/pawnskins/queen.png') center/cover no-repeat",
+  "pawn-farmer": "url('/cosmetics/pawnskins/farmer.png') center/cover no-repeat",
+
 };
 
 // ─── Card assets ──────────────────────────────────────────────────────────────

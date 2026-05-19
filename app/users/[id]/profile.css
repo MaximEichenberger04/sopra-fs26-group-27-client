@@ -585,8 +585,8 @@
 }
 
 .cosmetic-preview-pawn {
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
 }
 
@@ -625,6 +625,18 @@
 
 .pskin-wolf {
   background: url('/cosmetics/pawnskins/wolf.png') center/cover no-repeat;
+}
+
+.pskin-farmer {
+  background: url('/cosmetics/pawnskins/farmer.png') center/cover no-repeat;
+}
+
+.pskin-demon {
+  background: url('/cosmetics/pawnskins/demon.png') center/cover no-repeat;
+}
+
+.pskin-queen {
+  background: url('/cosmetics/pawnskins/queen.png') center/cover no-repeat;
 }
 
 /* ═══════════════════════════════════════════════
@@ -842,8 +854,8 @@
 }
 
 .view-pawn-lg {
-  width: 32px !important;
-  height: 32px !important;
+  width: 52px !important;
+  height: 52px !important;
 }
 
 .view-coins-row {
