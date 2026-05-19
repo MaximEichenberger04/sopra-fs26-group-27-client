@@ -664,6 +664,18 @@ a {
   background: url('/cosmetics/pawnskins/wolf.png') center/cover no-repeat;
 }
 
+.pskin-farmer {
+  background: url('/cosmetics/pawnskins/farmer.png') center/cover no-repeat;
+}
+
+.pskin-demon {
+  background: url('/cosmetics/pawnskins/demon.png') center/cover no-repeat;
+}
+
+.pskin-queen {
+  background: url('/cosmetics/pawnskins/queen.png') center/cover no-repeat;
+}
+
 /* Fix toast message text color */
 .ant-message .ant-message-notice-content,
 .ant-message-success .ant-message-custom-content,
