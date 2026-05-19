@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { CellValue, MATRIX_SIZE, WALL_VALUE, AbilityType, PoisonZoneDTO } from "@/types/game";
-import { getValidWallSet, slotToCenter } from "@/utils/ValidwallPlacements";
+import { slotToCenter } from "@/utils/ValidwallPlacements";
 
 const BASE_CELL = 56;
 const BASE_WALL = 12;
@@ -254,8 +254,6 @@ export default function QuoridorBoard({
 
   const isAbilityMode = !!selectedAbilityCard;
 
-  const validWalls = useMemo(() => getValidWallSet(matrix), [matrix]);
-
   const poisonedCells = useMemo(() => {
     const set = new Set<string>();
     for (const z of poisonZones)
@@ -276,7 +274,6 @@ export default function QuoridorBoard({
 
   function handleHover(mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") {
     const [cr, cc] = slotToCenter(mr, mc, o);
-    if (!validWalls.has(`${cr},${cc},${o}`)) { setHoveredWall([]); setHoveredCenter(null); return; }
     if (o === "HORIZONTAL") {
       setHoveredWall([[cr, cc - 1], [cr, cc], [cr, cc + 1]]);
       setHoveredCenter({ mr: cr, mc: cc, o });
@@ -497,20 +494,16 @@ export default function QuoridorBoard({
                     />
                   );
                 if (!evenRow && evenCol) {
-                  const [hcr, hcc] = slotToCenter(mr, mc, "HORIZONTAL");
-                  const hValid = validWalls.has(`${hcr},${hcc},HORIZONTAL`);
                   return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
                     mr={mr} mc={mc} isMyTurn={isMyTurn} isAbilityMode={isAbilityMode}
-                    isHighlighted={isWallHighlighted(mr, mc)} isValid={hValid}
+                    isHighlighted={isWallHighlighted(mr, mc)} isValid={true}
                     cellSize={CELL} wallSize={WALL}
                     onWall={handleWallClick} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
                 }
                 if (evenRow && !evenCol) {
-                  const [vcr, vcc] = slotToCenter(mr, mc, "VERTICAL");
-                  const vValid = validWalls.has(`${vcr},${vcc},VERTICAL`);
                   return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
                     mr={mr} mc={mc} isMyTurn={isMyTurn} isAbilityMode={isAbilityMode}
-                    isHighlighted={isWallHighlighted(mr, mc)} isValid={vValid}
+                    isHighlighted={isWallHighlighted(mr, mc)} isValid={true}
                     cellSize={CELL} wallSize={WALL}
                     onWall={handleWallClick} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
                 }
