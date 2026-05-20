@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { CellValue, MATRIX_SIZE, WALL_VALUE, AbilityType, PoisonZoneDTO } from "@/types/game";
-import { getValidWallSet, slotToCenter } from "@/utils/ValidwallPlacements";
+import { slotToCenter } from "@/utils/ValidwallPlacements";
 
 const BASE_CELL = 56;
 const BASE_WALL = 12;
@@ -257,8 +257,6 @@ export default function QuoridorBoard({
 
   const isAbilityMode = !!selectedAbilityCard;
 
-  const validWalls = useMemo(() => getValidWallSet(matrix), [matrix]);
-
   const poisonedCells = useMemo(() => {
     const set = new Set<string>();
     for (const z of poisonZones)
@@ -279,7 +277,6 @@ export default function QuoridorBoard({
 
   function handleHover(mr: number, mc: number, o: "HORIZONTAL" | "VERTICAL") {
     const [cr, cc] = slotToCenter(mr, mc, o);
-    if (!validWalls.has(`${cr},${cc},${o}`)) { setHoveredWall([]); setHoveredCenter(null); return; }
     if (o === "HORIZONTAL") {
       setHoveredWall([[cr, cc - 1], [cr, cc], [cr, cc + 1]]);
       setHoveredCenter({ mr: cr, mc: cc, o });
@@ -519,20 +516,16 @@ export default function QuoridorBoard({
                     />
                   );
                 if (!evenRow && evenCol) {
-                  const [hcr, hcc] = slotToCenter(mr, mc, "HORIZONTAL");
-                  const hValid = validWalls.has(`${hcr},${hcc},HORIZONTAL`);
                   return <WallSlot key={`${mr}-${mc}`} orientation="HORIZONTAL" value={value}
                     mr={mr} mc={mc} isMyTurn={isMyTurn} isAbilityMode={isAbilityMode}
-                    isHighlighted={isWallHighlighted(mr, mc)} isValid={hValid}
+                    isHighlighted={isWallHighlighted(mr, mc)} isValid={true}
                     cellSize={CELL} wallSize={WALL}
                     onWall={handleWallClick} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
                 }
                 if (evenRow && !evenCol) {
-                  const [vcr, vcc] = slotToCenter(mr, mc, "VERTICAL");
-                  const vValid = validWalls.has(`${vcr},${vcc},VERTICAL`);
                   return <WallSlot key={`${mr}-${mc}`} orientation="VERTICAL" value={value}
                     mr={mr} mc={mc} isMyTurn={isMyTurn} isAbilityMode={isAbilityMode}
-                    isHighlighted={isWallHighlighted(mr, mc)} isValid={vValid}
+                    isHighlighted={isWallHighlighted(mr, mc)} isValid={true}
                     cellSize={CELL} wallSize={WALL}
                     onWall={handleWallClick} onHover={handleHover} onHoverEnd={handleHoverEnd} />;
                 }
@@ -557,7 +550,7 @@ export default function QuoridorBoard({
               for (let mr = 0; mr < MATRIX_SIZE; mr += 2) {
                 for (let mc = 0; mc < MATRIX_SIZE; mc += 2) {
                   const cv = matrix[mr]?.[mc] ?? 0;
-                  if (cv !== 1 && cv !== 2) continue;
+                  if (cv < 1 || cv > 4) continue;
                   const p = players?.find(p => p.symbol === cv);
                   if (!p || !frozenPlayerIds.includes(p.id)) continue;
                   els.push(
@@ -616,6 +609,34 @@ export default function QuoridorBoard({
                   animation: "earthquake-shake 0.12s ease-in-out infinite",
                 }} />
               );
+            })()}
+
+            {/* Goal side glow — each side glows in the color of the player who must reach it */}
+            {players && (() => {
+              const symbolsPresent = new Set(players.map(p => p.symbol));
+              // Symbol 1 starts bottom → goal is top, symbol 2 starts top → goal is bottom,
+              // symbol 3 starts right → goal is left, symbol 4 starts left → goal is right
+              const sides: Record<number, React.CSSProperties> = {
+                1: { top: 0, left: 0, right: 0, height: 4 },
+                2: { bottom: 0, left: 0, right: 0, height: 4 },
+                3: { top: 0, bottom: 0, left: 0, width: 4 },
+                4: { top: 0, bottom: 0, right: 0, width: 4 },
+              };
+              return ([1, 2, 3, 4] as const)
+                .filter(sym => symbolsPresent.has(sym))
+                .map(sym => {
+                  const color = PLAYER_OUTLINE_COLORS[sym];
+                  return (
+                    <div key={`goal-glow-${sym}`} style={{
+                      position: "absolute",
+                      ...sides[sym],
+                      background: color,
+                      boxShadow: `0 0 18px 8px ${color}`,
+                      pointerEvents: "none",
+                      zIndex: 20,
+                    }} />
+                  );
+                });
             })()}
           </div>
 
