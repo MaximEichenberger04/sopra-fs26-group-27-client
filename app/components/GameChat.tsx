@@ -23,7 +23,7 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
   const [gifQuery, setGifQuery] = useState("");
   const [gifResults, setGifResults] = useState<GifSearchResultDTO[]>([]);
 
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const gifInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,7 +41,8 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
   }, [fetchChat, refreshTrigger]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesContainerRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
   useEffect(() => {
@@ -118,7 +119,10 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
         <h4>CHAT</h4>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto", minHeight: 0, marginBottom: 12 }}>
+      <div
+        ref={messagesContainerRef}
+        style={{ flex: 1, overflowY: "auto", minHeight: 0, marginBottom: 12 }}
+      >
         {messages.length === 0 ? (
           <p style={{ color: "var(--q-text-muted)", fontSize: 14, margin: 0 }}>No messages yet...</p>
         ) : (
@@ -147,7 +151,10 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
                   src={msg.gifUrl}
                   alt="gif"
                   style={{ maxWidth: "100%", borderRadius: 4, display: "block", marginTop: 4 }}
-                  onLoad={() => bottomRef.current?.scrollIntoView({ behavior: "smooth" })}
+                  onLoad={() => {
+                    const el = messagesContainerRef.current;
+                    if (el) el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+                  }}
                 />
               ) : (
                 msg.text
@@ -155,7 +162,6 @@ export default function GameChat({ gameId, userId, username, token, refreshTrigg
             </div>
           ))
         )}
-        <div ref={bottomRef} />
       </div>
 
       {gifPickerOpen && (
