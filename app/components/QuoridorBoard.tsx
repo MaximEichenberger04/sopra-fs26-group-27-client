@@ -29,7 +29,8 @@ const PLAYER_OUTLINE_COLORS: Record<number, string> = {
 };
 
 // Original board positions for each symbol (degrees, same as BOARD_ROTATION)
-// Symbol 1 starts at bottom (0°), Symbol 2 at top (180°), Symbol 3 at left (90°), Symbol 4 at right (-90°)
+// Symbol 1 starts at bottom (row 16), Symbol 2 at top (row 0),
+// Symbol 3 at right (col 16), Symbol 4 at left (col 0)
 const SYMBOL_POSITION: Record<number, number> = { 1: 180, 2: 0, 3: 90, 4: -90 };
 
 // ─── PawnCell ─────────────────────────────────────────────────────────────────
@@ -45,14 +46,12 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, boardRotatio
   onAbilityLeave: () => void;
   onAbilityClick: (r: number, c: number) => void;
 }) {
-  // Each pawn faces inward from its apparent screen position.
-  // The board container is CSS-rotated by boardRotation, so the pawn's actual
-  // on-screen rotation = boardRotation + pawnAngle.  We want the screen rotation
-  // to equal the pawn's apparent position (= SYMBOL_POSITION[value] − boardRotation),
-  // so: pawnAngle = apparentPos − boardRotation = SYMBOL_POSITION[value] − 2·boardRotation.
+
+
   const pawnAngle = (value >= 1 && value <= 4)
-    ? (SYMBOL_POSITION[value] ?? 0) - 2 * boardRotation
+    ? (SYMBOL_POSITION[value] ?? 0)
     : 0;
+
   const pawnTransform = pawnAngle === 0 ? "none" : `rotate(${pawnAngle}deg)`;
 
   return (
@@ -67,19 +66,23 @@ function PawnCell({ value, boardRow, boardCol, isValidMove, onMove, boardRotatio
         display: "flex", alignItems: "center", justifyContent: "center",
       }}
     >
-      {(value >= 1 && value <= 4) && (
-        <div
-          className={`pawn pawn-${value}`}
-          style={{
-            width: cellSize * 0.82, height: cellSize * 0.82,
-            transform: pawnTransform,
-            ...(pawnStyles?.[value] ? { background: pawnStyles[value] } : {}),
-            borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
-          }}
-        >
-          <div className="pawn-highlight" />
-        </div>
-      )}
+      {(value >= 1 && value <= 4) && (() => {
+        const hasCustomSkin = !!pawnStyles?.[value];
+        const pawnSize = hasCustomSkin ? cellSize * 0.92 : cellSize * 0.82;
+        return (
+          <div
+            className={`pawn pawn-${value}`}
+            style={{
+              width: pawnSize, height: pawnSize,
+              transform: pawnTransform,
+              ...(hasCustomSkin ? { background: pawnStyles[value] } : {}),
+              borderColor: PLAYER_OUTLINE_COLORS[value] || "rgba(255,255,255,0.4)",
+            }}
+          >
+            {!hasCustomSkin && <div className="pawn-highlight" />}
+          </div>
+        );
+      })()}
     </div>
   );
 }
@@ -297,8 +300,9 @@ export default function QuoridorBoard({
     if (selectedAbilityCard === "FREEZE") {
       const cellVal = matrix[logR * 2]?.[logC * 2] ?? 0;
       if (cellVal < 1 || cellVal > 4) return;
+      if (cellVal === mySymbol) return;
       const target = players?.find(p => p.symbol === cellVal);
-      if (!target) return;
+      if (!target || target.hasLeft) return;
       onAbilityTarget(logR, logC, target.id);
     } else {
       onAbilityTarget(logR, logC);
@@ -314,7 +318,7 @@ export default function QuoridorBoard({
     selectedAbilityCard !== null && (() => {
       if (selectedAbilityCard === "FREEZE") {
         const v = matrix[hoverLogR! * 2]?.[hoverLogC! * 2] ?? 0;
-        return v >= 1 && v <= 4;
+        return v >= 1 && v <= 4 && v !== mySymbol;
       }
       return true;
     })();
@@ -327,6 +331,21 @@ export default function QuoridorBoard({
     : 0;
 
   const timerWarning = remainingSeconds <= 10;
+
+  // Colored borders for each player's GOAL side (CSS sides in unrotated grid)
+  // Server START_POSITIONS: sym1=bottom, sym2=top, sym3=RIGHT(col16), sym4=LEFT(col0)
+  // Goals are opposite: sym1→top, sym2→bottom, sym3→left, sym4→right
+  // These rotate with the board, so each player always sees their own goal color at the top.
+  const SIDE_SYMBOL: Record<string, number> = { top: 1, bottom: 2, left: 3, right: 4 };
+  const BORDER_COLORS: Record<number, string> = {
+    1: "rgba(91, 141, 217, 0.85)",
+    2: "rgba(217, 107, 107, 0.85)",
+    3: "rgba(107, 217, 130, 0.85)",
+    4: "rgba(217, 180, 107, 0.85)",
+  };
+  const activeSymbols = new Set<number>(players?.map(p => p.symbol) ?? []);
+  const borderColor = (side: string) =>
+    activeSymbols.has(SIDE_SYMBOL[side]) ? BORDER_COLORS[SIDE_SYMBOL[side]] : "transparent";
 
   return (
     <div className="game-layout">
@@ -471,7 +490,10 @@ export default function QuoridorBoard({
               gap: 0,
               transform: `rotate(${boardRotation}deg)`,
               position: "relative",
-              borderBottom: "none",
+              borderTop: `4px solid ${borderColor("top")}`,
+              borderBottom: `4px solid ${borderColor("bottom")}`,
+              borderLeft: `4px solid ${borderColor("left")}`,
+              borderRight: `4px solid ${borderColor("right")}`,
             }}
           >
             {Array.from({ length: MATRIX_SIZE }, (_, mr) =>
