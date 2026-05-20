@@ -82,7 +82,7 @@ const LobbyPage: React.FC = () => {
 
   useEffect(() => {
     fetchLobby();
-    const interval = globalThis.setInterval(fetchLobby, 2000);
+    const interval = globalThis.setInterval(fetchLobby, 1000);
 
     let ws: WebSocket;
     let reconnectTimeout: ReturnType<typeof setTimeout>;
