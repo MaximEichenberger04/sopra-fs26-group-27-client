@@ -4,8 +4,8 @@ import { slotToCenter } from "@/utils/ValidwallPlacements";
 
 const BASE_CELL = 56;
 const BASE_WALL = 12;
-const MIN_CELL = 36;
-const MAX_CELL = 56;
+const MIN_CELL = 26;
+const MAX_CELL = 52;
 const PAD = 12;
 
 function cellPx(i: number, cell: number, wall: number): number { return PAD + i * (cell + wall); }
@@ -207,6 +207,7 @@ interface QuoridorBoardProps {
   poisonZones?: PoisonZoneDTO[];
   frozenPlayerIds?: number[];
   isFrozen?: boolean;
+  bottomReserve?: number;
   chatSlot?: React.ReactNode;
 }
 
@@ -229,6 +230,7 @@ export default function QuoridorBoard({
   poisonZones = [],
   frozenPlayerIds = [],
   isFrozen = false,
+  bottomReserve = 24,
   chatSlot,
 }: QuoridorBoardProps) {
   const [mounted, setMounted] = useState(false);
@@ -243,7 +245,17 @@ export default function QuoridorBoard({
   const [sizes, setSizes] = useState({ cell: BASE_CELL, wall: BASE_WALL });
   useEffect(() => {
     function updateSizes() {
-      const available = Math.min(window.innerWidth * 0.52, window.innerHeight * 0.72);
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const gap = Math.max(10, Math.min(16, vw * 0.012));
+      const pagePadX = Math.max(12, Math.min(32, vw * 0.02));
+      const pagePadY = Math.max(10, Math.min(24, vh * 0.02));
+      const sidebarWidth = Math.max(144, Math.min(220, vw * 0.14));
+      const chatWidth = Math.max(220, Math.min(380, vw * 0.26));
+      const boardChrome = PAD * 2 + 8;
+      const widthAvailable = vw - pagePadX * 2 - sidebarWidth - chatWidth - gap * 2 - boardChrome;
+      const heightAvailable = vh - pagePadY * 2 - bottomReserve - boardChrome;
+      const available = Math.max(260, Math.min(widthAvailable, heightAvailable));
       const wallRatio = BASE_WALL / BASE_CELL;
       const rawCell = Math.floor(available / (9 + 8 * wallRatio));
       const cell = Math.max(MIN_CELL, Math.min(MAX_CELL, rawCell));
@@ -253,7 +265,7 @@ export default function QuoridorBoard({
     updateSizes();
     window.addEventListener("resize", updateSizes);
     return () => window.removeEventListener("resize", updateSizes);
-  }, []);
+  }, [bottomReserve]);
 
   const isAbilityMode = !!selectedAbilityCard;
 
@@ -324,6 +336,7 @@ export default function QuoridorBoard({
     })();
 
   const { cell: CELL, wall: WALL } = sizes;
+  const boardPanelHeight = 9 * CELL + 8 * WALL + PAD * 2 + 8;
   const remainingSeconds = Math.ceil(remainingMillis / 1000);
 
   const timerRatio = turnTimeLimitSeconds > 0
@@ -348,7 +361,10 @@ export default function QuoridorBoard({
     activeSymbols.has(SIDE_SYMBOL[side]) ? BORDER_COLORS[SIDE_SYMBOL[side]] : "transparent";
 
   return (
-    <div className="game-layout">
+    <div
+      className="game-layout"
+      style={{ "--game-panel-height": `${boardPanelHeight}px` } as React.CSSProperties}
+    >
 
       {/* Help modal */}
       {showHelp && (
@@ -400,7 +416,7 @@ export default function QuoridorBoard({
             </div>
           </div>
 
-          <div className="beam-section">
+          <div className="beam-section players-section">
             <h4>PLAYERS</h4>
             {players && players.length > 0 ? (
               players.map((p) => (
@@ -656,7 +672,7 @@ export default function QuoridorBoard({
 
       {/* Chat column */}
       {chatSlot && (
-        <div className="chat-column" style={{ height: 9 * CELL + 8 * WALL + 26 }}>
+        <div className="chat-column">
           {chatSlot}
         </div>
       )}
