@@ -741,9 +741,6 @@ export default function GamePage() {
       }} />
       {/* Content wrapper - fit-content + margin auto centers relative to its own width */}
       <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "fit-content", margin: "0 auto" }}>
-        <img src="/quoridor.png" alt="Quoridor"
-          style={{ height: 240, objectFit: "contain", userSelect: "none" as const }} />
-
         {error && (
           <div style={{
             position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
