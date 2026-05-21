@@ -399,7 +399,13 @@ export default function QuoridorBoard({
 
       {/* Sidebar: Players + Forfeit */}
       <div className="right-column">
-        <div className="vertical-beam">
+        <div className="sidebar-stack">
+          <img
+            src="/quoridor.png"
+            alt="Quoridor"
+            className="quoridor-logo-sidebar"
+          />
+          <div className="vertical-beam">
           <button className="help-btn" onClick={() => setShowHelp(true)}>HOW TO PLAY</button>
 
           <div className={`turn-timer-box ${timerWarning ? "warning" : ""}`}>
@@ -463,6 +469,7 @@ export default function QuoridorBoard({
             </button>
           )}
           <button onClick={onForfeit} className="forfeit-btn">FORFEIT</button>
+        </div>
         </div>
       </div>
 
