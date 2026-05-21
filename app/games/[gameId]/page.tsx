@@ -382,11 +382,17 @@ export default function GamePage() {
   useEffect(() => {
     const prevHtml = document.documentElement.style.overflowX;
     const prevBody = document.body.style.overflowX;
-    document.documentElement.style.overflowX = "auto";
-    document.body.style.overflowX = "auto";
+    const prevHtmlY = document.documentElement.style.overflowY;
+    const prevBodyY = document.body.style.overflowY;
+    document.documentElement.style.overflowX = "hidden";
+    document.body.style.overflowX = "hidden";
+    document.documentElement.style.overflowY = "hidden";
+    document.body.style.overflowY = "hidden";
     return () => {
       document.documentElement.style.overflowX = prevHtml;
       document.body.style.overflowX = prevBody;
+      document.documentElement.style.overflowY = prevHtmlY;
+      document.body.style.overflowY = prevBodyY;
     };
   }, []);
 
@@ -724,9 +730,14 @@ export default function GamePage() {
     <main
       className={`theme-${game.mapTheme}`}
       style={{
-        minHeight: "100vh",
-        display: "block",
-        paddingTop: 40, paddingBottom: 40,
+        height: "100dvh",
+        width: "100vw",
+        overflowX: "hidden",
+        overflowY: game.chaosMode ? "auto" : "hidden",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: game.chaosMode ? "flex-start" : "center",
+        padding: "clamp(10px, 2vh, 24px) clamp(12px, 2vw, 32px)",
         fontFamily: "system-ui, sans-serif",
         position: "relative",
       }}
@@ -739,8 +750,8 @@ export default function GamePage() {
         background: "var(--q-main-bg)",
         transition: "background 0.3s ease",
       }} />
-      {/* Content wrapper - fit-content + margin auto centers relative to its own width */}
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "fit-content", margin: "0 auto" }}>
+      {/* Content wrapper */}
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, width: "100%", minHeight: 0 }}>
         {error && (
           <div style={{
             position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)",
@@ -772,7 +783,7 @@ export default function GamePage() {
         )}
 
         {/* Board + Chat via chatSlot */}
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%", minHeight: 0 }}>
           {mounted && (
             <QuoridorBoard
               mySymbol={mySymbol}
@@ -793,6 +804,7 @@ export default function GamePage() {
               poisonZones={game.poisonZones}
               frozenPlayerIds={game.frozenPlayerIds}
               isFrozen={game.frozenPlayerIds.map(Number).includes(Number(userId))}
+              bottomReserve={game.chaosMode ? 150 : 24}
               chatSlot={
                 <GameChat
                   gameId={gameId}
@@ -830,7 +842,7 @@ export default function GamePage() {
         </div>
 
         {lastSync && (
-          <p style={{ color: "var(--q-text-muted,#4a4438)", fontSize: 11, margin: 0 }}>
+          <p style={{ position: "fixed", right: 12, bottom: 8, color: "var(--q-text-muted,#4a4438)", fontSize: 11, margin: 0, zIndex: 30 }}>
             last sync {lastSync.toLocaleTimeString()}
           </p>
         )}

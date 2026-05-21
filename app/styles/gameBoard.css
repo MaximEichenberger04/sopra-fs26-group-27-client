@@ -3,11 +3,16 @@
 /* --- LAYOUT BEAMS --- */
 .game-layout {
     display: grid;
-    grid-template-columns: auto auto auto;
+    grid-template-columns:
+        minmax(144px, clamp(150px, 14vw, 220px))
+        auto
+        minmax(220px, clamp(240px, 26vw, 380px));
     justify-content: center;
-    align-items: flex-end;
-    gap: 16px;
+    align-items: stretch;
+    gap: clamp(10px, 1.2vw, 16px);
     margin: 0 auto;
+    height: var(--game-panel-height, 620px);
+    max-width: calc(100vw - 24px);
 }
 
 .left-column {
@@ -16,8 +21,11 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 40px;
+    justify-content: center;
+    gap: 0;
     justify-self: center;
+    height: 100%;
+    min-height: 0;
 }
 
 .board-3d-wrapper {
@@ -28,10 +36,12 @@
 
 .right-column {
     grid-column: 1;
-    width: auto;
+    width: 100%;
     justify-self: end;
     display: flex;
     justify-content: flex-end;
+    height: 100%;
+    min-height: 0;
 }
 
 .sidebar-stack {
@@ -39,10 +49,14 @@
     flex-direction: column;
     align-items: center;
     gap: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
 }
 
 .quoridor-logo-sidebar {
-    height: 132px;
+    flex: 0 0 clamp(58px, 12vh, 132px);
+    height: clamp(58px, 12vh, 132px);
     width: 100%;
     max-width: 264px;
     object-fit: contain;
@@ -51,12 +65,14 @@
 
 .chat-column {
     grid-column: 3;
-    width: 380px;
+    width: 100%;
     justify-self: start;
     display: flex;
     flex-direction: column;
-    align-self: flex-end;
+    align-self: stretch;
     overflow: hidden;
+    height: 100%;
+    min-height: 0;
 }
 
 /* Horizontal & Vertical Beams (Solid Color) */
@@ -77,12 +93,13 @@
 }
 
 .vertical-beam {
-    width: 220px;
+    width: 100%;
     height: 100%;
-    min-height: 400px;
+    min-height: 0;
     display: flex;
     flex-direction: column;
-    padding: 24px;
+    padding: clamp(12px, 1.5vw, 24px);
+    overflow: hidden;
 }
 
 .beam-section h4 {
@@ -93,7 +110,8 @@
 }
 
 .beam-spacer {
-    flex-grow: 1;
+    flex: 0 0 6px;
+    min-height: 6px;
 }
 
 .player-badge {
@@ -116,7 +134,7 @@
     background: rgba(212, 175, 55, 0.08);
     border: 1px solid rgba(212, 175, 55, 0.3);
     color: rgba(212, 175, 55, 0.9);
-    padding: 12px;
+    padding: clamp(8px, 1.2vh, 12px);
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
@@ -124,7 +142,7 @@
     font-size: 11px;
     transition: all 0.2s;
     width: 100%;
-    margin-bottom: 16px;
+    margin-bottom: clamp(8px, 1.5vh, 16px);
     font-family: inherit;
 }
 
@@ -133,8 +151,8 @@
 }
 
 .turn-timer-box {
-    margin: 0 0 16px 0;
-    padding: 12px;
+    margin: 0 0 clamp(8px, 1.5vh, 16px) 0;
+    padding: clamp(8px, 1.4vh, 12px);
     border-radius: 12px;
     background: rgba(10, 10, 14, 0.72);
     border: 1px solid rgba(212, 175, 55, 0.35);
@@ -151,7 +169,7 @@
 }
 
 .turn-timer-value {
-    font-size: 28px;
+    font-size: clamp(20px, 3vh, 28px);
     font-weight: 800;
     color: var(--q-title, #c8a44a);
     line-height: 1.1;
@@ -290,7 +308,7 @@
     background: rgba(217, 107, 107, 0.1);
     border: 1px solid rgba(217, 107, 107, 0.3);
     color: #d96b6b;
-    padding: 12px;
+    padding: clamp(8px, 1.2vh, 12px);
     border-radius: 8px;
     cursor: pointer;
     font-weight: bold;
@@ -338,7 +356,13 @@
 /* --- 3D BOARD --- */
 .board-3d-wrapper {
     perspective: 1200px;
-    margin-top: 20px;
+    margin-top: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
 }
 
 .board-surface {
@@ -455,11 +479,11 @@
 
 /* Player rows in sidebar */
 .player-row {
-    margin-bottom: 14px;
+    margin-bottom: clamp(8px, 1.3vh, 14px);
 }
 
 .player-name {
-    font-size: 16px;
+    font-size: clamp(12px, 1.7vh, 16px);
     color: var(--q-text);
 }
 
@@ -469,7 +493,7 @@
 
 .player-walls {
     display: block;
-    font-size: 14px;
+    font-size: clamp(11px, 1.5vh, 14px);
     color: var(--q-text-muted);
     margin-left: 26px;
     margin-top: 2px;
@@ -484,21 +508,15 @@
     font-style: italic;
 }
 
+.players-section {
+    flex: 1 1 0;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
 /* Responsive */
 @media (max-width: 1280px) {
-    .game-layout {
-        gap: 14px;
-    }
-
-    .vertical-beam {
-        width: 180px;
-        padding: 16px;
-    }
-
-    .chat-column {
-        width: 280px;
-    }
-
     .quoridor-logo-sidebar {
         height: 110px;
         max-width: 220px;
@@ -506,20 +524,6 @@
 }
 
 @media (max-width: 1024px) {
-    .game-layout {
-        gap: 12px;
-    }
-
-    .vertical-beam {
-        width: 170px;
-        min-height: 320px;
-        padding: 14px;
-    }
-
-    .chat-column {
-        width: 240px;
-    }
-
     .player-name {
         font-size: 13px;
     }
@@ -530,32 +534,23 @@
     }
 }
 
-/* Stack chat below the board on narrow viewports (multi-window, zoom-in) */
-@media (max-width: 1024px) {
+/* Keep the full game on one screen for small desktop windows. */
+@media (max-width: 820px) {
     .game-layout {
-        grid-template-columns: auto auto;
-        grid-template-rows: auto auto;
-        row-gap: 16px;
+        grid-template-columns: minmax(120px, 22vw) auto minmax(180px, 28vw);
+        gap: 8px;
     }
 
-    .right-column {
-        grid-column: 1;
-        grid-row: 1;
+    .vertical-beam {
+        padding: 10px;
     }
 
-    .left-column {
-        grid-column: 2;
-        grid-row: 1;
+    .chat-btn {
+        padding: 10px 8px;
     }
 
-    .chat-column {
-        grid-column: 1 / -1;
-        grid-row: 2;
-        width: 100%;
-        max-width: 600px;
-        height: 280px !important;
-        justify-self: center;
-        align-self: auto;
+    .chat-input {
+        padding: 10px 8px;
     }
 }
 
