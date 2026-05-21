@@ -808,9 +808,9 @@ export default function GamePage() {
             />
           )}
 
-          {/* Ability inventory below board — outer div stays 624px wide to stay centred under board */}
+          {/* Ability inventory below board — centred via the flex parent */}
           {mounted && game.chaosMode && (
-            <div style={{ paddingTop: 16, width: 624, display: "flex", justifyContent: "center" }}>
+            <div style={{ paddingTop: 16, display: "flex", justifyContent: "center" }}>
               <div style={{
                 background: "var(--q-beam-bg, rgba(20,20,25,0.85))",
                 backdropFilter: "blur(10px)",
