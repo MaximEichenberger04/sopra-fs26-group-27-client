@@ -200,7 +200,9 @@ After games, users can review their profile, match history, achievements, score,
 
 ## Roadmap
 
-
+- Add automated frontend tests with Jest, Playwright, or React Testing Library.
+- Improve responsive design and mobile gameplay support.
+- Add user settings, notifications, and expanded cosmetic customization.
 
 ## Authors and Acknowledgment
 
@@ -217,4 +219,7 @@ Team members:
 This project was developed as part of the Software Engineering Praktikum at the University of Zurich.
 
 ## License
+
+This repository does not include a separate license file. The project is currently licensed under the same terms as the backend repository if both parts are distributed together. For a formal license, see the backend `LICENSE` file if available.
+
 
