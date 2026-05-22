@@ -1,29 +1,28 @@
-# Quoridor Chaos Arena
+# Quoridor Chaos Arena frontend
 
 ## Introduction
 
-Quoridor is a strategic board game built around two core movements wall placement and pawn movement with the goal
-of reaching the opposite side of the board befor your opponent. The goal of this project is to make Quoridor
-playable as a modern online multiplayer web application, while making the classic experience something more
-exciting by adding modern competitive features and a new chaos game mode and a four player option which turn the
-whole game upside down. To do that we implemented profiles, progression, cosmetics, lobbies, chat, leaderboards,
-map themes, and a Chaos mode with special abilities.
+Quoridor is a strategic board game built on two simple actions: move your pawn, or drop a wall to block your rival. The first player to reach the opposite side wins. Simple rules, deep tactics.
 
-The frontend is responsible for turning the game logic into an accessible and engaging user experience. It guides
-users from landing page to login, lobby selection, real-time gameplay, post-game results, profile progression, and
-customization. The motivation behind the client design is to make the multiplayer flow clear, responsive, and
-visually understandable, even when players interact through moves, walls, abilities, chat messages, and live
-game-state updates.
+Our project brings Quoridor to life as a modern online multiplayer web application, and pushes the classic formula further with competitive features, a four-player mode that turns the board into a free-for-all, and a Chaos mode where special abilities flip the rules on their head.
+
+The frontend is where the game comes alive for the player. It guides users from landing page to login, lobby selection, real-time matches, post-game results, profile progression, and cosmetic customization, supported by chat, leaderboards, and map themes throughout the experience.
+
+Our goal was a client that feels clear, responsive, and visually intuitive, even as moves, walls, abilities, chat messages, and live game-state updates all unfold at once.
 
 ## Technologies Used
 
-- TypeScript
-- Next.js / React
-- Ant Design
-- REST API integration
-- WebSocket client integration
-- CSS modules and global styles
-- Docker
+* TypeScript
+* Next.js / React
+* Ant Design
+* REST API integration
+* WebSocket client integration
+* CSS modules and global styles
+* Sonar
+
+
+
+This is the frontend implementation. For the backend implementation, click [here](https://github.com/MaximEichenberger04/sopra-fs26-group-27-server).
 
 ## High-Level Components
 
@@ -37,19 +36,19 @@ Authentication tokens and user IDs are stored through [`useLocalStorage.tsx`](ap
 
 The entry flow starts at the landing page [`app/page.tsx`](app/page.tsx), then continues through [`login/page.tsx`](app/login/page.tsx) and [`register/page.tsx`](app/register/page.tsx). After authentication, users are sent to the dashboard in [`users/page.tsx`](app/users/page.tsx).
 
-The profile page [`users/[id]/page.tsx`](app/users/[id]/page.tsx) supports profile viewing and owner-only editing. It displays user information, avatar, biography, score, XP, level, achievements, statistics, cosmetics, and match history. The same page also links to the cosmetics shop and allows users to equip owned cosmetics.
+The profile page [`users/[id]/page.tsx`](app/users/\[id]/page.tsx) supports profile viewing and owner-only editing. It displays user information, avatar, biography, score, XP, level, achievements, statistics, cosmetics, and match history. The same page also links to the cosmetics shop and allows users to equip owned cosmetics.
 
 ### Lobby Flow and Match Setup
 
 Lobby browsing is implemented in [`lobbies/page.tsx`](app/lobbies/page.tsx). Users can view open lobbies, join by invite code, or navigate to lobby creation.
 
-Lobby creation is implemented in [`lobby/page.tsx`](app/lobby/page.tsx), where users choose lobby name, game mode, maximum players, and map theme. The waiting-room view [`lobby/[id]/page.tsx`](app/lobby/[id]/page.tsx) shows players in the lobby, allows host-side settings updates, supports leaving the lobby, and starts the match when ready.
+Lobby creation is implemented in [`lobby/page.tsx`](app/lobby/page.tsx), where users choose lobby name, game mode, maximum players, and map theme. The waiting-room view [`lobby/[id]/page.tsx`](app/lobby/\[id]/page.tsx) shows players in the lobby, allows host-side settings updates, supports leaving the lobby, and starts the match when ready.
 
 The lobby view uses polling and WebSocket refresh events so players are redirected once the game starts.
 
 ### Game Board, Real-Time Gameplay and Abilities
 
-The main gameplay page is [`games/[gameId]/page.tsx`](app/games/[gameId]/page.tsx). It loads game state from the backend, connects to the game WebSocket, reacts to game events, handles game-over redirection, and coordinates user actions such as moving, placing walls, forfeiting, drawing ability cards, and using abilities.
+The main gameplay page is [`games/[gameId]/page.tsx`](app/games/\[gameId]/page.tsx). It loads game state from the backend, connects to the game WebSocket, reacts to game events, handles game-over redirection, and coordinates user actions such as moving, placing walls, forfeiting, drawing ability cards, and using abilities.
 
 The board UI itself is implemented in [`QuoridorBoard.tsx`](app/components/QuoridorBoard.tsx). It renders pawn cells, wall slots, valid move indicators, player positions, wall placement previews, poison/effect zones, map themes, and ability targeting overlays.
 
@@ -73,21 +72,21 @@ The instructions page [`instructions/page.tsx`](app/instructions/page.tsx) expla
 
 ### Prerequisites
 
-- Node.js 18 or newer
-- npm
-- Backend running locally on `http://localhost:8080`
-- Optional: Deno, if using the provided template tasks
-- Optional: Docker
+* Node.js 18 or newer
+* npm
+* Backend running locally on `http://localhost:8080`
+* Optional: Deno, if using the provided template tasks
+* Optional: Docker
 
 ### Install Dependencies
 
-```bash
+```Shell
 npm install
 ```
 
 ### Run Locally
 
-```bash
+```Shell
 npm run dev
 ```
 
@@ -99,20 +98,19 @@ http://localhost:3000
 
 ### Build
 
-```bash
+```Shell
 npm run build
 ```
 
 ### Start Production Build
 
-```bash
+```Shell
 npm start
 ```
 
 ### Lint and Format
 
-
-```bash
+```Shell
 deno task dev
 deno task build
 deno task start
@@ -134,13 +132,13 @@ For production, configure the relevant public backend URL, for example through `
 
 Build the frontend Docker image:
 
-```bash
+```Shell
 docker build -t quoridor-frontend .
 ```
 
 Run the container locally:
 
-```bash
+```Shell
 docker run -p 3000:3000 quoridor-frontend
 ```
 
@@ -161,33 +159,27 @@ A typical release flow is:
 Users start on the landing page and can either register a new account, log in with an existing one or read the
 games instructions.
 
-![Landing Page](docs/screenshots/landing.png)
-
+![1.00](docs/screenshots/landing.png)
 
 ### Registration, Login and Dashboard
 
 Users arrive on the landing page, then either register a new account or log in with an existing one. After authentication, they are redirected to the dashboard, where they can start matchmaking, create a lobby, view their profile, open the leaderboard, or access the shop.
 
-
-![Dashboard](docs/screenshots/dashboard.png)
+![1.00](docs/screenshots/dashboard.png)
 
 ### Lobby Creation and Joining
 
 Players can browse open lobbies or join a private lobby through an invite code. A host can create a lobby, select game settings such as game mode, player count, and map theme, then start the match once enough players have joined.
 
-
 ![Lobby Browser](docs/screenshots/lobby-browser.png)
 ![Lobby Room](docs/screenshots/lobby-room.png)
-
 
 ### Real-Time Gameplay
 
 During the match, players interact with the Quoridor board by moving pawns, placing walls, and, in Chaos mode, using ability cards or by simply chatting to each other using either gifs or text. The frontend listens to WebSocket events and refreshes the game state after moves, wall placements, ability usage, chat messages, forfeits, and game-over events.
 
-
 ![Game Board](docs/screenshots/game-classic.png)
 ![Chaos Mode](docs/screenshots/game-chaos.png)
-
 
 ### Progression and Social Features
 
@@ -197,12 +189,11 @@ After games, users can review their profile, match history, achievements, score,
 ![Shop](docs/screenshots/shop.png)
 ![Leaderboard](docs/screenshots/leaderboard.png)
 
-
 ## Roadmap
 
-- Add automated frontend tests with Jest, Playwright, or React Testing Library.
-- Improve responsive design and mobile gameplay support.
-- Add user settings, notifications, and expanded cosmetic customization.
+* Add automated frontend tests with Jest, Playwright, or React Testing Library.
+* Improve responsive design and mobile gameplay support.
+* Add user settings, notifications, and expanded cosmetic customization.
 
 ## Authors and Acknowledgment
 
@@ -210,16 +201,14 @@ Developed by the SoPra group 27.
 
 Team members:
 
-- Flint Menzi
-- Maxim Eichenberger
-- Eldar Kryeziu
-- Timon Weidmann
-- Jonas Metzger
+* Flint Menzi
+* Maxim Eichenberger
+* Eldar Kryeziu
+* Timon Weidmann
+* Jonas Metzger
 
 This project was developed as part of the Software Engineering Praktikum at the University of Zurich.
 
 ## License
 
 This repository does not include a separate license file. The project is currently licensed under the same terms as the backend repository if both parts are distributed together. For a formal license, see the backend `LICENSE` file if available.
-
-
